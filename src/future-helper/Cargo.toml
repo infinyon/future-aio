@@ -22,4 +22,4 @@ async-test-derive = { path = "async-test-derive", optional = true }
 
 [dev-dependencies]
 lazy_static = "1.2.0"
-
+flv-util = { path= "../utils", features= ["fixture"]}

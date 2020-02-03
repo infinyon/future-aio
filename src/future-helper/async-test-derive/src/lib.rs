@@ -20,7 +20,7 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #[test]
         fn #out_fn_iden()  {
 
-            flv_util::init_logger();
+            ::flv_util::init_logger();
           
             #input
             
