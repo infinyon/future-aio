@@ -2,7 +2,10 @@
 name = "flv-util"
 version = "0.1.0"
 authors = ["fluvio.io"]
+description = "utilies for Fluvio projects"
+repository = "https://github.com/infinyon/flv-future"
 edition = "2018"
+license = "Apache-2.0"
 
 [features]
 default = []

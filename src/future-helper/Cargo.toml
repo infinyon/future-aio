@@ -4,7 +4,7 @@ name = "flv-future-core"
 version = "0.1.0"
 authors = ["fluvio.io"]
 description = "future wrapper for fluvio projects"
-repository = "https://github.com:infinyon/flv-future.git"
+repository = "https://github.com/infinyon/flv-future"
 readme = "README.md"
 license = "Apache-2.0"
 
