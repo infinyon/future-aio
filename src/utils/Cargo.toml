@@ -1,7 +1,7 @@
 [package]
 name = "flv-util"
-version = "0.1.0"
-authors = ["fluvio.io"]
+version = "0.1.1"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "utilies for Fluvio projects"
 repository = "https://github.com/infinyon/flv-future"
 edition = "2018"
