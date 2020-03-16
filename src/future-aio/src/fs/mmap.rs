@@ -10,9 +10,9 @@ use std::sync::RwLockWriteGuard;
 
 use memmap::Mmap;
 use memmap::MmapMut;
-use async_std::task::spawn_blocking;
-use async_std::fs::File;
 
+use crate::task::spawn_blocking;
+use crate::fs::File;
 
 /// Mutable async wrapper for MmapMut
 pub struct MemoryMappedMutFile(Arc<RwLock<MmapMut>>);
@@ -152,8 +152,9 @@ mod tests {
     use std::io::Error as IoError;
     use std::io::Read;
 
-    use flv_future_core::test_async;
     use flv_util::fixture::ensure_clean_file;
+
+    use crate::test_async;
 
     use super::MemoryMappedMutFile;
     

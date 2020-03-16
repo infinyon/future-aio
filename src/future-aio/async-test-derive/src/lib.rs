@@ -20,7 +20,7 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
         #[test]
         fn #out_fn_iden()  {
 
-            ::flv_util::init_logger();
+            ::flv_future_aio::util::init_logger();
           
             #input
             
@@ -28,7 +28,7 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 #name().await
             };
 
-            if let Err(err) = flv_future_core::run_block_on(ft) {
+            if let Err(err) = ::flv_future_aio::task::run_block_on(ft) {
                 assert!(false,"error: {:?}",err);
             }            
             

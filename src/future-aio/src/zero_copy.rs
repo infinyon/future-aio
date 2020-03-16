@@ -6,9 +6,11 @@ use std::os::unix::io::AsRawFd;
 
 use nix::sys::sendfile::sendfile;
 use nix::Error as NixError;
-use async_std::task::spawn_blocking;
-use async_std::net::TcpStream;
 use async_trait::async_trait;
+
+use crate::task::spawn_blocking;
+use crate::net::TcpStream;
+
 
 use crate::fs::AsyncFileSlice;
 
@@ -102,26 +104,28 @@ mod tests {
     use std::time;
 
     use log::debug;
-
-    use futures::stream::StreamExt;
-    use async_std::prelude::*;
-    use async_std::net::TcpStream;
-    use async_std::net::TcpListener;
-
-    use flv_future_core::test_async;
+    use futures::stream::StreamExt;    
     use futures::future::join;
-    use flv_future_core::sleep;
 
-    use crate::fs::file_util;
-    use crate::ZeroCopyWrite;
+    use crate::net::TcpStream;
+    use crate::net::TcpListener;
+    use crate::io::AsyncReadExt;
+    use crate::fs::util as file_util;
+    use crate::zero_copy::ZeroCopyWrite;
     use crate::fs::AsyncFile;
+    use crate::timer::sleep;
+    use crate::test_async;
+
     use super::SendFileError;
 
     #[test_async]
     async fn test_zero_copy_from_fs_to_socket() -> Result<(), SendFileError> {
         // spawn tcp client and check contents
         let server = async {
-            let listener = TcpListener::bind("127.0.0.1:9999").await?;
+
+            #[allow(unused_mut)]
+            let mut listener = TcpListener::bind("127.0.0.1:9999").await?;
+            
             debug!("server: listening");
             let mut incoming = listener.incoming();
             if let Some(stream) = incoming.next().await {

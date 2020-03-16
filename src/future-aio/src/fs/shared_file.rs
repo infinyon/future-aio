@@ -126,9 +126,10 @@ mod tests {
     use futures::io::AsyncWriteExt;
     use futures::io::AsyncReadExt;
 
-    use flv_future_core::test_async;
     use utils::fixture::ensure_clean_file;
     use crate::fs::AsyncFile;
+    use crate::test_async;
+    
     use super::SharedAsyncFile;
 
     #[test_async]

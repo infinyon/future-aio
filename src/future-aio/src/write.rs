@@ -7,7 +7,8 @@ use std::task::Poll;
 use futures::io::AsyncWrite;
 use futures::ready;
 use futures::future::Future;
-use async_std::fs::File;
+
+use crate::fs::File;
 
 /// Derived from future io Writeall,
 /// Instead of buf restricted to[u8], it supports asref

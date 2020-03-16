@@ -1,9 +1,8 @@
 
-mod tcp_stream;
+#[cfg(feature = "asyncstd")]
+pub use async_std::net::*;
 
-use tcp_stream as common_tcp_stream;
 
-pub use self::common_tcp_stream::AsyncTcpListener;
-pub use self::common_tcp_stream::AsyncTcpStream;
+#[cfg(feature = "tokio2")]
+pub use tokio::net::*;
 
-pub use async_std::net::ToSocketAddrs;

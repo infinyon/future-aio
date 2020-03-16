@@ -7,59 +7,13 @@ use std::os::unix::io::AsRawFd;
 
 use log::trace;
 use async_trait::async_trait;
-use async_std::fs::File;
 
+
+#[cfg(feature = "asyncstd")]
 use async_std::io::prelude::SeekExt;
 
 use super::AsyncFileSlice;
-
-pub mod file_util {
-
-    use std::io::Error as IoError;
-    use std::path::Path;
-
-    use async_std::fs::File;
-    use async_std::fs::OpenOptions;
-    /// open for write only
-    pub async fn create<P>(path: P) -> Result<File, IoError>
-    where
-        P: AsRef<Path>,
-    {
-        File::create(path.as_ref()).await
-    }
-
-    /// open for only read
-    pub async fn open<P>(path: P) -> Result<File, IoError>
-    where
-        P: AsRef<Path>,
-    {
-        let file_path = path.as_ref();
-        File::open(file_path).await
-    }
-
-    /// open for read and write
-    pub async fn open_read_write<P>(path: P) -> Result<File, IoError>
-    where
-        P: AsRef<Path>,
-    {
-        let file_path = path.as_ref();
-        let mut option = OpenOptions::new();
-        option.read(true).write(true).create(true).append(false);
-
-        option.open(file_path).await
-    }
-
-    pub async fn open_read_append<P>(path: P) -> Result<File, IoError>
-    where
-        P: AsRef<Path>,
-    {
-        let file_path = path.as_ref();
-        let mut option = OpenOptions::new();
-        option.read(true).create(true).append(true);
-
-        option.open(file_path).await
-    }
-}
+use super::File;
 
 #[async_trait]
 pub trait AsyncFile {
@@ -130,14 +84,19 @@ mod tests {
     use std::io::Seek as _;
     use std::io::SeekFrom;
     use std::io::Read;
-    use futures::io::AsyncReadExt;
-    use futures::io::AsyncWriteExt;
+
+
+    #[cfg(feature = "asyncstd")]
     use async_std::io::prelude::SeekExt;
-    use flv_future_core::test_async;
-    use flv_util::fixture::ensure_clean_file;
     
+    use flv_util::fixture::ensure_clean_file;
+
+    use crate::test_async;
+    use crate::io::AsyncReadExt;
+    use crate::io::AsyncWriteExt;
+    use crate::fs::util as file_util;
     use super::AsyncFile;
-    use super::file_util;
+
 
     // sync seek write and read
     // this is used for implementating async version

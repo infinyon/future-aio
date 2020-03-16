@@ -1,13 +1,4 @@
 
-use async_std::net::TcpStream;
-use async_std::net::TcpListener;
-
-
-pub type AsyncTcpListener = TcpListener;
-pub type AsyncTcpStream = TcpStream;
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -23,14 +14,14 @@ mod tests {
     use futures::sink::SinkExt;
     use futures::stream::StreamExt;
     use futures::future::join;
-    use flv_future_core::sleep;
     use log::debug;
     use futures_codec::BytesCodec;
     use futures_codec::Framed;
     use async_std::prelude::*;
 
-    use flv_future_core::test_async;
-    use flv_future_core::spawn;
+    use crate::test_async;
+    use crate::spawn;
+    use crate::sleep;
 
     use super::AsyncTcpListener;
     use super::AsyncTcpStream;

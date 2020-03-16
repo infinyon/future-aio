@@ -9,15 +9,17 @@ use std::task::Poll;
 use std::fmt;
 
 use log::trace;
-use futures::io::AsyncWrite;
+
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
-use async_std::fs::metadata;
-use async_std::fs::File;
+
+use super::metadata;
+use super::File;
 
 use crate::fs::AsyncFile;
 use crate::fs::AsyncFileSlice;
-use crate::fs::file_util;
+use crate::fs::util as file_util;
+use crate::io::AsyncWrite;
 
 
 #[derive(Debug)]
@@ -179,6 +181,12 @@ impl AsyncWrite for BoundedFileSink {
         self.writer().poll_flush(cx)
     }
 
+    #[cfg(feature = "tokio2")]
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
+        self.writer().poll_shutdown(cx)
+    }
+
+    #[cfg(feature = "asyncstd")]
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         self.writer().poll_close(cx)
     }
@@ -193,15 +201,15 @@ mod tests {
     use std::fs::File as StdFile;
     use std::io::Read;
     use std::path::PathBuf;
+    use std::io::SeekFrom;
 
     use log::debug;
-    use futures::io::AsyncReadExt;
-    use futures::io::AsyncWriteExt;
-    use futures::io::AsyncSeekExt;
-    use async_std::io::SeekFrom;
-
-    use flv_future_core::test_async;
-
+   
+    use crate::io::AsyncReadExt;
+    use crate::io::AsyncWriteExt;
+    #[allow(unused)]
+    use crate::io::AsyncSeekExt;
+    use crate::test_async;
 
     use super::BoundedFileSink;
     use super::BoundedFileOption;
@@ -322,7 +330,7 @@ mod tests {
         use std::io::Error as IoError;
         use std::io::Write;
 
-        use flv_future_core::test_async;
+        use crate::test_async;
         
         use super::temp_dir;
         use super::ensure_clean_file;
