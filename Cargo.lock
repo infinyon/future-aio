@@ -47,7 +47,7 @@ dependencies = [
 
 [[package]]
 name = "async-test-derive"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "log",
  "proc-macro2",
@@ -206,7 +206,7 @@ dependencies = [
 
 [[package]]
 name = "flv-future-aio"
-version = "0.4.0"
+version = "1.0.1"
 dependencies = [
  "async-std",
  "async-test-derive",
