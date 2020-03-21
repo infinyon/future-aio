@@ -206,7 +206,7 @@ dependencies = [
 
 [[package]]
 name = "flv-future-aio"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "async-std",
  "async-test-derive",
@@ -779,16 +779,7 @@ checksum = "b34bee1facdc352fba10c9c58b654e6ecb6a2250167772bf86071f7c5f2f5061"
 dependencies = [
  "bytes",
  "fnv",
- "futures-core",
- "iovec",
- "lazy_static",
- "libc",
- "memchr",
- "mio",
- "mio-uds",
- "num_cpus",
  "pin-project-lite",
- "slab",
 ]
 
 [[package]]
