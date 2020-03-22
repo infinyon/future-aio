@@ -1,6 +1,6 @@
 [package]
 name = "flv-future-aio"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2018"
 authors = ["fluvio.io"]
 description = "I/O futures for Fluvio project"
