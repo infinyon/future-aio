@@ -1,5 +1,6 @@
 
 use std::io;
+#[cfg(unix)]
 use std::io::Error as IoError;
 use std::path::Path;
 use std::path::PathBuf;
@@ -16,7 +17,9 @@ use pin_utils::unsafe_unpinned;
 use super::metadata;
 use super::File;
 
+#[cfg(unix)]
 use crate::fs::AsyncFile;
+#[cfg(unix)]
 use crate::fs::AsyncFileSlice;
 use crate::fs::util as file_util;
 use crate::io::AsyncWrite;
@@ -147,6 +150,7 @@ impl BoundedFileSink {
     }
 
     #[allow(unused)]
+    #[cfg(unix)]
     pub fn slice_from(&self, position: u64, len: u64) -> Result<AsyncFileSlice, IoError> {
         Ok(self.writer.raw_slice(position, len))
     }

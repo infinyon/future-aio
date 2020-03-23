@@ -170,70 +170,101 @@ mod test {
         assert_eq!(*COUNTER.lock().unwrap(), 10);
     }
 
-    /*
-    // this is sample code to show how to keep test goging
-    //#[test]
-    fn test_sleep() {
-       
+    
 
-        let ft = async {
-            for _ in 0..100 {
-                println!("sleeping");
-                super::sleep(time::Duration::from_millis(1000)).await;
-            }
+}
+
+
+
+#[cfg(test)]
+mod basic_test {
+
+    use std::io::Error;
+    use std::thread;
+    use std::time;
+
+    use futures::future::join;
+    use log::debug;
+
+
+    use crate::test_async;
+    use crate::task::spawn;
+
+
+
+    #[test_async]
+    async fn future_join() -> Result<(), Error> {
+       
+        // with join, futures are dispatched on same thread
+        // since ft1 starts first and
+        // blocks on thread, it will block future2
+        // should see ft1,ft1,ft2,ft2
+
+        //let mut ft_id = 0;
+
+        let ft1 = async {
            
+           debug!("ft1: starting sleeping for 1000ms");
+           // this will block ft2.  both ft1 and ft2 share same thread
+           thread::sleep(time::Duration::from_millis(1000)); 
+           debug!("ft1: woke from sleep");
+         //  ft_id = 1;      
+            Ok(()) as Result<(),()>
         };
 
-        run(async {
-            let join_handle = spawn(ft);
-            join_handle.await;
-        });
-    
-    }
-    */
+        let ft2 = async {
+            debug!("ft2: starting sleeping for 500ms");
+            thread::sleep(time::Duration::from_millis(500)); 
+            debug!("ft2: woke up");
+         //   ft_id = 2;            
+            Ok(()) as Result<(), ()>
+        };
 
-    /*
-    use std::future::Future;
-    use std::task::Context;
-    use std::task::Poll;
-    use std::pin::Pin;
-    use std::io;
-
-
-    use async_std::task::spawn_blocking;
-
-    struct BlockingFuture {
+        let core_threads = num_cpus::get().max(1);
+        debug!("num threads: {}",core_threads);
+        let _rt = join(ft1,ft2).await;
+        assert!(true);
+        Ok(())
     }
 
-    impl Future for BlockingFuture {
 
-        type Output = io::Result<()>;
 
-        fn poll(self: Pin<&mut Self>, _cx: &mut Context) -> Poll<io::Result<()>> {
-            
-            println!("start poll");
-            
-            spawn_blocking(move || { 
-                println!("start sleeping");
-                thread::sleep(time::Duration::from_millis(100));
-                println!("wake up from sleeping");
-            });
-            
-            Poll::Pending
-        }
+    #[test_async]
+    async fn future_spawn() -> Result<(), Error> {
+       
+        // with spawn, futures are dispatched on separate thread
+        // in this case, thread sleep on ft1 won't block 
+        // should see  ft1, ft2, ft2, ft1
 
+        let ft1 = async {
+           
+           debug!("ft1: starting sleeping for 1000ms");
+           thread::sleep(time::Duration::from_millis(1000)); // give time for server to come up
+           debug!("ft1: woke from sleep");            
+        };
+
+        let ft2 = async {
+           
+            debug!("ft2: starting sleeping for 500ms");
+            thread::sleep(time::Duration::from_millis(500)); 
+            debug!("ft2: woke up");
+        };
+
+        let core_threads = num_cpus::get().max(1);
+        debug!("num threads: {}",core_threads);
+
+        spawn(ft1);
+        spawn(ft2);
+        // wait for all futures complete
+        thread::sleep(time::Duration::from_millis(2000));
+
+        assert!(true);
+       
+
+        Ok(())
     }
 
-    //#[test]
-    fn test_block_spawning() {
-
-        run(async {
-            let block = BlockingFuture{};
-            block.await;
-        });        
-
-    }
-    */
 
 
 }
+

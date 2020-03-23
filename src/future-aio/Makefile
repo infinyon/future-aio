@@ -5,4 +5,4 @@ test_tokio:
 
 
 test_asyncstd:
-	cargo test --features=asyncstd --no-default-features 
+	cargo test --features=asyncstd --no-default-features

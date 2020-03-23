@@ -2,7 +2,6 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::io::SeekFrom;
 
-#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
 use log::trace;

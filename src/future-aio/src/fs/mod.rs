@@ -1,9 +1,13 @@
-mod async_file;
 mod mmap;
+#[cfg(unix)]
 mod file_slice;
+#[cfg(unix)]
+mod async_file;
 mod bounded;
 
+#[cfg(unix)]
 pub use self::async_file::AsyncFile;
+#[cfg(unix)]
 pub use self::file_slice::AsyncFileSlice;
 pub use self::bounded::BoundedFileSink;
 pub use self::bounded::BoundedFileOption;

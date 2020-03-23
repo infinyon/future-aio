@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use std::fmt;
 
-#[cfg(unix)]
+
 use std::os::unix::io::AsRawFd;
 
 use nix::sys::sendfile::sendfile;
@@ -9,7 +9,6 @@ use nix::Error as NixError;
 use async_trait::async_trait;
 
 use crate::task::spawn_blocking;
-use crate::net::TcpStream;
 
 
 use crate::fs::AsyncFileSlice;
@@ -43,7 +42,13 @@ impl From<NixError> for SendFileError {
 
 /// zero copy write
 #[async_trait]
-pub trait ZeroCopyWrite: AsRawFd {
+pub trait ZeroCopyWrite  {
+    async fn zero_copy_write(&mut self, source: &AsyncFileSlice) -> Result<usize, SendFileError>;
+}
+
+#[async_trait]
+impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
+
     async fn zero_copy_write(&mut self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
         let size = source.len();
         let target_fd = self.as_raw_fd();
@@ -92,10 +97,8 @@ pub trait ZeroCopyWrite: AsRawFd {
 
         ft.await
     }
-}
 
-#[async_trait]
-impl ZeroCopyWrite for TcpStream {}
+}
 
 #[cfg(test)]
 mod tests {
