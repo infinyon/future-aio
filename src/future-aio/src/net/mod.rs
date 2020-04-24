@@ -57,9 +57,9 @@ mod connector {
 
         type WrapperStream = TcpStream;
 
-        async fn connect(&self,domain: &str) -> Result<(Self::WrapperStream,RawFd),IoError> {
-            debug!("connect to tcp addr: {}",domain);
-            let tcp_stream = TcpStream::connect(domain).await?;
+        async fn connect(&self,addr: &str) -> Result<(Self::WrapperStream,RawFd),IoError> {
+            debug!("connect to tcp addr: {}",addr);
+            let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
             Ok((tcp_stream,fd))
         }

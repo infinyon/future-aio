@@ -25,6 +25,7 @@ mod cert {
     use std::io::ErrorKind;
     use std::path::Path;
     use std::io::BufReader;
+    use std::io::BufRead;
     use std::fs::File;
     
     use rustls::internal::pemfile::certs;
@@ -36,13 +37,21 @@ mod cert {
     use super::RootCertStore;
 
     pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<Certificate>,IoError> {
-        certs(&mut BufReader::new(File::open(path)?))
+        load_certs_from_reader(&mut BufReader::new(File::open(path)?))
+    }
+
+    pub fn load_certs_from_reader(rd: &mut dyn BufRead) -> Result<Vec<Certificate>,IoError> {
+        certs(rd)
             .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))
     }
 
     /// Load the passed keys file
     pub fn load_keys<P: AsRef<Path>>(path: P) -> Result<Vec<PrivateKey>,IoError> {
-        rsa_private_keys(&mut BufReader::new(File::open(path)?))
+        load_keys_from_reader(&mut BufReader::new(File::open(path)?))
+    }
+
+    pub fn load_keys_from_reader(rd: &mut dyn BufRead) -> Result<Vec<PrivateKey>,IoError> {
+        rsa_private_keys(rd)
             .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid key"))
     }
 
@@ -202,6 +211,7 @@ mod builder {
 
     use std::io::Error as IoError;
     use std::io::ErrorKind;
+    use std::io::Cursor;
     use std::path::Path;
     use std::sync::Arc;
     use std::io::BufReader;
@@ -216,6 +226,8 @@ mod builder {
     use super::ClientConfig;
     use super::load_certs;
     use super::load_keys;
+    use super::load_certs_from_reader;
+    use super::load_keys_from_reader;
     use super::TlsConnector;
     use super::ServerConfig;
     use super::load_root_ca;
@@ -240,6 +252,17 @@ mod builder {
             Ok(self)
         }
 
+        pub fn load_ca_cert_from_bytes(mut self,buffer: &Vec<u8>) -> Result<Self, IoError> {
+
+            let mut bytes = Cursor::new(buffer);
+            self.0.root_store
+                .add_pem_file(&mut bytes)
+                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+
+            Ok(self)
+
+        }
+
         pub fn load_client_certs<P: AsRef<Path>>(
             mut self,
             cert_path: P,
@@ -249,6 +272,18 @@ mod builder {
 
             let client_certs = load_certs(cert_path)?;
             let mut client_keys = load_keys(key_path)?;
+            self.0
+                .set_single_client_cert(client_certs,client_keys.remove(0))
+                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
+            
+            Ok(self)
+        }
+
+        pub fn load_client_certs_from_bytes(mut self,cert_buf: &Vec<u8>,key_buf: &Vec<u8>) -> Result<Self,IoError> {
+
+            
+            let client_certs = load_certs_from_reader(&mut Cursor::new(cert_buf))?;
+            let mut client_keys = load_keys_from_reader(&mut Cursor::new(key_buf))?;
             self.0
                 .set_single_client_cert(client_certs,client_keys.remove(0))
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
