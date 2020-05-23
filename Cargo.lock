@@ -214,9 +214,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.6.2"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aafcde04e90a5226a6443b7aabdb016ba2f8307c847d524724bd9b346dd1a2d3"
+checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
 dependencies = [
  "atty",
  "humantime",
@@ -227,7 +227,7 @@ dependencies = [
 
 [[package]]
 name = "flv-future-aio"
-version = "2.1.1"
+version = "2.2.0"
 dependencies = [
  "async-std",
  "async-test-derive",
@@ -254,7 +254,7 @@ dependencies = [
 
 [[package]]
 name = "flv-util"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "chrono",
  "env_logger",

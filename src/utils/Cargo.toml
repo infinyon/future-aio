@@ -1,6 +1,6 @@
 [package]
 name = "flv-util"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "utilies for Fluvio projects"
 repository = "https://github.com/infinyon/flv-future"
@@ -12,6 +12,6 @@ default = []
 fixture = []
 
 [dependencies]
-env_logger = "0.6.2"
-chrono = { version = "0.4.7"}
+env_logger = "0.7.1"
+chrono =  "0.4.11"
 log = "0.4.8"

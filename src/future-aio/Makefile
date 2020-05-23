@@ -1,4 +1,5 @@
-test:	test_tokio	test_asyncstd
+test:
+	cargo test
 
 test_tokio:
 	cargo test   --features=tokio2 --no-default-features 
