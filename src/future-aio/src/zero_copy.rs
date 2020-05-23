@@ -161,4 +161,67 @@ mod tests {
         let _rt = join(client, server).await;
         Ok(())
     }
+
+
+    #[test_async]
+    async fn test_zero_copy_large_size() -> Result<(), SendFileError> {
+
+        use std::env::temp_dir;
+        use crate::io::AsyncWriteExt;
+
+
+        // spawn tcp client and check contents
+        let server = async {
+
+            #[allow(unused_mut)]
+            let mut listener = TcpListener::bind("127.0.0.1:9998").await?;
+            
+            debug!("server: listening");
+            let mut incoming = listener.incoming();
+            if let Some(stream) = incoming.next().await {
+                debug!("server: got connection. waiting");
+                let mut tcp_stream = stream?;
+                let mut buffer = vec![];
+                let len = tcp_stream.read_to_end(&mut buffer).await?;
+                debug!("len: {}",len);
+                //assert_eq!(len, 30);
+            } else {
+                assert!(false, "client should connect");
+            }
+            Ok(()) as Result<(), SendFileError>
+        };
+
+        let client = async {
+            // create file with large size with at least 300k bytes
+            let temp_file = temp_dir().join("async_large");
+            debug!("temp file: {:#?}",temp_file);
+            let mut file = file_util::create(temp_file.clone()).await.expect("file creation");
+            
+            let bytes: Vec<u8> = vec![0;1000];
+            for _ in 0..300 {
+                file.write_all(&bytes).await.expect("writing");
+            }
+
+            file.sync_all().await.expect("flushing");
+            drop(file);
+
+            // re open
+            let file = file_util::open(temp_file).await.expect("re opening");
+
+            sleep(time::Duration::from_millis(100)).await;
+            let addr = "127.0.0.1:9998".parse::<SocketAddr>().expect("parse");
+            debug!("client: file loaded");
+            let mut stream = TcpStream::connect(&addr).await?;
+            debug!("client: connected to server");
+            let f_slice = file.as_slice(0, None).await?;
+            debug!("client: send back file using zero copy");
+            stream.zero_copy_write(&f_slice).await?;
+            Ok(()) as Result<(), SendFileError>
+        };
+
+        // read file and zero copy to tcp stream
+
+        let _rt = join(client, server).await;
+        Ok(())
+    }
 }
