@@ -1,5 +1,10 @@
+test:	test-util test-aio
+
 test-aio:
-	cd src/future-aio; make test
+	make  -C src/future-aio test
+
+test-util:
+	make -C src/utils test
 
 install_windows_on_mac:
 	rustup target add x86_64-pc-windows-gnu
