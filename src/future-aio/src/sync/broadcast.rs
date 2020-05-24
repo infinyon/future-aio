@@ -120,7 +120,7 @@ mod test {
 
         for i in 0..5 {
             sender.send(i as u16).expect("should be sent");
-            sleep(Duration::from_millis(1)).await;
+            sleep(Duration::from_millis(10)).await;
         }
 
         sleep(Duration::from_millis(100)).await;
