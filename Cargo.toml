@@ -1,5 +1,43 @@
-[workspace]
-members = [
-    "src/future-aio",
-    "src/utils"
-]
+[package]
+name = "flv-future-aio"
+version = "2.2.0"
+edition = "2018"
+authors = ["fluvio.io"]
+description = "I/O futures for Fluvio project"
+repository = "https://github.com/infinyon/flv-future"
+license = "Apache-2.0"
+
+[features]
+default = ["asyncstd"]
+asyncstd = ["async-std","futures-timer","tokio/sync"]
+tokio2 = ["tokio"]
+fixture = ["async-test-derive"]
+tls = ["rustls","webpki","async-tls"]
+
+[dependencies]
+log = "0.4.8"
+nix = "0.17.0"
+bytes = "0.5.4"
+memmap = "0.7.0"
+async-trait = "0.1.30"
+async-std = { version = "1.5.0", features = ["default","unstable"], optional = true }
+futures-timer = { version = "2.0.2", optional = true }
+tokio = { version = "0.2.21", optional = true }
+futures = { version = "0.3.4"  }
+pin-utils = "0.1.0-alpha.4"
+pin-project = "0.4.8"
+rustls = { version = "0.17.0", features = ["dangerous_configuration"], optional = true }
+webpki = { version = "0.21.2", optional = true }
+async-tls = {  version = "0.7.0", optional = true }
+async-test-derive = { path = "async-test-derive", version = "1.0.0", optional = true }
+flv-util = { version = "0.2.0" }
+
+
+[dev-dependencies]
+lazy_static = "1.2.0"
+num_cpus =  "1.10.1"
+futures_codec = "0.3.4"
+tokio-util = { version = "0.3.1", features = ["codec","compat"]} 
+flv-util = { version = "0.2.0", features= ["fixture"]}
+async-test-derive = { path = "async-test-derive", version = "1.0.0" }
+flv-future-aio = { path = "."}
