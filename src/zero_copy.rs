@@ -229,6 +229,8 @@ mod tests {
     #[test_async]
     async fn test_zero_copy_large_size() -> Result<(), SendFileError> {
 
+        const MAX_BYTES: usize = 300000;
+
         use std::env::temp_dir;
         use crate::io::AsyncWriteExt;
 
@@ -259,7 +261,7 @@ mod tests {
             let file = file_util::open(temp_file).await.expect("re opening");
 
             let f_slice = file.as_slice(0, None).await?;
-
+            assert_eq!(f_slice.len(),MAX_BYTES as u64);
            
             let listener = TcpListener::bind("127.0.0.1:9998").await?;
             
@@ -296,13 +298,10 @@ mod tests {
                 debug!("client: Test loop: {}",i);
                 let mut stream = TcpStream::connect(&addr).await?;
                 debug!("client: {} connected ",i);
-                let mut buffer = vec![];
-                let len = stream.read_to_end(&mut buffer).await?;
-                debug!("client: {} len: {}",i,len);
-                assert_eq!(len, 300000);
+                let mut buffer = Vec::with_capacity(MAX_BYTES);
+                stream.read_exact(&mut buffer).await.expect("no more buffer");
                 debug!("client: {} test success",i);
             }
-            
 
             Ok(()) as Result<(), SendFileError>
         };
