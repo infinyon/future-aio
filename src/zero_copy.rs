@@ -56,10 +56,45 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
 
         #[cfg(target_os = "linux")]
         let ft = {
+
             let mut offset = source.position() as i64;
+
             spawn_blocking(move || {
-                sendfile(target_fd, source_fd, Some(&mut offset), size as usize)
-                    .map_err(|err| err.into())
+
+                let mut current_transferred: usize = 0;
+                let mut current_offset = offset;
+
+                loop {
+
+                    log::trace!(
+                        "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
+                        source_fd,
+                        current_offset,
+                        size as usize - current_transferred,
+                        target_fd
+                    );
+    
+                    match sendfile(target_fd, source_fd, Some(&mut offset), size as usize) {
+                        Ok(len) => {
+    
+                            current_transferred += len as usize;
+                            current_offset += len as i64;
+                            log::trace!("mac zero copy bytes transferred: {}", len);
+                            
+                            if current_transferred < size as usize {
+                                log::debug!("current transferred: {} less than total: {}, continuing",current_transferred,size);
+                            } else {
+                                return Ok(len as usize)
+                            }
+                        },
+                        Err(err) => {
+                            log::error!("error sendfile: {}", err);
+                            return Err(err.into())
+                        }
+                    } 
+
+                }
+                               
             })
         };
 
@@ -67,29 +102,57 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
         let ft = {
             let offset = source.position();
             spawn_blocking(move || {
-                log::trace!(
-                    "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
-                    source_fd,
-                    offset,
-                    size,
-                    target_fd
-                );
-                let (res, len) = sendfile(
-                    source_fd,
-                    target_fd,
-                    offset as i64,
-                    Some(size as i64),
-                    None,
-                    None,
-                );
-                match res {
-                    Ok(_) => {
-                        log::trace!("mac zero copy bytes transferred: {}", len);
-                        Ok(len as usize)
-                    }
-                    Err(err) => {
-                        log::error!("error sendfile: {}", err);
-                        Err(err.into())
+                
+                use nix::errno::Errno;
+
+                let mut current_transferred = 0;
+                let mut current_offset = offset as u64;
+
+                loop  {
+
+                    log::trace!(
+                        "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
+                        source_fd,
+                        current_offset,
+                        size - current_transferred,
+                        target_fd
+                    );
+
+                    let (res, len) = sendfile(
+                        source_fd,
+                        target_fd,
+                        current_offset as i64,
+                        Some((size - current_transferred) as i64),
+                        None,
+                        None,
+                    );
+
+                    log::trace!("mac zero copy bytes transferred: {}", len);
+                    current_transferred += len as u64;
+                    current_offset += len as u64;
+                    match res {
+                        Ok(_) => {
+                            if current_transferred < size  {
+                                log::debug!("current transferred: {} less than total: {}, continuing",current_transferred,size);
+                            } else {
+                                return Ok(len as usize)
+                            }
+                          
+                        }
+                        Err(err) => {
+                            match err {
+                                NixError::Sys(err_no) => {
+                                    if err_no == Errno::EAGAIN {
+                                        log::debug!("EAGAIN, try again");
+                                        continue;
+                                    }
+                                }
+                                _ => {}
+                            }
+                            
+                            log::error!("error sendfile: {}", err);
+                            return  Err(err.into());
+                        }
                     }
                 }
             })
@@ -169,30 +232,9 @@ mod tests {
         use std::env::temp_dir;
         use crate::io::AsyncWriteExt;
 
+        const TEST_ITERATION: u16 = 20;
 
-        // spawn tcp client and check contents
-        let server = async {
-
-            #[allow(unused_mut)]
-            let mut listener = TcpListener::bind("127.0.0.1:9998").await?;
-            
-            debug!("server: listening");
-            let mut incoming = listener.incoming();
-            if let Some(stream) = incoming.next().await {
-                debug!("server: got connection. waiting");
-                let mut tcp_stream = stream?;
-                let mut buffer = vec![];
-                let len = tcp_stream.read_to_end(&mut buffer).await?;
-                debug!("len: {}",len);
-                //assert_eq!(len, 30);
-            } else {
-                assert!(false, "client should connect");
-            }
-            Ok(()) as Result<(), SendFileError>
-        };
-
-        let client = async {
-            // create file with large size with at least 300k bytes
+        async fn init_file() {
             let temp_file = temp_dir().join("async_large");
             debug!("temp file: {:#?}",temp_file);
             let mut file = file_util::create(temp_file.clone()).await.expect("file creation");
@@ -204,18 +246,64 @@ mod tests {
 
             file.sync_all().await.expect("flushing");
             drop(file);
+            debug!("finish creating large test file");
+        }
 
-            // re open
+
+        // spawn tcp client and check contents
+        let server = async {
+
+            init_file().await;
+
+            let temp_file = temp_dir().join("async_large");
             let file = file_util::open(temp_file).await.expect("re opening");
 
+            let f_slice = file.as_slice(0, None).await?;
+
+           
+            let listener = TcpListener::bind("127.0.0.1:9998").await?;
+            
+            debug!("server: listening");
+            let mut incoming = listener.incoming();
+
+            for i in 0..TEST_ITERATION {
+
+                if let Some(stream) = incoming.next().await {
+                    debug!("server {} got connection. waiting",i);
+                    let mut tcp_stream = stream?;
+    
+                    // do zero copy
+                   
+                    debug!("server {}, send back file using zero copy: {:#?}",i,f_slice.len());
+                    tcp_stream.zero_copy_write(&f_slice).await?;  
+                } else {
+                    assert!(false, "client should connect");
+                }
+
+            }
+            
+            Ok(()) as Result<(), SendFileError>
+        };
+
+        let client = async {
+            
             sleep(time::Duration::from_millis(100)).await;
             let addr = "127.0.0.1:9998".parse::<SocketAddr>().expect("parse");
             debug!("client: file loaded");
-            let mut stream = TcpStream::connect(&addr).await?;
-            debug!("client: connected to server");
-            let f_slice = file.as_slice(0, None).await?;
-            debug!("client: send back file using zero copy");
-            stream.zero_copy_write(&f_slice).await?;
+            
+
+            for i in 0..TEST_ITERATION {
+                debug!("client: Test loop: {}",i);
+                let mut stream = TcpStream::connect(&addr).await?;
+                debug!("client: {} connected ",i);
+                let mut buffer = vec![];
+                let len = stream.read_to_end(&mut buffer).await?;
+                debug!("client: {} len: {}",i,len);
+                assert_eq!(len, 300000);
+                debug!("client: {} test success",i);
+            }
+            
+
             Ok(()) as Result<(), SendFileError>
         };
 
