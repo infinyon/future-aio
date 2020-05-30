@@ -51,10 +51,6 @@ async fn test_async_tcp() -> Result<(), Error> {
                 debug!("server: sending values to client");
                 let data = vec![0x05, 0x0a, 0x63];
                 framed.send(to_bytes(data)).await?;
-                sleep(time::Duration::from_micros(1)).await;
-                debug!("server: sending 2nd value to client");
-                let data2 = vec![0x20,0x11]; 
-                framed.send(to_bytes(data2)).await?;
                 return Ok(()) as Result<(),Error>
 
         }
@@ -73,24 +69,16 @@ async fn test_async_tcp() -> Result<(), Error> {
         if let Some(value) = framed.next().await {
             debug!("client :received first value from server");
             let bytes = value?;
+            debug!("client :received bytes len: {}",bytes.len());
+            assert_eq!(bytes.len(),3);
             let values = bytes.take(3).into_inner();
             assert_eq!(values[0],0x05);
             assert_eq!(values[1],0x0a);
             assert_eq!(values[2],0x63);
-            assert_eq!(values.len(),3);
         } else {
             assert!(false,"no value received");
         }
 
-        if let Some(value) = framed.next().await {
-            debug!("client: received 2nd value from server");
-            let bytes = value?;
-            let values = bytes.take(2).into_inner();
-            assert_eq!(values.len(),2);
-
-        } else {
-            assert!(false,"no value received");
-        }
 
         
         Ok(()) as Result<(), Error>

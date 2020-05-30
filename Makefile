@@ -9,7 +9,7 @@ install_windows_on_mac:
 
 
 test:
-	RUST_LOG=trace cargo test
+	cargo test
 
 test_tokio:
 	cargo test   --features=tokio2 --no-default-features 
