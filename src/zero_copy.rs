@@ -268,7 +268,7 @@ mod tests {
             let f_slice = file.as_slice(0, None).await.expect("filed opening");
             assert_eq!(f_slice.len(),MAX_BYTES as u64);
 
-            let listener = TcpListener::bind("127.0.0.1:9998").await.expect("failed bind");
+            let listener = TcpListener::bind("127.0.0.1:8888").await.expect("failed bind");
             
             debug!("server: listening");
             let mut incoming = listener.incoming();
