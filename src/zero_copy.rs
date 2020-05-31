@@ -306,7 +306,7 @@ mod tests {
                 stream.read_exact(&mut buffer).await.expect("no more buffer");
                 debug!("client: {} test success",i);
 
-                // sleep 10 milliseconds between request to allow server to respond otherwise it will lead to EPIPE
+                // sleep 10 milliseconds between request to keep tcp connection otherwise it may lead to EPIPE error
                 //  
                 sleep(time::Duration::from_millis(10)).await;
             }
