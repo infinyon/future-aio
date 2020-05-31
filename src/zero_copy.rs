@@ -57,32 +57,34 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
         #[cfg(target_os = "linux")]
         let ft = {
 
-            let mut offset = source.position() as i64;
+            let offset = source.position() as i64;
 
             spawn_blocking(move || {
 
-                let mut current_transferred: usize = 0;
+                let mut total_transferred: usize = 0;           // total bytes transferred so far
                 let mut current_offset = offset;
-
+            
                 loop {
 
+                    let to_be_transfer = size as usize - total_transferred;
+
                     log::trace!(
-                        "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
+                        "trying: zero copy source fd: {} offset: {} len: {}, target: fd{}",
                         source_fd,
                         current_offset,
-                        size as usize - current_transferred,
+                        to_be_transfer,
                         target_fd
                     );
     
-                    match sendfile(target_fd, source_fd, Some(&mut offset), size as usize) {
+                    match sendfile(target_fd, source_fd, Some(&mut current_offset), to_be_transfer) {
                         Ok(len) => {
     
-                            current_transferred += len as usize;
+                            total_transferred += len as usize;
                             current_offset += len as i64;
-                            log::trace!("mac zero copy bytes transferred: {}", len);
+                            log::trace!("actual: zero copy bytes transferred: {} out of {}", len, size);
                             
-                            if current_transferred < size as usize {
-                                log::debug!("current transferred: {} less than total: {}, continuing",current_transferred,size);
+                            if total_transferred < size as usize {
+                                log::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
                             } else {
                                 return Ok(len as usize)
                             }
@@ -105,16 +107,19 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                 
                 use nix::errno::Errno;
 
-                let mut current_transferred = 0;
+                let mut total_transferred = 0;
                 let mut current_offset = offset as u64;
 
                 loop  {
+
+                    let to_be_transfer = (size - total_transferred) as i64;
+
 
                     log::trace!(
                         "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
                         source_fd,
                         current_offset,
-                        size - current_transferred,
+                        to_be_transfer,
                         target_fd
                     );
 
@@ -122,18 +127,18 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                         source_fd,
                         target_fd,
                         current_offset as i64,
-                        Some((size - current_transferred) as i64),
+                        Some(to_be_transfer),
                         None,
                         None,
                     );
 
                     log::trace!("mac zero copy bytes transferred: {}", len);
-                    current_transferred += len as u64;
+                    total_transferred += len as u64;
                     current_offset += len as u64;
                     match res {
                         Ok(_) => {
-                            if current_transferred < size  {
-                                log::debug!("current transferred: {} less than total: {}, continuing",current_transferred,size);
+                            if total_transferred < size  {
+                                log::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
                             } else {
                                 return Ok(len as usize)
                             }
@@ -258,12 +263,12 @@ mod tests {
             init_file().await;
 
             let temp_file = temp_dir().join("async_large");
-            let file = file_util::open(temp_file).await.expect("re opening");
-
-            let f_slice = file.as_slice(0, None).await?;
+            // do zero copy
+            let file = file_util::open(&temp_file).await.expect("re opening");
+            let f_slice = file.as_slice(0, None).await.expect("filed opening");
             assert_eq!(f_slice.len(),MAX_BYTES as u64);
-           
-            let listener = TcpListener::bind("127.0.0.1:9998").await?;
+
+            let listener = TcpListener::bind("127.0.0.1:9998").await.expect("failed bind");
             
             debug!("server: listening");
             let mut incoming = listener.incoming();
@@ -273,11 +278,10 @@ mod tests {
                 if let Some(stream) = incoming.next().await {
                     debug!("server {} got connection. waiting",i);
                     let mut tcp_stream = stream?;
-    
-                    // do zero copy
-                   
+                               
                     debug!("server {}, send back file using zero copy: {:#?}",i,f_slice.len());
-                    tcp_stream.zero_copy_write(&f_slice).await?;  
+                    tcp_stream.zero_copy_write(&f_slice).await.expect("file slice");
+
                 } else {
                     assert!(false, "client should connect");
                 }
@@ -297,10 +301,14 @@ mod tests {
             for i in 0..TEST_ITERATION {
                 debug!("client: Test loop: {}",i);
                 let mut stream = TcpStream::connect(&addr).await?;
-                debug!("client: {} connected ",i);
+                debug!("client: {} connected trying to read",i);
                 let mut buffer = Vec::with_capacity(MAX_BYTES);
                 stream.read_exact(&mut buffer).await.expect("no more buffer");
                 debug!("client: {} test success",i);
+
+                // sleep 10 milliseconds between request to allow server to respond otherwise it will lead to EPIPE
+                //  
+                sleep(time::Duration::from_millis(10)).await;
             }
 
             Ok(()) as Result<(), SendFileError>
