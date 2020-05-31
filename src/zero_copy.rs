@@ -235,6 +235,7 @@ mod tests {
     async fn test_zero_copy_large_size() -> Result<(), SendFileError> {
 
         const MAX_BYTES: usize = 300000;
+        const PORT: u16 = 8888;
 
         use std::env::temp_dir;
         use crate::io::AsyncWriteExt;
@@ -268,7 +269,7 @@ mod tests {
             let f_slice = file.as_slice(0, None).await.expect("filed opening");
             assert_eq!(f_slice.len(),MAX_BYTES as u64);
 
-            let listener = TcpListener::bind("127.0.0.1:8888").await.expect("failed bind");
+            let listener = TcpListener::bind(format!("127.0.0.1:{}",PORT)).await.expect("failed bind");
             
             debug!("server: listening");
             let mut incoming = listener.incoming();
@@ -294,7 +295,7 @@ mod tests {
         let client = async {
             
             sleep(time::Duration::from_millis(100)).await;
-            let addr = "127.0.0.1:9998".parse::<SocketAddr>().expect("parse");
+            let addr = format!("127.0.0.1:{}",PORT).parse::<SocketAddr>().expect("parse");
             debug!("client: file loaded");
             
 
