@@ -1,6 +1,6 @@
 [package]
 name = "flv-future-aio"
-version = "2.2.2"
+version = "2.3.0-alpha"
 edition = "2018"
 authors = ["fluvio.io"]
 description = "I/O futures for Fluvio project"
@@ -13,6 +13,7 @@ asyncstd = ["async-std","futures-timer","tokio/sync"]
 tokio2 = ["tokio"]
 fixture = ["async-test-derive"]
 tls = ["rustls","webpki","async-tls"]
+unstable = []
 
 [dependencies]
 log = "0.4.8"
@@ -37,6 +38,7 @@ flv-util = { version = "0.2.0" }
 lazy_static = "1.2.0"
 num_cpus =  "1.10.1"
 futures_codec = "0.3.4"
+async-lock = "1.1.0"
 tokio-util = { version = "0.3.1", features = ["codec","compat"]} 
 flv-util = { version = "0.2.0", features= ["fixture"]}
 async-test-derive = { path = "async-test-derive", version = "1.0.0" }
