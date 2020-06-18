@@ -3,6 +3,7 @@ pub mod sync;
 pub mod io;
 pub mod task;
 pub mod timer;
+pub mod actor;
 
 
 #[cfg(any(test,feature = "fixture"))]

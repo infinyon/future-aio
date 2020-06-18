@@ -10,6 +10,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-lock"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f375939949ac63cfe11de0f407b727605d3100386f09c640ba44ad149f70211e"
+dependencies = [
+ "event-listener",
+]
+
+[[package]]
 name = "async-std"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -198,9 +207,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "event-listener"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "043d21a617dda31c36aed31a38f4ebb643a6fa55c2963fd9f0cc1c831e5095d7"
+
+[[package]]
 name = "flv-future-aio"
-version = "2.2.2"
+version = "2.3.0-alpha"
 dependencies = [
+ "async-lock",
  "async-std",
  "async-test-derive",
  "async-tls",

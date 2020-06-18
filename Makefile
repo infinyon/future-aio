@@ -9,7 +9,7 @@ install_windows_on_mac:
 
 
 test:
-	cargo test
+	cargo test	--features==unstable
 
 test_tokio:
 	cargo test   --features=tokio2 --no-default-features 
