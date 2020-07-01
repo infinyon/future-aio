@@ -1,6 +1,6 @@
 [package]
 name = "flv-future-aio"
-version = "2.3.0"
+version = "2.4.0"
 edition = "2018"
 authors = ["fluvio.io"]
 description = "I/O futures for Fluvio project"
@@ -8,11 +8,12 @@ repository = "https://github.com/infinyon/flv-future"
 license = "Apache-2.0"
 
 [features]
-default = ["asyncstd"]
+default = ["asyncstd","zerocopy"]
 asyncstd = ["async-std","futures-timer","tokio/sync"]
 tokio2 = ["tokio"]
 fixture = ["async-test-derive"]
 tls = ["rustls","webpki","async-tls"]
+zerocopy = []
 unstable = []
 
 [dependencies]

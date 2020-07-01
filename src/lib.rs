@@ -13,7 +13,7 @@ mod test_util;
 #[cfg(any(test,feature = "fixture"))]
 pub use async_test_derive::test_async;
 
-#[cfg(unix)]
+#[cfg(all(unix,feature ="zerocopy"))]
 pub mod zero_copy;
 
 pub mod net;

@@ -214,7 +214,7 @@ checksum = "043d21a617dda31c36aed31a38f4ebb643a6fa55c2963fd9f0cc1c831e5095d7"
 
 [[package]]
 name = "flv-future-aio"
-version = "2.3.0"
+version = "2.4.0"
 dependencies = [
  "async-lock",
  "async-std",
