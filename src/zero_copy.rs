@@ -5,6 +5,7 @@ use std::fmt;
 use std::os::unix::io::AsRawFd;
 
 use nix::sys::sendfile::sendfile;
+#[allow(unused)]
 use nix::libc::off_t;
 use nix::Error as NixError;
 use async_trait::async_trait;
