@@ -5,6 +5,7 @@ use std::fmt;
 use std::os::unix::io::AsRawFd;
 
 use nix::sys::sendfile::sendfile;
+use nix::libc::off_t;
 use nix::Error as NixError;
 use async_trait::async_trait;
 
@@ -56,8 +57,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
 
         #[cfg(target_os = "linux")]
         let ft = {
-
-            let offset = source.position() as i64;
+            let offset = source.position() as off_t;
 
             spawn_blocking(move || {
 
@@ -80,7 +80,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                         Ok(len) => {
     
                             total_transferred += len as usize;
-                            current_offset += len as i64;
+                            current_offset += len as off_t;
                             log::trace!("actual: zero copy bytes transferred: {} out of {}", len, size);
                             
                             if total_transferred < size as usize {
