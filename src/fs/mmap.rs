@@ -1,3 +1,4 @@
+#![cfg(mmap)]
 // memory mapped file
 
 use std::fs::OpenOptions;
@@ -7,6 +8,7 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
+
 
 use memmap::Mmap;
 use memmap::MmapMut;

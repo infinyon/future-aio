@@ -13,8 +13,8 @@ pub use self::bounded::BoundedFileSink;
 pub use self::bounded::BoundedFileOption;
 pub use self::bounded::BoundedFileSinkError;
 
-pub use self::mmap::MemoryMappedFile;
-pub use self::mmap::MemoryMappedMutFile;
+#[cfg(mmap)]
+pub use self::mmap::{MemoryMappedFile, MemoryMappedMutFile};
 
 
 #[cfg(feature = "asyncstd")]
