@@ -18,6 +18,10 @@ pub mod zero_copy;
 
 pub mod net;
 
+#[cfg(feature = "asyncstd")]
+pub mod path {
+    pub use async_std::path::*;
+}
 
 pub mod bytes {
     pub use bytes::Bytes;
