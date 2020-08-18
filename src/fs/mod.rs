@@ -1,8 +1,12 @@
+#[cfg(mmap)]
 mod mmap;
+
 #[cfg(unix)]
 mod file_slice;
 #[cfg(unix)]
 mod async_file;
+
+#[cfg(feature = "fs")]
 mod bounded;
 
 #[cfg(unix)]
@@ -18,12 +22,14 @@ pub use self::mmap::{MemoryMappedFile, MemoryMappedMutFile};
 
 
 #[cfg(feature = "asyncstd")]
+#[cfg(feature = "fs")]
 pub use async_std::fs::*;
 
 #[cfg(feature = "tokio2")]
+#[cfg(feature = "fs")]
 pub use tokio::fs::*;
 
-
+#[cfg(feature = "fs")]
 pub mod util {
 
     use std::io::Error as IoError;

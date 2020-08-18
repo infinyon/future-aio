@@ -9,6 +9,7 @@ pub use tokio::net::*;
 
 
 #[cfg(test)]
+#[cfg(feature = "fs")]
 mod tcp_stream;
 
 

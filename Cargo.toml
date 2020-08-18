@@ -15,6 +15,7 @@ fixture = ["async-test-derive"]
 tls = ["rustls","webpki","async-tls"]
 unstable = []
 mmap = ["memmap"]
+fs = []
 
 [dependencies]
 log = "0.4.8"

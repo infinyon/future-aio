@@ -1,6 +1,7 @@
 pub use task::*;
 
 #[cfg(feature = "asyncstd")]
+#[cfg(feature = "fs")]
 mod task {
 
     use std::future::Future;
