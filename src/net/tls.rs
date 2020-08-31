@@ -252,7 +252,7 @@ mod builder {
             Ok(self)
         }
 
-        pub fn load_ca_cert_from_bytes(mut self,buffer: &Vec<u8>) -> Result<Self, IoError> {
+        pub fn load_ca_cert_from_bytes(mut self, buffer: &[u8]) -> Result<Self, IoError> {
 
             let mut bytes = Cursor::new(buffer);
             self.0.root_store
@@ -279,7 +279,7 @@ mod builder {
             Ok(self)
         }
 
-        pub fn load_client_certs_from_bytes(mut self,cert_buf: &Vec<u8>,key_buf: &Vec<u8>) -> Result<Self,IoError> {
+        pub fn load_client_certs_from_bytes(mut self, cert_buf: &[u8], key_buf: &[u8]) -> Result<Self,IoError> {
 
             
             let client_certs = load_certs_from_reader(&mut Cursor::new(cert_buf))?;
