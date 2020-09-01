@@ -8,8 +8,6 @@ pub use async_tls::TlsConnector;
 pub type DefaultServerTlsStream = ServerTlsStream<TcpStream>;
 pub type DefaultClientTlsStream = ClientTlsStream<TcpStream>;
 
-
-
 use rustls::ClientConfig;
 use rustls::Certificate;
 use rustls::PrivateKey;
@@ -21,14 +19,13 @@ pub use connector::*;
 pub use builder::*;
 
 mod cert {
-    use std::io::Error as IoError;
+    use std::io::{Error as IoError, Cursor};
     use std::io::ErrorKind;
-    use std::path::Path;
     use std::io::BufReader;
-    use std::io::BufRead;
     use std::fs::File;
-    
-    use rustls::internal::pemfile::certs;
+    use std::path::Path;
+
+    use rustls::internal::pemfile::{certs, pkcs8_private_keys};
     use rustls::internal::pemfile::rsa_private_keys;
 
     
@@ -37,22 +34,36 @@ mod cert {
     use super::RootCertStore;
 
     pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<Certificate>,IoError> {
-        load_certs_from_reader(&mut BufReader::new(File::open(path)?))
+        let cert_bytes = std::fs::read(path)?;
+        load_certs_from_bytes(&cert_bytes)
     }
 
-    pub fn load_certs_from_reader(rd: &mut dyn BufRead) -> Result<Vec<Certificate>,IoError> {
-        certs(rd)
+    pub fn load_certs_from_bytes(buffer: &[u8]) -> Result<Vec<Certificate>,IoError> {
+        certs(&mut Cursor::new(buffer))
             .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))
     }
 
     /// Load the passed keys file
     pub fn load_keys<P: AsRef<Path>>(path: P) -> Result<Vec<PrivateKey>,IoError> {
-        load_keys_from_reader(&mut BufReader::new(File::open(path)?))
+        let key_bytes = std::fs::read(path)?;
+        load_keys_from_bytes(&key_bytes)
     }
 
-    pub fn load_keys_from_reader(rd: &mut dyn BufRead) -> Result<Vec<PrivateKey>,IoError> {
-        rsa_private_keys(rd)
-            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid key"))
+    /// Try to load keys from the buffer, trying RSA and PKCS8
+    pub fn load_keys_from_bytes(buffer: &[u8]) -> Result<Vec<PrivateKey>, IoError> {
+
+        // Attempt to read keys as RSA.
+        let rsa_keys = rsa_private_keys(&mut Cursor::new(buffer))
+            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid RSA key"))?;
+
+        if !rsa_keys.is_empty() {
+            return Ok(rsa_keys);
+        }
+
+        // If no RSA keys are found, try to read keys as PKCS8
+        let pkcs8_keys = pkcs8_private_keys(&mut Cursor::new(buffer))
+            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid PKCS8 key"))?;
+        Ok(pkcs8_keys)
     }
 
     pub fn load_root_ca<P: AsRef<Path>>(path: P) -> Result<RootCertStore,IoError> {
@@ -226,8 +237,8 @@ mod builder {
     use super::ClientConfig;
     use super::load_certs;
     use super::load_keys;
-    use super::load_certs_from_reader;
-    use super::load_keys_from_reader;
+    use super::load_certs_from_bytes;
+    use super::load_keys_from_bytes;
     use super::TlsConnector;
     use super::ServerConfig;
     use super::load_root_ca;
@@ -243,8 +254,8 @@ mod builder {
             Self(ClientConfig::new())
         }
 
+        /// Load CA certificate from the given file path
         pub fn load_ca_cert<P: AsRef<Path>>(mut self,path: P) -> Result<Self,IoError>  {
-
             self.0.root_store
                 .add_pem_file(&mut BufReader::new(File::open(path)?))
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
@@ -252,48 +263,54 @@ mod builder {
             Ok(self)
         }
 
+        /// Load CA certificate from the given byte buffer
         pub fn load_ca_cert_from_bytes(mut self, buffer: &[u8]) -> Result<Self, IoError> {
-
             let mut bytes = Cursor::new(buffer);
             self.0.root_store
                 .add_pem_file(&mut bytes)
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
 
             Ok(self)
-
         }
 
+        /// Load client keys and certificates from the given paths
         pub fn load_client_certs<P: AsRef<Path>>(
             mut self,
             cert_path: P,
             key_path: P,
-        ) -> Result<Self,IoError> {
-
-
+        ) -> Result<Self, IoError> {
             let client_certs = load_certs(cert_path)?;
-            let mut client_keys = load_keys(key_path)?;
+            let client_keys = load_keys(key_path)?;
+
+            let client_key = client_keys.get(0)
+                .ok_or_else(|| IoError::new(ErrorKind::InvalidInput, "unable to load client key"))?
+                .clone();
+
             self.0
-                .set_single_client_cert(client_certs,client_keys.remove(0))
+                .set_single_client_cert(client_certs,client_key)
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
             
             Ok(self)
         }
 
-        pub fn load_client_certs_from_bytes(mut self, cert_buf: &[u8], key_buf: &[u8]) -> Result<Self,IoError> {
+        /// Load client keys and certificates from the given byte buffers
+        pub fn load_client_certs_from_bytes(mut self, cert_buf: &[u8], key_buf: &[u8]) -> Result<Self, IoError> {
+            let client_certs = load_certs_from_bytes(cert_buf)?;
+            let client_keys = load_keys_from_bytes(key_buf)?;
 
-            
-            let client_certs = load_certs_from_reader(&mut Cursor::new(cert_buf))?;
-            let mut client_keys = load_keys_from_reader(&mut Cursor::new(key_buf))?;
+            let client_key = client_keys.get(0)
+                .ok_or_else(|| IoError::new(ErrorKind::InvalidInput, "unable to load client key"))?
+                .clone();
+
             self.0
-                .set_single_client_cert(client_certs,client_keys.remove(0))
+                .set_single_client_cert(client_certs,client_key)
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
             
             Ok(self)
         }
 
-        
+        /// Do not verify TLS certificates
         pub fn no_cert_verification(mut self) -> Self {
-
             self.0
                 .dangerous()
                 .set_certificate_verifier(Arc::new(NoCertificateVerification {}));
@@ -302,7 +319,6 @@ mod builder {
         }
 
         pub fn build(self) -> TlsConnector {
-            
             TlsConnector::from(Arc::new(self.0))
         }
     }
@@ -327,17 +343,21 @@ mod builder {
             Ok(Self(ServerConfig::new(AllowAnyAuthenticatedClient::new(root_store))))
         }
 
+        /// Load server keys and certificates from the given file paths
         pub fn load_server_certs<P: AsRef<Path>>(
             mut self,
             cert_path: P,
             key_path: P,
         ) -> Result<Self,IoError> {
-
-
             let server_crt = load_certs(cert_path)?;
             let mut server_keys = load_keys(key_path)?;
+
+            let server_key = server_keys.get(0)
+                .ok_or_else(|| IoError::new(ErrorKind::InvalidInput, "unable to load server key"))?
+                .clone();
+
             self.0
-                .set_single_cert(server_crt,server_keys.remove(0))
+                .set_single_cert(server_crt,server_key)
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
             
             Ok(self)
