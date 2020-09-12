@@ -12,7 +12,7 @@ use bytes::buf::ext::BufExt;
 use futures::sink::SinkExt;
 use futures::stream::StreamExt;
 use futures::future::join;
-use log::debug;
+use tracing::debug;
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;

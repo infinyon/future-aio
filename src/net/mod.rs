@@ -27,7 +27,7 @@ mod connector {
     #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
 
-    use log::debug;
+    use tracing::debug;
     use futures::io::{AsyncRead, AsyncWrite};
     use async_trait::async_trait;
 

@@ -69,7 +69,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
 
                     let to_be_transfer = size as usize - total_transferred;
 
-                    log::trace!(
+                    tracing::trace!(
                         "trying: zero copy source fd: {} offset: {} len: {}, target: fd{}",
                         source_fd,
                         current_offset,
@@ -82,16 +82,16 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
     
                             total_transferred += len as usize;
                             current_offset += len as off_t;
-                            log::trace!("actual: zero copy bytes transferred: {} out of {}", len, size);
+                            tracing::trace!("actual: zero copy bytes transferred: {} out of {}", len, size);
                             
                             if total_transferred < size as usize {
-                                log::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
+                                tracing::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
                             } else {
                                 return Ok(len as usize)
                             }
                         },
                         Err(err) => {
-                            log::error!("error sendfile: {}", err);
+                            tracing::error!("error sendfile: {}", err);
                             return Err(err.into())
                         }
                     } 
@@ -116,7 +116,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                     let to_be_transfer = (size - total_transferred) as i64;
 
 
-                    log::trace!(
+                    tracing::trace!(
                         "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
                         source_fd,
                         current_offset,
@@ -133,13 +133,13 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                         None,
                     );
 
-                    log::trace!("mac zero copy bytes transferred: {}", len);
+                    tracing::trace!("mac zero copy bytes transferred: {}", len);
                     total_transferred += len as u64;
                     current_offset += len as u64;
                     match res {
                         Ok(_) => {
                             if total_transferred < size  {
-                                log::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
+                                tracing::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
                             } else {
                                 return Ok(len as usize)
                             }
@@ -149,14 +149,14 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                             match err {
                                 NixError::Sys(err_no) => {
                                     if err_no == Errno::EAGAIN {
-                                        log::debug!("EAGAIN, try again");
+                                        tracing::debug!("EAGAIN, try again");
                                         continue;
                                     }
                                 }
                                 _ => {}
                             }
                             
-                            log::error!("error sendfile: {}", err);
+                            tracing::error!("error sendfile: {}", err);
                             return  Err(err.into());
                         }
                     }
@@ -175,7 +175,7 @@ mod tests {
     use std::net::SocketAddr;
     use std::time;
 
-    use log::debug;
+    use tracing::debug;
     use futures::stream::StreamExt;    
     use futures::future::join;
 

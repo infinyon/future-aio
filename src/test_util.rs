@@ -5,7 +5,7 @@ macro_rules! assert_async_block {
           
         let ft = $ft_exp;
         match flv_future_aio::task::run_block_on(ft)  {
-            Ok(_) => log::debug!("finished run"),
+            Ok(_) => tracing::debug!("finished run"),
             Err(err) => assert!(false,"error {:?}",err)
         }
 
