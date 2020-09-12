@@ -9,7 +9,7 @@ use std::task::Context;
 use std::task::Poll;
 use std::fmt;
 
-use log::trace;
+use tracing::trace;
 
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
@@ -207,7 +207,7 @@ mod tests {
     use std::path::PathBuf;
     use std::io::SeekFrom;
 
-    use log::debug;
+    use tracing::debug;
    
     use crate::io::AsyncReadExt;
     use crate::io::AsyncWriteExt;

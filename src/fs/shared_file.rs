@@ -6,7 +6,7 @@ use std::sync::RwLock;
 use std::task::Context;
 use std::io::SeekFrom;
 
-use log::trace;
+use tracing::trace;
 
 use futures::io::AsyncRead;
 

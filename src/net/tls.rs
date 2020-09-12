@@ -79,7 +79,7 @@ mod connector {
     #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
 
-    use log::debug;
+    use tracing::debug;
     use async_trait::async_trait;
 
     use super::TlsConnector;
@@ -359,7 +359,7 @@ mod builder {
                             _dns_name: DNSNameRef<'_>,
                             _ocsp: &[u8]) -> Result<ServerCertVerified,TLSError> {
 
-            log::debug!("ignoring server cert");
+            tracing::debug!("ignoring server cert");
             Ok(ServerCertVerified::assertion())
         }
     }
@@ -378,12 +378,12 @@ mod stream {
     use std::io;
     use std::task::{Context, Poll};
 
-    use pin_project::{pin_project, project};
+    use pin_project::pin_project;
 
     use super::TcpStream;
     use super::DefaultClientTlsStream;
 
-    #[pin_project]
+    #[pin_project(project = EnumProj)]
     pub enum AllTcpStream {
         Tcp(#[pin] TcpStream),
         Tls(#[pin] DefaultClientTlsStream)
@@ -405,17 +405,15 @@ mod stream {
 
     impl AsyncRead for AllTcpStream  {
 
-        #[project] 
         fn poll_read(
             self: Pin<&mut Self>,
             cx: &mut Context<'_>,
             buf: &mut [u8],
         ) -> Poll<io::Result<usize>> {
 
-            #[project]
             match self.project() {
-                AllTcpStream::Tcp(stream) => stream.poll_read(cx,buf),
-                AllTcpStream::Tls(stream) => stream.poll_read(cx,buf)
+                EnumProj::Tcp(stream) => stream.poll_read(cx,buf),
+                EnumProj::Tls(stream) => stream.poll_read(cx,buf)
             }
 
         }
@@ -424,37 +422,32 @@ mod stream {
 
     impl AsyncWrite for AllTcpStream {
 
-        #[project] 
         fn poll_write(
             self: Pin<&mut Self>, 
             cx: &mut Context, 
             buf: &[u8]
         ) -> Poll<Result<usize, io::Error>> {
 
-            #[project]
             match self.project() {
-                AllTcpStream::Tcp(stream) => stream.poll_write(cx,buf),
-                AllTcpStream::Tls(stream) => stream.poll_write(cx,buf)
+                EnumProj::Tcp(stream) => stream.poll_write(cx,buf),
+                EnumProj::Tls(stream) => stream.poll_write(cx,buf)
             }
         }
 
-        #[project]
         fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
 
-            #[project]
             match self.project() {
-                AllTcpStream::Tcp(stream) => stream.poll_flush(cx),
-                AllTcpStream::Tls(stream) => stream.poll_flush(cx)
+                EnumProj::Tcp(stream) => stream.poll_flush(cx),
+                EnumProj::Tls(stream) => stream.poll_flush(cx)
             }
         }
 
-        #[project]
+
         fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
 
-            #[project]
             match self.project() {
-                AllTcpStream::Tcp(stream) => stream.poll_close(cx),
-                AllTcpStream::Tls(stream) => stream.poll_close(cx)
+                EnumProj::Tcp(stream) => stream.poll_close(cx),
+                EnumProj::Tls(stream) => stream.poll_close(cx)
             }
         }
     }
@@ -475,7 +468,7 @@ mod test {
     use std::time;
 
 
-    use log::debug;
+    use tracing::debug;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;

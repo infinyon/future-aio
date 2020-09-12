@@ -7,7 +7,7 @@ mod task {
 
     use async_std::task::JoinHandle;
     use async_std::task;
-    use log::trace;
+    use tracing::trace;
 
     use crate::timer::sleep;
 
@@ -76,7 +76,7 @@ mod task {
     use tokio::runtime;
     use tokio::task;
     use tokio::task::JoinHandle;
-    use log::trace;
+    use tracing::trace;
 
     fn create_thread_runtime() -> Result<runtime::Runtime,IoError> {
         runtime::Builder::new()
@@ -184,7 +184,7 @@ mod basic_test {
     use std::time;
 
     use futures::future::join;
-    use log::debug;
+    use tracing::debug;
 
 
     use crate::test_async;

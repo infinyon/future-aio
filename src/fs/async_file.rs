@@ -4,7 +4,7 @@ use std::io::SeekFrom;
 
 use std::os::unix::io::AsRawFd;
 
-use log::trace;
+use tracing::trace;
 use async_trait::async_trait;
 
 

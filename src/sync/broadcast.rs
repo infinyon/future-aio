@@ -46,7 +46,7 @@ impl <T>Channel<T> {
 mod test {
     use std::time::Duration;
 
-    use log::debug;
+    use tracing::debug;
 
 
     use crate::timer::sleep;
