@@ -79,7 +79,7 @@ mod connector {
     #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
 
-    use tracing::debug;
+    use flv_util::log::debug;
     use async_trait::async_trait;
 
     use super::TlsConnector;
@@ -359,7 +359,7 @@ mod builder {
                             _dns_name: DNSNameRef<'_>,
                             _ocsp: &[u8]) -> Result<ServerCertVerified,TLSError> {
 
-            tracing::debug!("ignoring server cert");
+            flv_util::log::debug!("ignoring server cert");
             Ok(ServerCertVerified::assertion())
         }
     }
@@ -379,7 +379,7 @@ mod stream {
     use std::task::{Context, Poll};
 
     use pin_project::pin_project;
-
+    use futures_lite::{ AsyncRead, AsyncWrite };
     use super::TcpStream;
     use super::DefaultClientTlsStream;
 
@@ -398,8 +398,6 @@ mod stream {
             Self::Tls(stream)
         }
     }
-
-    use futures::io::{AsyncRead, AsyncWrite};
 
 
 

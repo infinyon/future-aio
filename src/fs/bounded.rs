@@ -1,29 +1,29 @@
 
+use core::pin::Pin;
+use core::task::Context;
+use core::task::Poll;
+
 use std::io;
-#[cfg(unix)]
 use std::io::Error as IoError;
 use std::path::Path;
 use std::path::PathBuf;
-use std::pin::Pin;
-use std::task::Context;
-use std::task::Poll;
+
 use std::fmt;
 
-use tracing::trace;
+use flv_util::log::trace;
 
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
 
-use super::metadata;
-use super::File;
+
+use async_fs::File;
+
 
 #[cfg(unix)]
-use crate::fs::AsyncFile;
-#[cfg(unix)]
-use crate::fs::AsyncFileSlice;
-use crate::fs::util as file_util;
-use crate::io::AsyncWrite;
+use crate::file_slice::AsyncFileSlice;
 
+use futures_lite::AsyncWrite;
+use super::AsyncFileExtension;
 
 #[derive(Debug)]
 pub enum BoundedFileSinkError {
@@ -71,13 +71,15 @@ impl BoundedFileSink {
     unsafe_pinned!(writer: File);
     unsafe_unpinned!(current_len: u64);
 
+    
+
     #[allow(unused)]
     pub async fn create<P>(path: P, option: BoundedFileOption) -> Result<Self, io::Error>
     where
         P: AsRef<Path>,
     {
         let inner_path = path.as_ref();
-        let writer = file_util::create(inner_path).await?;
+        let writer = File::create(inner_path).await?;
         Ok(Self {
             writer,
             path: inner_path.to_owned(),
@@ -92,8 +94,8 @@ impl BoundedFileSink {
         P: AsRef<Path>,
     {
         let file_path = path.as_ref();
-        let writer = file_util::open(file_path).await?;
-        let metadata = metadata(file_path).await?;
+        let writer = File::open(file_path).await?;
+        let metadata = writer.metadata().await?;
         let len = metadata.len();
 
         Ok(Self {
@@ -110,8 +112,10 @@ impl BoundedFileSink {
         P: AsRef<Path>,
     {
         let file_path = path.as_ref();
-        let writer = file_util::open_read_append(file_path).await?;
-        let metadata = metadata(file_path).await?;
+
+
+        let writer = crate::fs::util::open_read_append(file_path).await?;
+        let metadata = writer.metadata().await?;
         let len = metadata.len();
 
         Ok(Self {
@@ -149,7 +153,7 @@ impl BoundedFileSink {
         &mut self.writer
     }
 
-    #[allow(unused)]
+
     #[cfg(unix)]
     pub fn slice_from(&self, position: u64, len: u64) -> Result<AsyncFileSlice, IoError> {
         Ok(self.writer.raw_slice(position, len))
@@ -185,12 +189,7 @@ impl AsyncWrite for BoundedFileSink {
         self.writer().poll_flush(cx)
     }
 
-    #[cfg(feature = "tokio2")]
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), io::Error>> {
-        self.writer().poll_shutdown(cx)
-    }
 
-    #[cfg(feature = "asyncstd")]
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         self.writer().poll_close(cx)
     }

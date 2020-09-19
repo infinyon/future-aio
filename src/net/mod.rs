@@ -1,12 +1,5 @@
 
-#[cfg(feature = "asyncstd")]
-pub use async_std::net::*;
-
-
-#[cfg(feature = "tokio2")]
-pub use tokio::net::*;
-
-
+pub use async_net::TcpStream;
 
 #[cfg(test)]
 mod tcp_stream;
@@ -27,8 +20,8 @@ mod connector {
     #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
 
-    use tracing::debug;
-    use futures::io::{AsyncRead, AsyncWrite};
+    use flv_util::log::debug;
+    use futures_lite::{AsyncRead, AsyncWrite};
     use async_trait::async_trait;
 
     use super::TcpStream;

@@ -8,11 +8,12 @@ use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
 
+use async_fs::File;
 use memmap::Mmap;
 use memmap::MmapMut;
 
 use crate::task::spawn_blocking;
-use crate::fs::File;
+
 
 /// Mutable async wrapper for MmapMut
 pub struct MemoryMappedMutFile(Arc<RwLock<MmapMut>>);

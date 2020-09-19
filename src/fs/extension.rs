@@ -2,22 +2,24 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::io::SeekFrom;
 
+#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use tracing::trace;
 use async_trait::async_trait;
+use futures_lite::AsyncSeekExt;
 
+use crate::log::trace;
 
-#[cfg(feature = "asyncstd")]
-use async_std::io::prelude::SeekExt;
-
-use super::AsyncFileSlice;
+use crate::file_slice::AsyncFileSlice;
 use super::File;
 
+
+/// Utilites for dealing with Async file
 #[async_trait]
-pub trait AsyncFile {
+pub trait AsyncFileExtension {
     async fn reset_to_beginning(&mut self) -> Result<(), IoError>;
 
+    #[cfg(unix)]
     fn raw_slice(&self, position: u64, len: u64) -> AsyncFileSlice;
 
     async fn as_slice(
@@ -28,7 +30,7 @@ pub trait AsyncFile {
 }
 
 #[async_trait]
-impl AsyncFile for File {
+impl AsyncFileExtension for File {
     async fn reset_to_beginning(&mut self) -> Result<(), IoError> {
         self.seek(SeekFrom::Start(0)).await.map(|_| ())
     }
@@ -85,7 +87,7 @@ mod tests {
     use std::io::Read;
 
 
-    #[cfg(feature = "asyncstd")]
+    
     use async_std::io::prelude::SeekExt;
     
     use flv_util::fixture::ensure_clean_file;
@@ -94,7 +96,7 @@ mod tests {
     use crate::io::AsyncReadExt;
     use crate::io::AsyncWriteExt;
     use crate::fs::util as file_util;
-    use super::AsyncFile;
+    use super::AsyncFileExtension;
 
 
     // sync seek write and read

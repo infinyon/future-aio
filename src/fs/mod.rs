@@ -1,28 +1,16 @@
-mod mmap;
-#[cfg(unix)]
-mod file_slice;
-#[cfg(unix)]
-mod async_file;
 mod bounded;
+mod extension;
 
-#[cfg(unix)]
-pub use self::async_file::AsyncFile;
-#[cfg(unix)]
-pub use self::file_slice::AsyncFileSlice;
-pub use self::bounded::BoundedFileSink;
+pub use extension::*;
+
 pub use self::bounded::BoundedFileOption;
+pub use self::bounded::BoundedFileSink;
 pub use self::bounded::BoundedFileSinkError;
 
-pub use self::mmap::MemoryMappedFile;
-pub use self::mmap::MemoryMappedMutFile;
+#[cfg(feature = "mmap")]
+pub mod mmap;
 
-
-#[cfg(feature = "asyncstd")]
-pub use async_std::fs::*;
-
-#[cfg(feature = "tokio2")]
-pub use tokio::fs::*;
-
+pub use async_fs::*;
 
 pub mod util {
 
@@ -31,11 +19,6 @@ pub mod util {
 
     use super::File;
     use super::OpenOptions;
-
-    pub async fn create_dir_all<P: AsRef<Path>>(path: P) -> Result<(), IoError> {
-
-        super::create_dir_all(path.as_ref()).await
-    }
 
 
     /// open for write only
@@ -78,8 +61,3 @@ pub mod util {
         option.open(file_path).await
     }
 }
-
-
-
-
-

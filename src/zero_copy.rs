@@ -10,10 +10,13 @@ use nix::libc::off_t;
 use nix::Error as NixError;
 use async_trait::async_trait;
 
+use flv_util::log::trace;
+use flv_util::log::debug;
+
 use crate::task::spawn_blocking;
 
 
-use crate::fs::AsyncFileSlice;
+use crate::file_slice::AsyncFileSlice;
 
 #[derive(Debug)]
 pub enum SendFileError {
@@ -69,7 +72,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
 
                     let to_be_transfer = size as usize - total_transferred;
 
-                    tracing::trace!(
+                    trace!(
                         "trying: zero copy source fd: {} offset: {} len: {}, target: fd{}",
                         source_fd,
                         current_offset,
@@ -82,16 +85,16 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
     
                             total_transferred += len as usize;
                             current_offset += len as off_t;
-                            tracing::trace!("actual: zero copy bytes transferred: {} out of {}", len, size);
+                            trace!("actual: zero copy bytes transferred: {} out of {}", len, size);
                             
                             if total_transferred < size as usize {
-                                tracing::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
+                                debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
                             } else {
                                 return Ok(len as usize)
                             }
                         },
                         Err(err) => {
-                            tracing::error!("error sendfile: {}", err);
+                            crate::util::log::error!("error sendfile: {}", err);
                             return Err(err.into())
                         }
                     } 
@@ -116,7 +119,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                     let to_be_transfer = (size - total_transferred) as i64;
 
 
-                    tracing::trace!(
+                    trace!(
                         "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
                         source_fd,
                         current_offset,
@@ -139,7 +142,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                     match res {
                         Ok(_) => {
                             if total_transferred < size  {
-                                tracing::debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
+                                debug!("current transferred: {} less than total: {}, continuing",total_transferred,size);
                             } else {
                                 return Ok(len as usize)
                             }
@@ -149,7 +152,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                             match err {
                                 NixError::Sys(err_no) => {
                                     if err_no == Errno::EAGAIN {
-                                        tracing::debug!("EAGAIN, try again");
+                                        debug!("EAGAIN, try again");
                                         continue;
                                     }
                                 }
