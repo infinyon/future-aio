@@ -5,10 +5,6 @@ pub use async_net::*;
 mod tcp_stream;
 
 
-#[cfg(feature = "tls")]
-#[cfg(unix)]
-pub mod tls;
-
 #[cfg(unix)]
 pub use connector::*;
 

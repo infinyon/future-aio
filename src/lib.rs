@@ -26,7 +26,9 @@ pub mod zero_copy;
 #[cfg(feature = "net")]
 pub mod net;
 
-
+#[cfg(feature = "tls")]
+#[cfg(unix)]
+pub mod tls;
 
 #[cfg(feature = "fixture")]
 pub mod subscriber {

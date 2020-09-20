@@ -79,12 +79,14 @@ mod connector {
     #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
 
-    use crate::log::debug;
+    
     use async_trait::async_trait;
 
+    use crate::net::TcpDomainConnector;
+    use crate::net::DefaultTcpDomainConnector;
+    use crate::log::debug;
+    
     use super::TlsConnector;
-    use super::super::TcpDomainConnector;
-    use super::super::DefaultTcpDomainConnector;
     use super::DefaultClientTlsStream;
     use super::TcpStream;
     use super::AllTcpStream;
