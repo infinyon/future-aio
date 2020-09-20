@@ -45,6 +45,7 @@ where
     task::spawn(future)
 }
 
+#[cfg(feature = "task_unstable")]
 pub fn spawn_blocking<F, T>(future: F) -> JoinHandle<T>
 where
     F: FnOnce() -> T + Send + 'static,

@@ -11,7 +11,7 @@ license = "Apache-2.0"
 task = ["async-std/default"]
 fixture = ["task","async-test-derive", "flv-util/subscriber"]
 task_unstable = ["task", "async-std/unstable"]
-net = ["futures-lite", "async-net"]
+net = ["futures-lite", "async-net","async-trait"]
 tls = ["net", "rustls", "webpki", "async-tls"]
 timer = ["async-io"]
 fs = ["async-fs", "futures-lite"]
@@ -47,4 +47,4 @@ async-lock = "1.1.0"
 tokio-util = { version = "0.3.1", features = ["codec", "compat"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
 async-test-derive = { path = "async-test-derive", version = "1.0.0" }
-flv-future-aio = { path = ".", features = ["net", "fixture"] }
+flv-future-aio = { path = ".", features = ["net", "fixture","timer"] }
