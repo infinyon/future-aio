@@ -106,15 +106,18 @@ mod tests {
     // this is used for implementating async version
     #[test]
     fn test_sync_seek_write() -> Result<(), std::io::Error> {
+
+
         let mut option = std::fs::OpenOptions::new();
         option.read(true).write(true).create(true).append(false);
-        let mut file = option.open("/tmp/x1")?;
+        let test_file = temp_dir().join("x1");
+        let mut file = option.open(&test_file)?;
         file.seek(SeekFrom::Start(0))?;
         file.write_all(b"test")?;
         //  file.write_all(b"kkk")?;
         file.sync_all()?;
 
-        let mut f2 = File::open("/tmp/x1")?;
+        let mut f2 = File::open(&test_file)?;
         let mut contents = String::new();
         f2.read_to_string(&mut contents)?;
         assert_eq!(contents, "test");
