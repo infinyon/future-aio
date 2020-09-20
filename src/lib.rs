@@ -48,7 +48,7 @@ pub mod subscriber {
 }
 
 /// re-export tracing
-pub mod log {
+pub mod tracing {
 
     pub use tracing::*;
 }

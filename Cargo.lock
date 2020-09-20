@@ -315,6 +315,7 @@ dependencies = [
  "futures-util",
  "futures_codec",
  "lazy_static",
+ "log",
  "memmap",
  "nix",
  "num_cpus",
@@ -329,11 +330,11 @@ dependencies = [
 
 [[package]]
 name = "flv-util"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c846083aac9b7a373920bc16c1757d664f471fa7a4907fb7d5e655a611bd0b9"
+checksum = "93c99c73681898acc4936b20fffe7da175748339fcb6aec683630d5225b152d8"
 dependencies = [
- "tracing",
+ "log",
 ]
 
 [[package]]

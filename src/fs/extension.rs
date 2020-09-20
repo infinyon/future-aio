@@ -8,13 +8,12 @@ use std::os::unix::io::AsRawFd;
 use async_trait::async_trait;
 use futures_lite::AsyncSeekExt;
 
-use crate::log::trace;
+use log::trace;
 
 #[cfg(unix)]
 use crate::file_slice::AsyncFileSlice;
 
 use super::File;
-
 
 /// Utilites for dealing with Async file
 #[async_trait]
@@ -84,30 +83,25 @@ mod tests {
     use std::env::temp_dir;
     use std::fs::File;
     use std::io::Error as IoError;
-    use std::io::Write;
+    use std::io::Read;
     use std::io::Seek as _;
     use std::io::SeekFrom;
-    use std::io::Read;
+    use std::io::Write;
 
-
-    
     use async_std::io::prelude::SeekExt;
-    
+
     use flv_util::fixture::ensure_clean_file;
 
+    use super::AsyncFileExtension;
+    use crate::fs::util as file_util;
     use crate::test_async;
     use futures_lite::AsyncReadExt;
     use futures_lite::AsyncWriteExt;
-    use crate::fs::util as file_util;
-    use super::AsyncFileExtension;
-
 
     // sync seek write and read
     // this is used for implementating async version
     #[test]
     fn test_sync_seek_write() -> Result<(), std::io::Error> {
-
-
         let mut option = std::fs::OpenOptions::new();
         option.read(true).write(true).create(true).append(false);
         let test_file = temp_dir().join("x1");

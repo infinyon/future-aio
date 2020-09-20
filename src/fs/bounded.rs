@@ -1,4 +1,3 @@
-
 use core::pin::Pin;
 use core::task::Context;
 use core::task::Poll;
@@ -10,20 +9,18 @@ use std::path::PathBuf;
 
 use std::fmt;
 
-use crate::log::trace;
+use log::trace;
 
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
 
-
 use async_fs::File;
-
 
 #[cfg(unix)]
 use crate::file_slice::AsyncFileSlice;
 
-use futures_lite::AsyncWrite;
 use super::AsyncFileExtension;
+use futures_lite::AsyncWrite;
 
 #[derive(Debug)]
 pub enum BoundedFileSinkError {
@@ -51,11 +48,9 @@ pub struct BoundedFileOption {
     pub max_len: Option<u64>,
 }
 
-
-
 /// File Sink that tracks how much byte it has written
 /// This file will not block write operation.  It is up to writer to check if maximum file has size is reached
-/// since AsyncWrite return IoError 
+/// since AsyncWrite return IoError
 pub struct BoundedFileSink {
     option: BoundedFileOption,
     current_len: u64,
@@ -63,15 +58,11 @@ pub struct BoundedFileSink {
     path: PathBuf,
 }
 
-impl Unpin for BoundedFileSink  {}
-
+impl Unpin for BoundedFileSink {}
 
 impl BoundedFileSink {
-
     unsafe_pinned!(writer: File);
     unsafe_unpinned!(current_len: u64);
-
-    
 
     #[allow(unused)]
     pub async fn create<P>(path: P, option: BoundedFileOption) -> Result<Self, io::Error>
@@ -113,7 +104,6 @@ impl BoundedFileSink {
     {
         let file_path = path.as_ref();
 
-
         let writer = crate::fs::util::open_read_append(file_path).await?;
         let metadata = writer.metadata().await?;
         let len = metadata.len();
@@ -132,14 +122,12 @@ impl BoundedFileSink {
     }
 
     /// check if buf_len can be written
-    pub fn can_be_appended(&self,buf_len: u64) -> bool {
+    pub fn can_be_appended(&self, buf_len: u64) -> bool {
         match self.option.max_len {
             Some(max_len) => self.current_len + buf_len <= max_len,
-            None => true
+            None => true,
         }
-        
     }
-
 
     pub fn get_path(&self) -> &Path {
         &self.path
@@ -153,35 +141,33 @@ impl BoundedFileSink {
         &mut self.writer
     }
 
-
     #[cfg(unix)]
     pub fn slice_from(&self, position: u64, len: u64) -> Result<AsyncFileSlice, IoError> {
         Ok(self.writer.raw_slice(position, len))
     }
 }
 
-
 impl AsyncWrite for BoundedFileSink {
-
     fn poll_write(
         mut self: Pin<&mut Self>,
         cx: &mut Context<'_>,
         buf: &[u8],
     ) -> Poll<io::Result<usize>> {
-
-        match self.as_mut().writer().poll_write(cx,buf) {
+        match self.as_mut().writer().poll_write(cx, buf) {
             Poll::Pending => Poll::Pending,
-            Poll::Ready(result) => {
-                match result {
-                    Ok(size) => {
-                        let current_len = self.as_ref().current_len + size as u64;
-                        *(self.as_mut().current_len()) = current_len;
-                        trace!("success write: {}, current len: {}",size,self.as_ref().current_len);
-                        Poll::Ready(Ok(size))
-                    },
-                    Err(err) => Poll::Ready(Err(err))
-                }   
-            }
+            Poll::Ready(result) => match result {
+                Ok(size) => {
+                    let current_len = self.as_ref().current_len + size as u64;
+                    *(self.as_mut().current_len()) = current_len;
+                    trace!(
+                        "success write: {}, current len: {}",
+                        size,
+                        self.as_ref().current_len
+                    );
+                    Poll::Ready(Ok(size))
+                }
+                Err(err) => Poll::Ready(Err(err)),
+            },
         }
     }
 
@@ -189,12 +175,10 @@ impl AsyncWrite for BoundedFileSink {
         self.writer().poll_flush(cx)
     }
 
-
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
         self.writer().poll_close(cx)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -203,18 +187,18 @@ mod tests {
     use std::fs::remove_file;
     use std::fs::File as StdFile;
     use std::io::Read;
-    use std::path::PathBuf;
     use std::io::SeekFrom;
+    use std::path::PathBuf;
 
-    use crate::log::debug;
-   
-    use futures_lite::AsyncReadExt;
-    use futures_lite::AsyncWriteExt;
-    use futures_lite::AsyncSeekExt;
+    use log::debug;
+
     use crate::test_async;
+    use futures_lite::AsyncReadExt;
+    use futures_lite::AsyncSeekExt;
+    use futures_lite::AsyncWriteExt;
 
-    use super::BoundedFileSink;
     use super::BoundedFileOption;
+    use super::BoundedFileSink;
     use super::BoundedFileSinkError;
 
     const TEST_FILE_NAME: &str = "file_test_01";
@@ -239,10 +223,9 @@ mod tests {
 
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write bytes");
-        assert_eq!(f_sink.get_current_len(),3);
+        assert_eq!(f_sink.get_current_len(), 3);
 
         f_sink.flush().await.expect("flush");
-       
 
         let test_file = temp_dir().join(TEST_FILE_NAME);
         let mut f = StdFile::open(test_file)?;
@@ -261,13 +244,15 @@ mod tests {
         let test_file = temp_dir().join(TEST_FILE_NAME2);
         ensure_clean_file(&test_file);
 
-        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default()).await.expect("create");
+        let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default())
+            .await
+            .expect("create");
 
         let bytes = vec![0x1; 1000];
         f_sink.write_all(&bytes).await.expect("first write");
         f_sink.write_all(&bytes).await.expect("second write");
 
-        assert_eq!(f_sink.get_current_len(),2000);
+        assert_eq!(f_sink.get_current_len(), 2000);
         f_sink.flush().await.expect("flush");
 
         let test_file = temp_dir().join(TEST_FILE_NAME2);
@@ -286,7 +271,9 @@ mod tests {
 
         let option = BoundedFileOption { max_len: Some(10) };
 
-        let mut f_sink = BoundedFileSink::create(&test_file, option).await.expect("file created");
+        let mut f_sink = BoundedFileSink::create(&test_file, option)
+            .await
+            .expect("file created");
 
         let bytes = vec![0x01; 8];
         f_sink.write_all(&bytes).await.expect("first write");
@@ -295,37 +282,40 @@ mod tests {
         Ok(())
     }
 
-
-
     #[test_async]
     async fn test_sink_file_write_read() -> Result<(), BoundedFileSinkError> {
-
         const WRITE_FILE: &str = "file_test_write_bounded";
 
         let test_file = temp_dir().join(WRITE_FILE);
         ensure_clean_file(&test_file);
 
-        let mut f_sink = BoundedFileSink::open_append(&test_file, BoundedFileOption::default()).await?;
+        let mut f_sink =
+            BoundedFileSink::open_append(&test_file, BoundedFileOption::default()).await?;
 
         let bytes: Vec<u8> = vec![0x01; 73];
         f_sink.write_all(&bytes).await.expect("send success");
-        debug!("current len: {}",f_sink.get_current_len());
+        debug!("current len: {}", f_sink.get_current_len());
         let bytes: Vec<u8> = vec![0x01; 74];
         f_sink.write_all(&bytes).await.expect("send success");
-        assert_eq!(f_sink.get_current_len(),147);
-
+        assert_eq!(f_sink.get_current_len(), 147);
 
         // check if we read back
-        f_sink.mut_inner().seek(SeekFrom::Start(0)).await.expect("reset to beginning");
+        f_sink
+            .mut_inner()
+            .seek(SeekFrom::Start(0))
+            .await
+            .expect("reset to beginning");
         // now read back
         let mut read_buf: Vec<u8> = vec![];
-        f_sink.mut_inner().read_to_end(&mut read_buf).await.expect("read");
-        assert_eq!(read_buf.len(),147);
-        
+        f_sink
+            .mut_inner()
+            .read_to_end(&mut read_buf)
+            .await
+            .expect("read");
+        assert_eq!(read_buf.len(), 147);
+
         Ok(())
     }
-
-
 
     mod inner {
 
@@ -333,13 +323,12 @@ mod tests {
         use std::io::Write;
 
         use crate::test_async;
-        
-        use super::temp_dir;
+
         use super::ensure_clean_file;
+        use super::temp_dir;
 
         #[test_async]
         async fn test_sink_file_write_std() -> Result<(), IoError> {
-
             use std::fs::File;
 
             const WRITE_FILE: &str = "file_test_two_write_std";
@@ -352,14 +341,13 @@ mod tests {
             f_sink.write_all(&bytes).expect("send success");
             let bytes: Vec<u8> = vec![0x01; 74];
             f_sink.write_all(&bytes).expect("send success");
-            
+
             let metadata = std::fs::metadata(test_file).expect("data file should exists");
 
-            // even if file is not flushed, file has all the data 
-            assert_eq!(metadata.len(),147);
-            
+            // even if file is not flushed, file has all the data
+            assert_eq!(metadata.len(), 147);
+
             Ok(())
         }
     }
-
 }

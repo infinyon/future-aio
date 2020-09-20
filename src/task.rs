@@ -1,12 +1,10 @@
-
-
 use std::future::Future;
 
 use async_std::task;
 use async_std::task::JoinHandle;
 
 //use async_std::task::JoinHandle;
-use crate::log::trace;
+use log::trace;
 
 use crate::timer::sleep;
 
@@ -63,7 +61,6 @@ where
     task::block_on(f)
 }
 
-
 #[cfg(test)]
 mod basic_test {
 
@@ -72,7 +69,7 @@ mod basic_test {
     use std::time;
 
     use futures_lite::future::zip;
-    use crate::log::debug;
+    use log::debug;
 
     use crate::task::spawn;
     use crate::test_async;
