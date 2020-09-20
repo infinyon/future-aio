@@ -473,8 +473,9 @@ mod test {
     use futures_util::sink::SinkExt;
     use futures_lite::stream::StreamExt;
     use futures_lite::future::zip;
-    use futures_codec::BytesCodec;
-    use futures_codec::Framed;
+    use tokio_util::codec::BytesCodec;
+    use tokio_util::codec::Framed;
+    use tokio_util::compat::FuturesAsyncReadCompatExt;
     use async_tls::TlsConnector;
     use async_tls::TlsAcceptor;
 
@@ -532,7 +533,7 @@ mod test {
      
     async fn test_tls(acceptor: TlsAcceptor,connector: TlsConnector) -> Result<(), IoError> {
     
-        let addr = "127.0.0.1:9998".parse::<SocketAddr>().expect("parse");
+        let addr = "127.0.0.1:19998".parse::<SocketAddr>().expect("parse");
 
         let server_ft = async {
             
@@ -554,7 +555,7 @@ mod test {
                     let tls_stream = handshake.await.expect("hand shake failed");
                     
                     // handle connection
-                    let mut framed = Framed::new(tls_stream,BytesCodec{});
+                    let mut framed = Framed::new(tls_stream.compat(),BytesCodec::new());
                     debug!("server: sending values to client");
                     let data = vec![0x05, 0x0a, 0x63];
                     framed.send(to_bytes(data)).await.expect("send failed");
@@ -577,7 +578,7 @@ mod test {
             let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
             let tls_stream = connector.connect("localhost", tcp_stream).await.expect("tls failed");
             let all_stream = AllTcpStream::Tls(tls_stream);
-            let mut framed = Framed::new(all_stream,BytesCodec{});
+            let mut framed = Framed::new(all_stream.compat(),BytesCodec::new());
             debug!("client: got connection. waiting");
             if let Some(value) = framed.next().await {
                 debug!("client :received first value from server");
