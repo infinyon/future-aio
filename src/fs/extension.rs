@@ -10,7 +10,9 @@ use futures_lite::AsyncSeekExt;
 
 use crate::log::trace;
 
+#[cfg(unix)]
 use crate::file_slice::AsyncFileSlice;
+
 use super::File;
 
 
@@ -22,6 +24,7 @@ pub trait AsyncFileExtension {
     #[cfg(unix)]
     fn raw_slice(&self, position: u64, len: u64) -> AsyncFileSlice;
 
+    #[cfg(unix)]
     async fn as_slice(
         &self,
         position: u64,
@@ -180,6 +183,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(unix)]
     #[test_async]
     async fn test_as_slice() -> Result<(), IoError> {
         let file = file_util::open("test-data/apirequest.bin").await?;
