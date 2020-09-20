@@ -296,8 +296,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c85295147490b8fcf2ea3d104080a105a8b2c63f9c319e82c02d8e952388919"
 
 [[package]]
-name = "flv-future-aio"
-version = "3.0.0"
+name = "fluvio-future"
+version = "0.1.0"
 dependencies = [
  "async-fs",
  "async-io",
@@ -308,7 +308,7 @@ dependencies = [
  "async-tls",
  "async-trait",
  "bytes",
- "flv-future-aio",
+ "fluvio-future",
  "flv-util",
  "futures-lite",
  "futures-timer",
@@ -322,6 +322,8 @@ dependencies = [
  "pin-utils",
  "rustls",
  "tokio-util",
+ "tracing",
+ "tracing-subscriber",
  "webpki",
 ]
 
@@ -332,7 +334,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4c846083aac9b7a373920bc16c1757d664f471fa7a4907fb7d5e655a611bd0b9"
 dependencies = [
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

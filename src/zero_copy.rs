@@ -10,8 +10,8 @@ use nix::libc::off_t;
 use nix::Error as NixError;
 use async_trait::async_trait;
 
-use flv_util::log::trace;
-use flv_util::log::debug;
+use crate::log::trace;
+use crate::log::debug;
 
 
 use crate::task::spawn_blocking;
