@@ -5,10 +5,26 @@ RUST_DOCKER_IMAGE=rust:${RUSTV}
 
 
 build-all:
-	cargo build --all-features 
+	cargo build
+	cargo build --features tls
+	cargo build --features timer
+	cargo build --features net
+	cargo build --features fs
+	cargo build --features zero_copy
+	cargo build --features mmap
+	cargo build --features task_unstable
+	cargo build --features fixture
 
 test-all:
-	cargo test --all-features
+	cargo test
+	cargo test --features tls
+	cargo test --features timer
+	cargo test --features net
+	cargo test --features fs
+	cargo test --features zero_copy
+	cargo test --features mmap
+	cargo test --features task_unstable
+	cargo test --features fixture 
 
 
 install_windows_on_mac:

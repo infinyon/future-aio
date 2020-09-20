@@ -8,15 +8,15 @@ repository = "https://github.com/infinyon/flv-future"
 license = "Apache-2.0"
 
 [features]
-task = ["async-std/default"]
+task = ["async-std/default","timer"]
 fixture = ["task","async-test-derive", "flv-util/subscriber"]
 task_unstable = ["task", "async-std/unstable"]
 net = ["futures-lite", "async-net","async-trait"]
-tls = ["net", "rustls", "webpki", "async-tls"]
+tls = ["net", "rustls", "webpki", "async-tls","pin-project"]
 timer = ["async-io"]
-fs = ["async-fs", "futures-lite"]
-zero_copy = ["nix", "task"]
-mmap = ["fs", "memmap"]
+fs = ["async-fs", "futures-lite","pin-utils"]
+zero_copy = ["nix", "task_unstable"]
+mmap = ["fs", "memmap","task_unstable"]
 
 [dependencies]
 futures-lite = { version = "1.7.0", optional = true }
@@ -39,6 +39,7 @@ flv-util = { version = "0.5.0", default-features = false }
 
 
 [dev-dependencies]
+bytes = "0.5.6"
 lazy_static = "1.2.0"
 num_cpus = "1.10.1"
 futures_codec = "0.4.0"
@@ -47,4 +48,4 @@ async-lock = "1.1.0"
 tokio-util = { version = "0.3.1", features = ["codec", "compat"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
 async-test-derive = { path = "async-test-derive", version = "1.0.0" }
-flv-future-aio = { path = ".", features = ["net", "fixture","timer"] }
+flv-future-aio = { path = ".", features = ["net", "fixture","timer","fs"] }
