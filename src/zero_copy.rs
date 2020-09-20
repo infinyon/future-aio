@@ -13,6 +13,7 @@ use async_trait::async_trait;
 use flv_util::log::trace;
 use flv_util::log::debug;
 
+
 use crate::task::spawn_blocking;
 
 
@@ -136,7 +137,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                         None,
                     );
 
-                    tracing::trace!("mac zero copy bytes transferred: {}", len);
+                    trace!("mac zero copy bytes transferred: {}", len);
                     total_transferred += len as u64;
                     current_offset += len as u64;
                     match res {
@@ -159,7 +160,7 @@ impl <T> ZeroCopyWrite for T where T: AsRawFd + Send {
                                 _ => {}
                             }
                             
-                            tracing::error!("error sendfile: {}", err);
+                            crate::util::log::error!("error sendfile: {}", err);
                             return  Err(err.into());
                         }
                     }
