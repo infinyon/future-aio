@@ -27,17 +27,10 @@ pub mod zero_copy;
 pub mod net;
 
 
-/*
-pub mod bytes {
-    pub use bytes::Bytes;
-    pub use bytes::BytesMut;
-    pub use bytes::BufMut;
-}
-*/
 
-
-pub mod util {
-    pub use flv_util::*;
+#[cfg(feature = "fixture")]
+pub mod subscriber {
+    pub use flv_util::subscriber::*;
 }
 
 pub mod log {
