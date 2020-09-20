@@ -93,8 +93,8 @@ mod tests {
     use flv_util::fixture::ensure_clean_file;
 
     use crate::test_async;
-    use crate::io::AsyncReadExt;
-    use crate::io::AsyncWriteExt;
+    use futures_lite::AsyncReadExt;
+    use futures_lite::AsyncWriteExt;
     use crate::fs::util as file_util;
     use super::AsyncFileExtension;
 

@@ -79,7 +79,7 @@ mod connector {
     #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
 
-    use flv_util::log::debug;
+    use crate::log::debug;
     use async_trait::async_trait;
 
     use super::TlsConnector;
@@ -303,7 +303,7 @@ mod builder {
 
         pub fn build(self) -> TlsConnector {
             
-            TlsConnector::from(Arc::new(self.0))
+            self.0.into()
         }
     }
 
@@ -359,7 +359,7 @@ mod builder {
                             _dns_name: DNSNameRef<'_>,
                             _ocsp: &[u8]) -> Result<ServerCertVerified,TLSError> {
 
-            flv_util::log::debug!("ignoring server cert");
+            crate::log::debug!("ignoring server cert");
             Ok(ServerCertVerified::assertion())
         }
     }
@@ -466,20 +466,20 @@ mod test {
     use std::time;
 
 
-    use tracing::debug;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
     use bytes::buf::ext::BufExt;
-    use futures::sink::SinkExt;
-    use futures::stream::StreamExt;
-    use futures::future::join;
+    use futures_util::sink::SinkExt;
+    use futures_lite::stream::StreamExt;
+    use futures_lite::future::zip;
     use futures_codec::BytesCodec;
     use futures_codec::Framed;
     use async_tls::TlsConnector;
     use async_tls::TlsAcceptor;
 
 
+    use crate::log::debug;
     use crate::test_async;
     use crate::timer::sleep;
 
@@ -606,7 +606,7 @@ mod test {
         };
 
 
-        let _rt = join(client_ft,server_ft).await;
+        let _ = zip(client_ft,server_ft).await;
 
         Ok(())
     }

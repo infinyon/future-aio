@@ -178,16 +178,16 @@ mod tests {
     use std::net::SocketAddr;
     use std::time;
 
-    use tracing::debug;
-    use futures::stream::StreamExt;    
-    use futures::future::join;
+    use crate::log::debug;
+    use futures_util::stream::StreamExt;    
+    use futures_lite::future::zip;
 
     use crate::net::TcpStream;
     use crate::net::TcpListener;
-    use crate::io::AsyncReadExt;
+    use futures_lite::AsyncReadExt;
     use crate::fs::util as file_util;
     use crate::zero_copy::ZeroCopyWrite;
-    use crate::fs::AsyncFile;
+    use crate::fs::AsyncFileExtension;
     use crate::timer::sleep;
     use crate::test_async;
 
@@ -230,7 +230,7 @@ mod tests {
 
         // read file and zero copy to tcp stream
 
-        let _rt = join(client, server).await;
+        let _ = zip(client, server).await;
         Ok(())
     }
 
@@ -242,7 +242,7 @@ mod tests {
         const PORT: u16 = 8888;
 
         use std::env::temp_dir;
-        use crate::io::AsyncWriteExt;
+        use futures_lite::AsyncWriteExt;
 
         const TEST_ITERATION: u16 = 20;
 
@@ -320,8 +320,7 @@ mod tests {
         };
 
         // read file and zero copy to tcp stream
-
-        let _rt = join(client, server).await;
+        let _ = zip(client, server).await;
         Ok(())
     }
 }

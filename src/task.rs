@@ -70,8 +70,8 @@ mod basic_test {
     use std::thread;
     use std::time;
 
-    use futures::future::join;
-    use tracing::debug;
+    use futures_lite::future::zip;
+    use crate::log::debug;
 
     use crate::task::spawn;
     use crate::test_async;
@@ -104,7 +104,7 @@ mod basic_test {
 
         let core_threads = num_cpus::get().max(1);
         debug!("num threads: {}", core_threads);
-        let _rt = join(ft1, ft2).await;
+        let _ = zip(ft1, ft2).await;
         assert!(true);
         Ok(())
     }

@@ -9,14 +9,15 @@ use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
 use bytes::buf::ext::BufExt;
-use futures::sink::SinkExt;
-use futures::stream::StreamExt;
-use futures::future::join;
-use tracing::debug;
+use futures_util::sink::SinkExt;
+use futures_lite::stream::StreamExt;
+use futures_lite::future::zip;
+
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 
+use crate::log::debug;
 
 use crate::test_async;
 use crate::timer::sleep;
@@ -85,7 +86,7 @@ async fn test_async_tcp() -> Result<(), Error> {
     };
 
 
-    let _rt = join(client_ft,server_ft).await;
+    let _ = zip(client_ft,server_ft).await;
 
     Ok(())
 }

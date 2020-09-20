@@ -7,6 +7,9 @@ RUST_DOCKER_IMAGE=rust:${RUSTV}
 build-all:
 	cargo build --all-features 
 
+test-all:
+	cargo test --all-features
+
 
 install_windows_on_mac:
 	rustup target add x86_64-pc-windows-gnu
@@ -21,18 +24,10 @@ build_linux:	install_linux
 	cargo build --target ${TARGET_LINUX}
 
 
-
-test:
-	cargo test	--features==unstable
-
-
-
-
-
-
 # build windows version
 build-windows:
 	cargo build --target=x86_64-pc-windows-gnu
+
 
 
 

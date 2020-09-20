@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 use std::fmt;
 
-use flv_util::log::trace;
+use crate::log::trace;
 
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
@@ -206,12 +206,11 @@ mod tests {
     use std::path::PathBuf;
     use std::io::SeekFrom;
 
-    use tracing::debug;
+    use crate::log::debug;
    
-    use crate::io::AsyncReadExt;
-    use crate::io::AsyncWriteExt;
-    #[allow(unused)]
-    use crate::io::AsyncSeekExt;
+    use futures_lite::AsyncReadExt;
+    use futures_lite::AsyncWriteExt;
+    use futures_lite::AsyncSeekExt;
     use crate::test_async;
 
     use super::BoundedFileSink;

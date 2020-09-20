@@ -5,7 +5,7 @@ macro_rules! assert_async_block {
           
         let ft = $ft_exp;
         match flv_future_aio::task::run_block_on(ft)  {
-            Ok(_) => tracing::debug!("finished run"),
+            Ok(_) => crate::log::debug!("finished run"),
             Err(err) => assert!(false,"error {:?}",err)
         }
 
@@ -22,8 +22,8 @@ mod test {
     use std::task::Context;
     use std::task::Poll;
 
-    use futures::Future;
-    use futures::future::poll_fn;
+    use futures_lite::Future;
+    use futures_lite::future::poll_fn;
    
 
     use crate::test_async;
