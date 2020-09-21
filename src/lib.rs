@@ -6,6 +6,9 @@ pub mod file_slice;
 pub mod fs;
 
 
+#[cfg(feature = "io")]
+pub mod io;
+
 #[cfg(feature = "task")]
 pub mod task;
 
