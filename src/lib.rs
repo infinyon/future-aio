@@ -1,10 +1,8 @@
 #[cfg(unix)]
 pub mod file_slice;
 
-
 #[cfg(feature = "fs")]
 pub mod fs;
-
 
 #[cfg(feature = "io")]
 pub mod io;
@@ -15,15 +13,13 @@ pub mod task;
 #[cfg(feature = "timer")]
 pub mod timer;
 
-
-#[cfg(any(test,feature = "fixture"))]
+#[cfg(any(test, feature = "fixture"))]
 mod test_util;
 
+#[cfg(any(test, feature = "fixture"))]
+pub use fluvio_test_derive::test_async;
 
-#[cfg(any(test,feature = "fixture"))]
-pub use async_test_derive::test_async;
-
-#[cfg(all(unix,feature = "zero_copy"))]
+#[cfg(all(unix, feature = "zero_copy"))]
 pub mod zero_copy;
 
 #[cfg(feature = "net")]
@@ -47,7 +43,6 @@ pub mod subscriber {
             .with_env_filter(EnvFilter::from_default_env())
             .try_init();
     }
-
 }
 
 /// re-export tracing

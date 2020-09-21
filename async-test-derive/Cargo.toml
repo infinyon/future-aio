@@ -1,6 +1,6 @@
 [package]
-name = "async-test-derive"
-version = "1.0.1"
+name = "fluvio-test-derive"
+version = "0.1.0"
 edition = "2018"
 authors = ["fluvio.io"]
 description = "Procedure macro to run async fn as test"
