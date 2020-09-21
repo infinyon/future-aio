@@ -1,9 +1,19 @@
+#[cfg(unix)]
+pub mod file_slice;
+
+
+#[cfg(feature = "fs")]
 pub mod fs;
-pub mod sync;
+
+
+#[cfg(feature = "io")]
 pub mod io;
+
+#[cfg(feature = "task")]
 pub mod task;
+
+#[cfg(feature = "timer")]
 pub mod timer;
-pub mod actor;
 
 
 #[cfg(any(test,feature = "fixture"))]
@@ -13,24 +23,35 @@ mod test_util;
 #[cfg(any(test,feature = "fixture"))]
 pub use async_test_derive::test_async;
 
-#[cfg(unix)]
+#[cfg(all(unix,feature = "zero_copy"))]
 pub mod zero_copy;
 
+#[cfg(feature = "net")]
 pub mod net;
 
-#[cfg(feature = "asyncstd")]
-pub mod path {
-    pub use async_std::path::*;
+#[cfg(feature = "tls")]
+#[cfg(unix)]
+pub mod tls;
+
+#[cfg(feature = "subscriber")]
+pub mod subscriber {
+    use tracing_subscriber::EnvFilter;
+
+    pub fn init_logger() {
+        init_tracer(None);
+    }
+
+    pub fn init_tracer(level: Option<tracing::Level>) {
+        let _ = tracing_subscriber::fmt()
+            .with_max_level(level.unwrap_or(tracing::Level::DEBUG))
+            .with_env_filter(EnvFilter::from_default_env())
+            .try_init();
+    }
+
 }
 
-pub mod bytes {
-    pub use bytes::Bytes;
-    pub use bytes::BytesMut;
-    pub use bytes::BufMut;
+/// re-export tracing
+pub mod tracing {
+
+    pub use tracing::*;
 }
-
-
-pub mod util {
-    pub use flv_util::*;
-}
-

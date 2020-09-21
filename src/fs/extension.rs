@@ -2,24 +2,28 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::io::SeekFrom;
 
+#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
 
-use tracing::trace;
 use async_trait::async_trait;
+use futures_lite::AsyncSeekExt;
 
+use log::trace;
 
-#[cfg(feature = "asyncstd")]
-use async_std::io::prelude::SeekExt;
+#[cfg(unix)]
+use crate::file_slice::AsyncFileSlice;
 
-use super::AsyncFileSlice;
 use super::File;
 
+/// Utilites for dealing with Async file
 #[async_trait]
-pub trait AsyncFile {
+pub trait AsyncFileExtension {
     async fn reset_to_beginning(&mut self) -> Result<(), IoError>;
 
+    #[cfg(unix)]
     fn raw_slice(&self, position: u64, len: u64) -> AsyncFileSlice;
 
+    #[cfg(unix)]
     async fn as_slice(
         &self,
         position: u64,
@@ -28,7 +32,7 @@ pub trait AsyncFile {
 }
 
 #[async_trait]
-impl AsyncFile for File {
+impl AsyncFileExtension for File {
     async fn reset_to_beginning(&mut self) -> Result<(), IoError> {
         self.seek(SeekFrom::Start(0)).await.map(|_| ())
     }
@@ -79,23 +83,20 @@ mod tests {
     use std::env::temp_dir;
     use std::fs::File;
     use std::io::Error as IoError;
-    use std::io::Write;
+    use std::io::Read;
     use std::io::Seek as _;
     use std::io::SeekFrom;
-    use std::io::Read;
+    use std::io::Write;
 
-
-    #[cfg(feature = "asyncstd")]
     use async_std::io::prelude::SeekExt;
-    
+
     use flv_util::fixture::ensure_clean_file;
 
-    use crate::test_async;
-    use crate::io::AsyncReadExt;
-    use crate::io::AsyncWriteExt;
+    use super::AsyncFileExtension;
     use crate::fs::util as file_util;
-    use super::AsyncFile;
-
+    use crate::test_async;
+    use futures_lite::AsyncReadExt;
+    use futures_lite::AsyncWriteExt;
 
     // sync seek write and read
     // this is used for implementating async version
@@ -103,13 +104,14 @@ mod tests {
     fn test_sync_seek_write() -> Result<(), std::io::Error> {
         let mut option = std::fs::OpenOptions::new();
         option.read(true).write(true).create(true).append(false);
-        let mut file = option.open("/tmp/x1")?;
+        let test_file = temp_dir().join("x1");
+        let mut file = option.open(&test_file)?;
         file.seek(SeekFrom::Start(0))?;
         file.write_all(b"test")?;
         //  file.write_all(b"kkk")?;
         file.sync_all()?;
 
-        let mut f2 = File::open("/tmp/x1")?;
+        let mut f2 = File::open(&test_file)?;
         let mut contents = String::new();
         f2.read_to_string(&mut contents)?;
         assert_eq!(contents, "test");
@@ -178,6 +180,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(unix)]
     #[test_async]
     async fn test_as_slice() -> Result<(), IoError> {
         let file = file_util::open("test-data/apirequest.bin").await?;
