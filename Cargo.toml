@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2018"
 authors = ["fluvio.io"]
 description = "I/O futures for Fluvio project"
-repository = "https://github.com/infinyon/flv-future"
+repository = "https://github.com/infinyon/future-aio"
 license = "Apache-2.0"
 
 [features]
