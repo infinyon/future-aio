@@ -198,12 +198,15 @@ mod tests {
 
     use super::SendFileError;
 
+    const CONST_TEST_ADDR: &str = "127.0.0.1:9999";
+    const ZERO_COPY_PORT: u16 = 8888;
+
     #[test_async]
     async fn test_zero_copy_from_fs_to_socket() -> Result<(), SendFileError> {
         // spawn tcp client and check contents
         let server = async {
             #[allow(unused_mut)]
-            let mut listener = TcpListener::bind("127.0.0.1:9999").await?;
+            let mut listener = TcpListener::bind(CONST_TEST_ADDR).await?;
 
             debug!("server: listening");
             let mut incoming = listener.incoming();
@@ -222,7 +225,7 @@ mod tests {
         let client = async {
             let file = file_util::open("test-data/apirequest.bin").await?;
             sleep(time::Duration::from_millis(100)).await;
-            let addr = "127.0.0.1:9999".parse::<SocketAddr>().expect("parse");
+            let addr = CONST_TEST_ADDR.parse::<SocketAddr>().expect("parse");
             debug!("client: file loaded");
             let mut stream = TcpStream::connect(&addr).await?;
             debug!("client: connected to server");
@@ -241,7 +244,7 @@ mod tests {
     #[test_async]
     async fn test_zero_copy_large_size() -> Result<(), SendFileError> {
         const MAX_BYTES: usize = 300000;
-        const PORT: u16 = 8888;
+       
 
         use futures_lite::AsyncWriteExt;
         use std::env::temp_dir;
@@ -275,7 +278,7 @@ mod tests {
             let f_slice = file.as_slice(0, None).await.expect("filed opening");
             assert_eq!(f_slice.len(), MAX_BYTES as u64);
 
-            let listener = TcpListener::bind(format!("127.0.0.1:{}", PORT))
+            let listener = TcpListener::bind(format!("127.0.0.1:{}", ZERO_COPY_PORT))
                 .await
                 .expect("failed bind");
 
@@ -306,7 +309,7 @@ mod tests {
 
         let client = async {
             sleep(time::Duration::from_millis(100)).await;
-            let addr = format!("127.0.0.1:{}", PORT)
+            let addr = format!("127.0.0.1:{}", ZERO_COPY_PORT)
                 .parse::<SocketAddr>()
                 .expect("parse");
             debug!("client: file loaded");
