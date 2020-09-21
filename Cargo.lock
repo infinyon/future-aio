@@ -146,15 +146,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6725e96011a83fae25074a8734932e8d67763522839be7473dcfe8a0d6a378b1"
 
 [[package]]
-name = "async-test-derive"
-version = "1.0.1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "async-tls"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -297,18 +288,18 @@ checksum = "5c85295147490b8fcf2ea3d104080a105a8b2c63f9c319e82c02d8e952388919"
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-fs",
  "async-io",
  "async-lock",
  "async-net",
  "async-std",
- "async-test-derive",
  "async-tls",
  "async-trait",
  "bytes",
  "fluvio-future",
+ "fluvio-test-derive",
  "flv-util",
  "futures-lite",
  "futures-timer",
@@ -325,6 +316,15 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "webpki",
+]
+
+[[package]]
+name = "fluvio-test-derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -437,9 +437,9 @@ dependencies = [
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.15"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3deed196b6e7f9e44a2ae8d94225d80302d81208b1bb673fd21fe634645c85a9"
+checksum = "4c30f6d0bc6b00693347368a67d41b58f2fb851215ff1da49e90fe2c5c667151"
 dependencies = [
  "libc",
 ]
