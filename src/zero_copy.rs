@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
-
 use std::os::unix::io::AsRawFd;
+use thiserror::Error;
 
 use async_trait::async_trait;
 #[allow(unused)]
@@ -16,31 +16,18 @@ use crate::task::spawn_blocking;
 
 use crate::file_slice::AsyncFileSlice;
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum SendFileError {
-    IoError(IoError),
-    NixError(NixError),
-}
-
-impl fmt::Display for SendFileError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::IoError(err) => write!(f, "{}", err),
-            Self::NixError(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-impl From<IoError> for SendFileError {
-    fn from(error: IoError) -> Self {
-        SendFileError::IoError(error)
-    }
-}
-
-impl From<NixError> for SendFileError {
-    fn from(error: NixError) -> Self {
-        SendFileError::NixError(error)
-    }
+    #[error("IO error: {source}")]
+    IoError {
+        #[from]
+        source: IoError,
+    },
+    #[error("Nix error: {source}")]
+    NixError {
+        #[from]
+        source: NixError,
+    },
 }
 
 /// zero copy write
