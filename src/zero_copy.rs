@@ -1,4 +1,3 @@
-use std::fmt;
 use std::io::Error as IoError;
 use std::os::unix::io::AsRawFd;
 use thiserror::Error;
