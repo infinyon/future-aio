@@ -488,7 +488,6 @@ mod test {
             let mut framed = Framed::new(tls_stream.compat(), BytesCodec::new());
 
             for i in 0..ITER {
-
                 let receives_bytes = framed.next().await.expect("frame");
 
                 let bytes = receives_bytes.expect("invalid value");
@@ -513,8 +512,6 @@ mod test {
                     .await
                     .expect("send failed");
             }
-               
-
 
             Ok(()) as Result<(), IoError>
         };
@@ -536,7 +533,10 @@ mod test {
                 let message = format!("message{}", i);
                 let bytes = message.as_bytes();
                 debug!("client: loop {} sending test message", i);
-                framed.send(to_bytes(bytes.to_vec())).await.expect("send failed");
+                framed
+                    .send(to_bytes(bytes.to_vec()))
+                    .await
+                    .expect("send failed");
                 let reply = framed.next().await.expect("messages").expect("frame");
                 debug!("client: loop {}, received reply back", i);
                 let slice = reply.as_ref();

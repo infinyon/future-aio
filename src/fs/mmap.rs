@@ -14,17 +14,13 @@ use memmap::MmapMut;
 
 use crate::task::spawn_blocking;
 
-
 /// Mutable async wrapper for MmapMut
 pub struct MemoryMappedMutFile(Arc<RwLock<MmapMut>>);
 
 impl MemoryMappedMutFile {
-
-
-    pub async fn create(m_path: &Path, len: u64) -> Result<(Self,File), IoError>
-    {
+    pub async fn create(m_path: &Path, len: u64) -> Result<(Self, File), IoError> {
         let owned_path = m_path.to_owned();
-        let (m_map, mfile,_) = spawn_blocking ( move || {
+        let (m_map, mfile, _) = spawn_blocking(move || {
             let inner_path = owned_path.clone();
             let mfile = OpenOptions::new()
                 .read(true)
@@ -34,16 +30,13 @@ impl MemoryMappedMutFile {
                 .unwrap();
 
             mfile.set_len(len)?;
-            
-            unsafe { MmapMut::map_mut(&mfile) }.map(|mm_file| (mm_file, mfile,owned_path))
-        }).await?;
 
-        Ok((
-            MemoryMappedMutFile::from_mmap(m_map),
-            mfile.into()
-        ))
+            unsafe { MmapMut::map_mut(&mfile) }.map(|mm_file| (mm_file, mfile, owned_path))
+        })
+        .await?;
+
+        Ok((MemoryMappedMutFile::from_mmap(m_map), mfile.into()))
     }
-
 
     fn from_mmap(mmap: MmapMut) -> MemoryMappedMutFile {
         MemoryMappedMutFile(Arc::new(RwLock::new(mmap)))
@@ -61,7 +54,6 @@ impl MemoryMappedMutFile {
         self.0.write().unwrap()
     }
 
-    
     /// write bytes at location,
     /// return number bytes written
     pub fn write_bytes(&mut self, pos: usize, bytes: &Vec<u8>) {
@@ -72,37 +64,33 @@ impl MemoryMappedMutFile {
         }
     }
 
-
-    pub async fn flush_ft(&self) -> Result<(),IoError> {
-    
+    pub async fn flush_ft(&self) -> Result<(), IoError> {
         let inner = self.0.clone();
         spawn_blocking(move || {
             let inner_map = inner.write().unwrap();
             let res = inner_map.flush();
             drop(inner_map);
             res
-        }).await
-        
+        })
+        .await
     }
 
-    pub async fn flush_async_ft(&self) ->  Result<(), IoError> {
+    pub async fn flush_async_ft(&self) -> Result<(), IoError> {
         let inner = self.0.clone();
-        spawn_blocking(move || { 
+        spawn_blocking(move || {
             let inner_map = inner.write().unwrap();
             inner_map.flush_async()
-        }).await
+        })
+        .await
     }
 
-    pub async fn flush_range_ft(
-        &self,
-        offset: usize,
-        len: usize,
-    ) -> Result<(), IoError> {
+    pub async fn flush_range_ft(&self, offset: usize, len: usize) -> Result<(), IoError> {
         let inner = self.0.clone();
         spawn_blocking(move || {
             let inner_map = inner.write().unwrap();
             inner_map.flush_range(offset, len)
-        }).await
+        })
+        .await
     }
 }
 
@@ -110,28 +98,24 @@ impl MemoryMappedMutFile {
 pub struct MemoryMappedFile(Arc<RwLock<Mmap>>);
 
 impl MemoryMappedFile {
-
-    /// open memory file, specify minimum size 
-    pub async fn open<P>(path: P,min_len: u64) -> Result<(Self, File), IoError>
+    /// open memory file, specify minimum size
+    pub async fn open<P>(path: P, min_len: u64) -> Result<(Self, File), IoError>
     where
-        P: AsRef<Path>
+        P: AsRef<Path>,
     {
-        
         let m_path = path.as_ref().to_owned();
-        let (m_map, mfile,_) = spawn_blocking (move || {
+        let (m_map, mfile, _) = spawn_blocking(move || {
             let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
             let meta = mfile.metadata().unwrap();
             if meta.len() == 0 {
-                    mfile.set_len(min_len)?;
+                mfile.set_len(min_len)?;
             }
 
-            unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile,m_path))
-        }).await?;
+            unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))
+        })
+        .await?;
 
-        Ok((
-            MemoryMappedFile::from_mmap(m_map),
-            mfile.into()
-        ))
+        Ok((MemoryMappedFile::from_mmap(m_map), mfile.into()))
     }
 
     fn from_mmap(mmap: Mmap) -> MemoryMappedFile {
@@ -141,8 +125,6 @@ impl MemoryMappedFile {
     pub fn inner(&self) -> RwLockReadGuard<Mmap> {
         self.0.read().unwrap()
     }
-
-    
 }
 
 #[cfg(test)]
@@ -158,15 +140,13 @@ mod tests {
     use crate::test_async;
 
     use super::MemoryMappedMutFile;
-    
 
     #[test_async]
-    async fn test_mmap_write_slice() -> Result<(),IoError> {
-       
+    async fn test_mmap_write_slice() -> Result<(), IoError> {
         let index_path = temp_dir().join("test.index");
         ensure_clean_file(&index_path.clone());
 
-        let result = MemoryMappedMutFile::create(&index_path,3).await;
+        let result = MemoryMappedMutFile::create(&index_path, 3).await;
         assert!(result.is_ok());
 
         let (mm_file, _) = result.unwrap();
@@ -175,7 +155,6 @@ mod tests {
             let src = [0x01, 0x02, 0x03];
             mm.copy_from_slice(&src);
         }
-        
 
         mm_file.flush_ft().await?;
 
@@ -186,13 +165,11 @@ mod tests {
         assert_eq!(buffer[1], 0x02);
         assert_eq!(buffer[2], 0x03);
 
-    
-        Ok(()) 
+        Ok(())
     }
 
     #[test_async]
-    async fn test_mmap_write_pair_slice() -> Result<(),IoError> {
-     
+    async fn test_mmap_write_pair_slice() -> Result<(), IoError> {
         let index_path = temp_dir().join("pairslice.index");
         ensure_clean_file(&index_path.clone());
 
@@ -207,11 +184,10 @@ mod tests {
             assert_eq!(bytes.len(), 24);
             mm.copy_from_slice(&bytes);
         }
-        
+
         mm_file.flush_ft().await?;
 
-        let (mm_file2, _) =
-            MemoryMappedMutFile::create(&index_path, 24).await?;
+        let (mm_file2, _) = MemoryMappedMutFile::create(&index_path, 24).await?;
         let mm2 = mm_file2.mut_inner();
         let (_, pairs, _) = unsafe { mm2.align_to::<(u32, u32)>() };
         assert_eq!(pairs.len(), 3);
@@ -219,12 +195,10 @@ mod tests {
         assert_eq!(pairs[2].1, 100);
 
         Ok(())
-              
     }
 
     #[test_async]
-    async fn test_mmap_write_with_pos() -> Result<(),IoError> {
-        
+    async fn test_mmap_write_with_pos() -> Result<(), IoError> {
         let index_path = temp_dir().join("testpos.index");
         ensure_clean_file(&index_path.clone());
 
@@ -276,5 +250,4 @@ mod tests {
         Ok(())
     }
     */
-
 }

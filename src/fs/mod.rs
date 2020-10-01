@@ -20,7 +20,6 @@ pub mod util {
     use super::File;
     use super::OpenOptions;
 
-
     /// open for write only
     pub async fn create<P>(path: P) -> Result<File, IoError>
     where

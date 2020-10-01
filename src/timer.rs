@@ -6,9 +6,7 @@ mod inner {
 
     use async_io::Timer;
 
-    pub async fn sleep(duration: Duration)  {
+    pub async fn sleep(duration: Duration) {
         Timer::after(duration).await;
     }
 }
-
-

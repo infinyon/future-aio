@@ -230,7 +230,6 @@ mod tests {
     #[test_async]
     async fn test_zero_copy_large_size() -> Result<(), SendFileError> {
         const MAX_BYTES: usize = 300000;
-       
 
         use futures_lite::AsyncWriteExt;
         use std::env::temp_dir;
