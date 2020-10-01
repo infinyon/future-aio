@@ -408,7 +408,6 @@ mod test {
 
     use async_tls::TlsAcceptor;
     use async_tls::TlsConnector;
-    use bytes::buf::ext::BufExt;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
@@ -431,6 +430,7 @@ mod test {
     use super::ConnectorBuilder;
 
     const CA_PATH: &'static str = "certs/certs/ca.crt";
+    const ITER: u16 = 10;
 
     fn to_bytes(bytes: Vec<u8>) -> Bytes {
         let mut buf = BytesMut::with_capacity(bytes.len());
@@ -475,28 +475,46 @@ mod test {
             debug!("server: successfully binding. waiting for incoming");
 
             let mut incoming = listener.incoming();
-            while let Some(stream) = incoming.next().await {
-                let acceptor = acceptor.clone();
-                debug!("server: got connection from client");
-                let tcp_stream = stream.expect("no stream");
+            let stream = incoming.next().await.expect("stream");
+            let tcp_stream = stream.expect("no stream");
+            let acceptor = acceptor.clone();
+            debug!("server: got connection from client");
+            debug!("server: try to accept tls connection");
+            let handshake = acceptor.accept(tcp_stream);
 
-                debug!("server: try to accept tls connection");
-                let handshake = acceptor.accept(tcp_stream);
+            debug!("server: handshaking");
+            let tls_stream = handshake.await.expect("hand shake failed");
 
-                debug!("server: handshaking");
-                let tls_stream = handshake.await.expect("hand shake failed");
+            let mut framed = Framed::new(tls_stream.compat(), BytesCodec::new());
 
-                // handle connection
-                let mut framed = Framed::new(tls_stream.compat(), BytesCodec::new());
-                debug!("server: sending values to client");
-                let data = vec![0x05, 0x0a, 0x63];
-                framed.send(to_bytes(data)).await.expect("send failed");
-                sleep(time::Duration::from_micros(1)).await;
-                debug!("server: sending 2nd value to client");
-                let data2 = vec![0x20, 0x11];
-                framed.send(to_bytes(data2)).await.expect("2nd send failed");
-                return Ok(()) as Result<(), IoError>;
+            for i in 0..ITER {
+
+                let receives_bytes = framed.next().await.expect("frame");
+
+                let bytes = receives_bytes.expect("invalid value");
+                debug!(
+                    "server: loop {}, received from client: {} bytes",
+                    i,
+                    bytes.len()
+                );
+
+                let slice = bytes.as_ref();
+                let mut str_bytes = vec![];
+                for b in slice {
+                    str_bytes.push(b.to_owned());
+                }
+                let message = String::from_utf8(str_bytes).expect("utf8");
+                assert_eq!(message, format!("message{}", i));
+                let resply = format!("{}reply", message);
+                let reply_bytes = resply.as_bytes();
+                debug!("sever: send back reply: {}", resply);
+                framed
+                    .send(to_bytes(reply_bytes.to_vec()))
+                    .await
+                    .expect("send failed");
             }
+               
+
 
             Ok(()) as Result<(), IoError>
         };
@@ -513,25 +531,21 @@ mod test {
             let all_stream = AllTcpStream::Tls(tls_stream);
             let mut framed = Framed::new(all_stream.compat(), BytesCodec::new());
             debug!("client: got connection. waiting");
-            if let Some(value) = framed.next().await {
-                debug!("client :received first value from server");
-                let bytes = value.expect("invalid value");
-                let values = bytes.take(3).into_inner();
-                assert_eq!(values[0], 0x05);
-                assert_eq!(values[1], 0x0a);
-                assert_eq!(values[2], 0x63);
-                assert_eq!(values.len(), 3);
-            } else {
-                assert!(false, "no value received");
-            }
 
-            if let Some(value) = framed.next().await {
-                debug!("client: received 2nd value from server");
-                let bytes = value.expect("packet decoding works");
-                let values = bytes.take(2).into_inner();
-                assert_eq!(values.len(), 2);
-            } else {
-                assert!(false, "no value received");
+            for i in 0..ITER {
+                let message = format!("message{}", i);
+                let bytes = message.as_bytes();
+                debug!("client: loop {} sending test message", i);
+                framed.send(to_bytes(bytes.to_vec())).await.expect("send failed");
+                let reply = framed.next().await.expect("messages").expect("frame");
+                debug!("client: loop {}, received reply back", i);
+                let slice = reply.as_ref();
+                let mut str_bytes = vec![];
+                for b in slice {
+                    str_bytes.push(b.to_owned());
+                }
+                let message = String::from_utf8(str_bytes).expect("utf8");
+                assert_eq!(message, format!("message{}reply", i));
             }
 
             Ok(()) as Result<(), IoError>
