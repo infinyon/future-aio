@@ -225,8 +225,6 @@ mod test {
     use async_native_tls::TlsAcceptor;
     use async_native_tls::TlsConnector;
     use ::native_tls::TlsAcceptor as SyncTlsAcceptor;
-    use ::native_tls::TlsConnector as SyncTlsConnector;
-    use ::native_tls::Identity as SyncIdentity;
     use bytes::buf::ext::BufExt;
     use bytes::BufMut;
     use bytes::Bytes;
@@ -290,16 +288,16 @@ mod test {
         file.read_to_end(&mut pkcs12).unwrap();
         let server_identity = Identity::from_pkcs12(&pkcs12, "test").unwrap();
         let acceptor: TlsAcceptor = SyncTlsAcceptor::new(server_identity).unwrap().into();
-        
 
-        let mut file = File::open(CLIENT_IDENTITY).unwrap();
+
+        let mut file2 = File::open(CLIENT_IDENTITY).unwrap();
         let mut pkcs122 = vec![];
-        file.read_to_end(&mut pkcs12).unwrap();
+        file2.read_to_end(&mut pkcs122).unwrap();
         let client_identity = Identity::from_pkcs12(&pkcs122, "test").unwrap();
 
-        let mut builder = SyncTlsConnector::builder();
-        builder.identity(client_identity);
-        let connector: TlsConnector = builder.into();
+        let connector = TlsConnector::new()
+            .identity(client_identity)
+            .danger_accept_invalid_certs(true);
 
         // test client authentication
         
