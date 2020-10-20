@@ -29,6 +29,11 @@ pub mod net;
 #[cfg(unix)]
 pub mod tls;
 
+
+#[cfg(feature = "native2_tls")]
+#[cfg(unix)]
+pub mod native_tls;
+
 #[cfg(feature = "subscriber")]
 pub mod subscriber {
     use tracing_subscriber::EnvFilter;

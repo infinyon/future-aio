@@ -26,6 +26,12 @@ generate-server-csr:	generate-server-key
 		-config  cert.conf 
 
 
+# generate anonymous pk12
+generate-server-pk12:
+	openssl pkcs12 -export -out certs/server.pfx -inkey certs/server.key -in certs/server.crt -certfile  certs/ca.crt -passout pass:test
+
+
+
 verify-csr:
 	openssl req -in certs/server.csr -noout -text
 
@@ -59,6 +65,8 @@ generate-client-crt:	generate-client-csr
 		-extensions v3_end \
 		-extfile openssl.cnf
 
+generate-client-pk12:
+	openssl pkcs12 -export -out certs/client.pfx -inkey certs/client.key -in certs/client.crt -certfile  certs/ca.crt -passout pass:test
 
 
 # for non mac

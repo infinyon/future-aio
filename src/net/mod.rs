@@ -24,8 +24,9 @@ mod connector {
     #[async_trait]
     pub trait TcpDomainConnector {
         type WrapperStream: AsyncRead + AsyncWrite + Unpin + Send;
+        type Error;
 
-        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), IoError>;
+        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), Self::Error>;
     }
 
     #[derive(Clone)]
@@ -40,8 +41,9 @@ mod connector {
     #[async_trait]
     impl TcpDomainConnector for DefaultTcpDomainConnector {
         type WrapperStream = TcpStream;
+        type Error = IoError;
 
-        async fn connect(&self, addr: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
+        async fn connect(&self, addr: &str) -> Result<(Self::WrapperStream, RawFd), Self::Error> {
             debug!("connect to tcp addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
