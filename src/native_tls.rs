@@ -109,7 +109,6 @@ mod connector {
         }
     }
 
-    
     pub enum AllDomainConnector {
         Tcp(DefaultTcpDomainConnector),
         TlsDomain(TlsDomainConnector),
