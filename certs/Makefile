@@ -4,16 +4,19 @@ clean-cert:
 	rm -rf certs/*
 
 
-generate-certs:	clean-cert	generate-ca-crt generate-server-crt generate-client-crt
+generate-certs:	enerate-ca-crt generate-server-crt generate-client-crt
+
+# run generate-certs first
+generate-pk12-certs:	generate-server-pk12 generate-client-pk12
 
 generate-ca-key:	
 	openssl genrsa  -out certs/ca.key 4096
 
-
 # this is CA pem file
 generate-ca-crt:	generate-ca-key
-	openssl req -x509 -new -nodes -key certs/ca.key  -days 1825 -out certs/ca.crt \
+	openssl req -x509 -new -nodes -key certs/ca.key -out certs/ca.crt \
 		-subj /C=US/ST=CA/L=Sunnyvale/O=Fluvio/OU=Eng/CN=fluvio.io
+
 
 
 generate-server-key:	
@@ -24,6 +27,12 @@ generate-server-csr:	generate-server-key
 	openssl req -new -key certs/server.key \
 		-out certs/server.csr \
 		-config  cert.conf 
+
+
+# generate anonymous pk12
+generate-server-pk12:
+	openssl pkcs12 -export -out certs/server.pfx -inkey certs/server.key -in certs/server.crt -certfile  certs/ca.crt -passout pass:test
+
 
 
 verify-csr:
@@ -59,6 +68,8 @@ generate-client-crt:	generate-client-csr
 		-extensions v3_end \
 		-extfile openssl.cnf
 
+generate-client-pk12:
+	openssl pkcs12 -export -out certs/client.pfx -inkey certs/client.key -in certs/client.crt -certfile  certs/ca.crt -passout pass:test
 
 
 # for non mac

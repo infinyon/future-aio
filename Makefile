@@ -11,12 +11,23 @@ test-all:
 	cargo test --all-features
 
 
+test_tls:
+	cargo test --features tls test_async_tls
+
+test_native_tls_pk12:
+	cargo test --features native2_tls test_native_tls_pk12
+
+test_native_tls_x509:
+	cargo test --features native2_tls test_native_tls_x509
+
 install_windows_on_mac:
 	rustup target add x86_64-pc-windows-gnu
 	brew install mingw-w64
 
 install_linux:
 	rustup target add x86_64-unknown-linux-musl
+
+	cargo +$(RUSTV) clippy --all-targets --all-features -- -D warnings
 
 
 # build linux version
@@ -29,6 +40,11 @@ build-windows:
 	cargo build --target=x86_64-pc-windows-gnu
 
 
+install-clippy:
+	rustup component add clippy
+
+check-clippy:	install-clippy
+	cargo  clippy --all-targets --all-features -- -D warnings
 
 
 cargo_cache_dir:
