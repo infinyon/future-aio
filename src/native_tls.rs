@@ -295,6 +295,13 @@ mod builder {
             Ok(Self(connector))
         }
 
+        pub fn anonymous() -> Self {
+            let connector = TlsConnector::new()
+                .danger_accept_invalid_certs(true)
+                .danger_accept_invalid_hostnames(true);
+            Self(connector)
+        }
+
         pub fn no_cert_verification(self) -> Self {
             let connector = self.0.danger_accept_invalid_certs(true);
             Self(connector)
