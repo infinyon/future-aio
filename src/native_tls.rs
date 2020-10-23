@@ -4,17 +4,19 @@ pub use async_native_tls::TlsAcceptor;
 pub use async_native_tls::TlsConnector;
 pub use async_native_tls::TlsStream;
 
-pub type DefaultTlsStream = TlsStream<TcpStream>;
+// server both cliennt and server and same but use same pattern as rustls
+pub type DefaultServerTlsStream = TlsStream<TcpStream>;
+pub type DefaultClientTlsStream = TlsStream<TcpStream>;
 
 pub use connector::*;
+pub use stream::*;
 
 mod connector {
 
     use std::io::Error as IoError;
+    use std::io::ErrorKind;
 
-    #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
-    #[cfg(unix)]
     use std::os::unix::io::RawFd;
 
     use async_native_tls::Error as NativeTlsError;
@@ -25,7 +27,7 @@ mod connector {
     use crate::net::TcpDomainConnector;
 
     use super::AllTcpStream;
-    use super::DefaultTlsStream;
+    use super::DefaultClientTlsStream;
     use super::TcpStream;
     use super::TlsConnector;
 
@@ -57,13 +59,18 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsAnonymousConnector {
-        type WrapperStream = DefaultTlsStream;
-        type Error = TlsError;
+        type WrapperStream = DefaultClientTlsStream;
 
-        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), Self::Error> {
+        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
             let fd = tcp_stream.as_raw_fd();
-            Ok((self.0.connect(domain, tcp_stream).await?, fd))
+            let connector = self.0.connect(domain, tcp_stream).await.map_err(|e| {
+                IoError::new(
+                    ErrorKind::ConnectionRefused,
+                    format!("failed to connect: {}", e),
+                )
+            })?;
+            Ok((connector, fd))
         }
     }
 
@@ -80,16 +87,25 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsDomainConnector {
-        type WrapperStream = DefaultTlsStream;
-        type Error = TlsError;
+        type WrapperStream = DefaultClientTlsStream;
 
-        async fn connect(&self, addr: &str) -> Result<(Self::WrapperStream, RawFd), Self::Error> {
+        async fn connect(&self, addr: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
 
             debug!("connect to tls domain: {}", self.domain);
-            Ok((self.connector.connect(&self.domain, tcp_stream).await?, fd))
+            let connector = self
+                .connector
+                .connect(&self.domain, tcp_stream)
+                .await
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::ConnectionRefused,
+                        format!("failed to connect: {}", e),
+                    )
+                })?;
+            Ok((connector, fd))
         }
     }
 
@@ -122,9 +138,8 @@ mod connector {
     #[async_trait]
     impl TcpDomainConnector for AllDomainConnector {
         type WrapperStream = AllTcpStream;
-        type Error = TlsError;
 
-        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), Self::Error> {
+        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
             match self {
                 Self::Tcp(connector) => {
                     let (stream, fd) = connector.connect(domain).await?;
@@ -144,6 +159,184 @@ mod connector {
     }
 }
 
+pub use cert::*;
+
+mod cert {
+    use std::fs::File;
+    use std::io::BufRead;
+    use std::io::BufReader;
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+    use std::path::Path;
+
+    use native_tls::Certificate as NativeCertificate;
+    use native_tls::Identity;
+    use openssl::pkcs12::Pkcs12;
+    use openssl::pkey::Private;
+
+    pub type Certificate = openssl::x509::X509;
+    pub type PrivateKey = openssl::pkey::PKey<Private>;
+
+    pub trait CertBuilder: Sized {
+        fn new(bytes: Vec<u8>) -> Self;
+
+        fn from_reader(reader: &mut dyn BufRead) -> Result<Self, IoError> {
+            let mut bytes = vec![];
+            reader.read_to_end(&mut bytes)?;
+            Ok(Self::new(bytes))
+        }
+
+        fn from_path(path: impl AsRef<Path>) -> Result<Self, IoError> {
+            let mut reader = BufReader::new(File::open(path)?);
+            Self::from_reader(&mut reader)
+        }
+    }
+
+    pub struct X509PemBuilder(Vec<u8>);
+
+    impl CertBuilder for X509PemBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl X509PemBuilder {
+        pub fn build(self) -> Result<Certificate, IoError> {
+            let cert = Certificate::from_pem(&self.0).map_err(|err| {
+                IoError::new(ErrorKind::InvalidInput, format!("invalid cert: {}", err))
+            })?;
+            Ok(cert)
+        }
+
+        pub fn build_native(self) -> Result<NativeCertificate, IoError> {
+            NativeCertificate::from_pem(&self.0).map_err(|err| {
+                IoError::new(
+                    ErrorKind::InvalidInput,
+                    format!("invalid pem file: {}", err),
+                )
+            })
+        }
+    }
+
+    pub struct PrivateKeyBuilder(Vec<u8>);
+
+    impl CertBuilder for PrivateKeyBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl PrivateKeyBuilder {
+        pub fn build(self) -> Result<PrivateKey, IoError> {
+            let key = PrivateKey::private_key_from_pem(&self.0).map_err(|err| {
+                IoError::new(ErrorKind::InvalidInput, format!("invalid key: {}", err))
+            })?;
+            Ok(key)
+        }
+    }
+
+    const PASSWORD: &str = "test";
+
+    pub struct IdentityBuilder(Vec<u8>);
+
+    impl CertBuilder for IdentityBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl IdentityBuilder {
+        /// load pk12 from x509 certs
+        pub fn from_x509(x509: X509PemBuilder, key: PrivateKeyBuilder) -> Result<Self, IoError> {
+            let server_key = key.build()?;
+            let server_crt = x509.build()?;
+            let p12 = Pkcs12::builder()
+                .build(PASSWORD, "", &server_key, &server_crt)
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::InvalidData,
+                        format!("Failed to create Pkcs12: {}", e),
+                    )
+                })?;
+
+            let der = p12.to_der()?;
+            Ok(Self(der))
+        }
+
+        pub fn build(self) -> Result<Identity, IoError> {
+            Identity::from_pkcs12(&self.0, PASSWORD).map_err(|e| {
+                IoError::new(ErrorKind::InvalidData, format!("Failed to load der: {}", e))
+            })
+        }
+    }
+}
+
+pub use builder::*;
+
+mod builder {
+
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+
+    use native_tls::Identity;
+    use native_tls::TlsAcceptor as NativeTlsAcceptor;
+
+    use super::IdentityBuilder;
+    use super::TlsAcceptor;
+    use super::TlsConnector;
+    use super::X509PemBuilder;
+
+    pub struct ConnectorBuilder(TlsConnector);
+
+    impl ConnectorBuilder {
+        pub fn identity(builder: IdentityBuilder) -> Result<Self, IoError> {
+            let identity = builder.build()?;
+            let connector = TlsConnector::new().identity(identity);
+            Ok(Self(connector))
+        }
+
+        pub fn no_cert_verification(self) -> Self {
+            let connector = self.0.danger_accept_invalid_certs(true);
+            Self(connector)
+        }
+
+        pub fn danger_accept_invalid_hostnames(self) -> Self {
+            let connector = self.0.danger_accept_invalid_hostnames(true);
+            Self(connector)
+        }
+
+        pub fn use_sni(self, use_sni: bool) -> Self {
+            let connector = self.0.use_sni(use_sni);
+            Self(connector)
+        }
+
+        pub fn add_root_certificate(self, builder: X509PemBuilder) -> Result<Self, IoError> {
+            let certificate = builder.build_native()?;
+            let connector = self.0.add_root_certificate(certificate);
+            Ok(Self(connector))
+        }
+
+        pub fn build(self) -> TlsConnector {
+            self.0
+        }
+    }
+
+    pub struct AcceptorBuilder(Identity);
+
+    impl AcceptorBuilder {
+        pub fn identity(builder: IdentityBuilder) -> Result<Self, IoError> {
+            let identity = builder.build()?;
+            Ok(Self(identity))
+        }
+
+        pub fn build(self) -> Result<TlsAcceptor, IoError> {
+            let acceptor = NativeTlsAcceptor::new(self.0)
+                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
+            Ok(acceptor.into())
+        }
+    }
+}
+
 pub use stream::AllTcpStream;
 
 mod stream {
@@ -152,7 +345,7 @@ mod stream {
     use std::pin::Pin;
     use std::task::{Context, Poll};
 
-    use super::DefaultTlsStream;
+    use super::DefaultClientTlsStream;
     use super::TcpStream;
     use futures_lite::{AsyncRead, AsyncWrite};
     use pin_project::pin_project;
@@ -160,7 +353,7 @@ mod stream {
     #[pin_project(project = EnumProj)]
     pub enum AllTcpStream {
         Tcp(#[pin] TcpStream),
-        Tls(#[pin] DefaultTlsStream),
+        Tls(#[pin] DefaultClientTlsStream),
     }
 
     impl AllTcpStream {
@@ -168,7 +361,7 @@ mod stream {
             Self::Tcp(stream)
         }
 
-        pub fn tls(stream: DefaultTlsStream) -> Self {
+        pub fn tls(stream: DefaultClientTlsStream) -> Self {
             Self::Tls(stream)
         }
     }
@@ -211,174 +404,5 @@ mod stream {
                 EnumProj::Tls(stream) => stream.poll_close(cx),
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-
-    use std::io::Error as IoError;
-    use std::net::SocketAddr;
-    use std::time;
-
-    use async_native_tls::Identity;
-    use async_native_tls::TlsAcceptor;
-    use async_native_tls::TlsConnector;
-    use ::native_tls::TlsAcceptor as SyncTlsAcceptor;
-    use bytes::buf::ext::BufExt;
-    use bytes::BufMut;
-    use bytes::Bytes;
-    use bytes::BytesMut;
-    use futures_lite::future::zip;
-    use futures_lite::stream::StreamExt;
-    use futures_util::sink::SinkExt;
-    use tokio_util::codec::BytesCodec;
-    use tokio_util::codec::Framed;
-    use tokio_util::compat::FuturesAsyncReadCompatExt;
-
-    use crate::test_async;
-    use crate::timer::sleep;
-    use log::debug;
-
-    use crate::net::TcpListener;
-    use crate::net::TcpStream;
-
-    use super::AllTcpStream;
-
-   // const CA_PATH: &'static str = "certs/certs/ca.crt";
-    const SERVER_IDENTITY: &'static str = "certs/certs/server.pfx";
-    const CLIENT_IDENTITY: &'static str = "certs/certs/client.pfx";
-
-    fn to_bytes(bytes: Vec<u8>) -> Bytes {
-        let mut buf = BytesMut::with_capacity(bytes.len());
-        buf.put_slice(&bytes);
-        buf.freeze()
-    }
-
-    #[test_async]
-    async fn test_native_tls_anonymous() -> Result<(), IoError> {
-        use std::fs::File;
-        use std::io::Read;
-
-        let mut file = File::open(SERVER_IDENTITY).unwrap();
-        let mut pkcs12 = vec![];
-        file.read_to_end(&mut pkcs12).unwrap();
-        let server_identity = Identity::from_pkcs12(&pkcs12, "test").unwrap();
-        let acceptor: TlsAcceptor = SyncTlsAcceptor::new(server_identity).unwrap().into();
-
-        let connector = TlsConnector::new()
-            .danger_accept_invalid_certs(true)
-            .danger_accept_invalid_hostnames(true);
-
-        test_tls(acceptor.clone(), connector)
-            .await
-            .expect("no client cert test failed");
-
-        Ok(())
-    }
-
-
-    #[test_async]
-    async fn test_native_tls_client() -> Result<(), IoError> {
-        use std::fs::File;
-        use std::io::Read;
-
-        let mut file = File::open(SERVER_IDENTITY).unwrap();
-        let mut pkcs12 = vec![];
-        file.read_to_end(&mut pkcs12).unwrap();
-        let server_identity = Identity::from_pkcs12(&pkcs12, "test").unwrap();
-        let acceptor: TlsAcceptor = SyncTlsAcceptor::new(server_identity).unwrap().into();
-
-
-        let mut file2 = File::open(CLIENT_IDENTITY).unwrap();
-        let mut pkcs122 = vec![];
-        file2.read_to_end(&mut pkcs122).unwrap();
-        let client_identity = Identity::from_pkcs12(&pkcs122, "test").unwrap();
-
-        let connector = TlsConnector::new()
-            .identity(client_identity)
-            .danger_accept_invalid_certs(true);
-
-        // test client authentication
-        
-        test_tls(acceptor,connector)
-            .await
-            .expect("client cert test fail");
-    
-
-        Ok(())
-    }
-
-    async fn test_tls(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), IoError> {
-        const TEST_ITERATION: u16 = 2;
-
-        let addr = "127.0.0.1:19998".parse::<SocketAddr>().expect("parse");
-
-        let server_ft = async {
-            debug!("server: binding");
-            let listener = TcpListener::bind(&addr).await.expect("listener failed");
-            debug!("server: successfully binding. waiting for incoming");
-
-            let mut incoming = listener.incoming();
-            let incoming_stream = incoming.next().await.expect("incoming");
-
-            debug!("server: got connection from client");
-            let tcp_stream = incoming_stream.expect("no stream");
-
-            let tls_stream = acceptor.accept(tcp_stream).await.unwrap();
-            let mut framed = Framed::new(tls_stream.compat(), BytesCodec::new());
-
-            for _ in 0..TEST_ITERATION { 
-                debug!("server: sending values to client");
-                let data = vec![0x05, 0x0a, 0x63];
-                framed.send(to_bytes(data)).await.expect("send failed");
-                sleep(time::Duration::from_micros(1)).await;
-                debug!("server: sending 2nd value to client");
-                let data2 = vec![0x20, 0x11];
-                framed.send(to_bytes(data2)).await.expect("2nd send failed");
-            }
-
-            // sleep 1 seconds so we don't lost connection
-            sleep(time::Duration::from_secs(1)).await;
-
-            Ok(()) as Result<(), IoError>
-        };
-
-        let client_ft = async {
-            debug!("client: sleep to give server chance to come up");
-            sleep(time::Duration::from_millis(100)).await;
-            debug!("client: trying to connect");
-            let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
-            let tls_stream = connector
-                .connect("localhost", tcp_stream)
-                .await
-                .expect("tls failed");
-            let all_stream = AllTcpStream::Tls(tls_stream);
-            let mut framed = Framed::new(all_stream.compat(), BytesCodec::new());
-            debug!("client: got connection. waiting");
-
-            for i in 0..TEST_ITERATION {
-                let value = framed.next().await.expect("frame");
-                debug!("{} client :received first value from server",i);
-                let bytes = value.expect("invalid value");
-                let values = bytes.take(3).into_inner();
-                assert_eq!(values[0], 0x05);
-                assert_eq!(values[1], 0x0a);
-                assert_eq!(values[2], 0x63);
-                assert_eq!(values.len(), 3);
-
-                let value2 = framed.next().await.expect("frame");
-                debug!("client: received 2nd value from server");
-                let bytes = value2.expect("packet decoding works");
-                let values = bytes.take(2).into_inner();
-                assert_eq!(values.len(), 2);
-            }
-
-            Ok(()) as Result<(), IoError>
-        };
-
-        let _ = zip(client_ft, server_ft).await;
-
-        Ok(())
     }
 }

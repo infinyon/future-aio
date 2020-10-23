@@ -29,7 +29,6 @@ pub mod net;
 #[cfg(unix)]
 pub mod tls;
 
-
 #[cfg(feature = "native2_tls")]
 #[cfg(unix)]
 pub mod native_tls;

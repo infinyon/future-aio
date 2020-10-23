@@ -4,16 +4,19 @@ clean-cert:
 	rm -rf certs/*
 
 
-generate-certs:	clean-cert	generate-ca-crt generate-server-crt generate-client-crt generate-server-pk12 generate-client-pk12
+generate-certs:	enerate-ca-crt generate-server-crt generate-client-crt
+
+# run generate-certs first
+generate-pk12-certs:	generate-server-pk12 generate-client-pk12
 
 generate-ca-key:	
 	openssl genrsa  -out certs/ca.key 4096
 
-
 # this is CA pem file
 generate-ca-crt:	generate-ca-key
-	openssl req -new -nodes -key certs/ca.key  -days 1825 -out certs/ca.crt \
+	openssl req -x509 -new -nodes -key certs/ca.key -out certs/ca.crt \
 		-subj /C=US/ST=CA/L=Sunnyvale/O=Fluvio/OU=Eng/CN=fluvio.io
+
 
 
 generate-server-key:	
