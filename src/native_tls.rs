@@ -109,6 +109,7 @@ mod connector {
         }
     }
 
+    
     pub enum AllDomainConnector {
         Tcp(DefaultTcpDomainConnector),
         TlsDomain(TlsDomainConnector),
@@ -293,6 +294,13 @@ mod builder {
             let identity = builder.build()?;
             let connector = TlsConnector::new().identity(identity);
             Ok(Self(connector))
+        }
+
+        pub fn anonymous() -> Self {
+            let connector = TlsConnector::new()
+                .danger_accept_invalid_certs(true)
+                .danger_accept_invalid_hostnames(true);
+            Self(connector)
         }
 
         pub fn no_cert_verification(self) -> Self {
