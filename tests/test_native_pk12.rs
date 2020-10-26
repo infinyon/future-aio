@@ -20,7 +20,7 @@ mod test {
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-    use fluvio_future::native_tls::{
+    use fluvio_future::tls::{
         AcceptorBuilder, AllTcpStream, CertBuilder, ConnectorBuilder, IdentityBuilder,
         PrivateKeyBuilder, X509PemBuilder,
     };
