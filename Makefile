@@ -5,13 +5,14 @@ RUST_DOCKER_IMAGE=rust:${RUSTV}
 
 
 build-all:
-	cargo build --all-features 
+	cargo build --all-features
 
-test-all:
+test-all:	test-tls-all
 	cargo test --all-features
 
+test-tls-all:	test_rustls test_native_tls_pk12 test_native_tls_x509
 
-test_tls:
+test_rustls:
 	cargo test --features tls test_async_tls
 
 test_native_tls_pk12:
