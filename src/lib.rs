@@ -25,13 +25,16 @@ pub mod zero_copy;
 #[cfg(feature = "net")]
 pub mod net;
 
-#[cfg(feature = "tls")]
-#[cfg(unix)]
-pub mod tls;
 
-#[cfg(feature = "native2_tls")]
-#[cfg(unix)]
-pub mod native_tls;
+cfg_if::cfg_if! {
+    if #[cfg(all(unix,feature = "tls"))] {
+        pub mod tls;
+    } else if #[cfg(all(unix,feature  = "native2_tls"))] {
+        pub mod native_tls;
+    } 
+}
+
+
 
 #[cfg(feature = "subscriber")]
 pub mod subscriber {
