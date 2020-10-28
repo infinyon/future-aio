@@ -323,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "async-fs",
  "async-io",
@@ -334,7 +334,6 @@ dependencies = [
  "async-tls",
  "async-trait",
  "bytes",
- "cfg-if 1.0.0",
  "fluvio-future",
  "fluvio-test-derive",
  "flv-util",
