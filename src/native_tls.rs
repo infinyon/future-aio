@@ -444,7 +444,6 @@ mod test {
         AcceptorBuilder, AllTcpStream, CertBuilder, ConnectorBuilder, IdentityBuilder,
         PrivateKeyBuilder, X509PemBuilder,
     };
-    
 
     const CA_PATH: &str = "certs/certs/ca.crt";
     const SERVER_IDENTITY: &str = "certs/certs/server.pfx";

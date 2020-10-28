@@ -406,11 +406,11 @@ mod test {
     use std::net::SocketAddr;
     use std::time;
 
-    use fluvio_async_tls::TlsAcceptor;
-    use fluvio_async_tls::TlsConnector;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
+    use fluvio_async_tls::TlsAcceptor;
+    use fluvio_async_tls::TlsConnector;
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
     use futures_util::sink::SinkExt;
@@ -419,12 +419,12 @@ mod test {
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-    use fluvio_future::test_async;
-    use fluvio_future::timer::sleep;
     use fluvio_future::net::TcpListener;
     use fluvio_future::net::TcpStream;
+    use fluvio_future::test_async;
+    use fluvio_future::timer::sleep;
 
-    use super::{ AcceptorBuilder,AllTcpStream,ConnectorBuilder} ;
+    use super::{AcceptorBuilder, AllTcpStream, ConnectorBuilder};
 
     const CA_PATH: &'static str = "certs/certs/ca.crt";
     const ITER: u16 = 10;
