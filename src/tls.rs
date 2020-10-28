@@ -1,9 +1,9 @@
 use crate::net::TcpStream;
 
-pub use async_tls::client::TlsStream as ClientTlsStream;
-pub use async_tls::server::TlsStream as ServerTlsStream;
-pub use async_tls::TlsAcceptor;
-pub use async_tls::TlsConnector;
+pub use fluvio_async_tls::client::TlsStream as ClientTlsStream;
+pub use fluvio_async_tls::server::TlsStream as ServerTlsStream;
+pub use fluvio_async_tls::TlsAcceptor;
+pub use fluvio_async_tls::TlsConnector;
 
 pub type DefaultServerTlsStream = ServerTlsStream<TcpStream>;
 pub type DefaultClientTlsStream = ClientTlsStream<TcpStream>;
@@ -406,8 +406,8 @@ mod test {
     use std::net::SocketAddr;
     use std::time;
 
-    use async_tls::TlsAcceptor;
-    use async_tls::TlsConnector;
+    use fluvio_async_tls::TlsAcceptor;
+    use fluvio_async_tls::TlsConnector;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
