@@ -25,11 +25,6 @@ pub mod zero_copy;
 #[cfg(feature = "net")]
 pub mod net;
 
-static_assertions::assert_cfg!(
-    not(all(feature = "rust_tls", feature = "native2_tls")),
-    "Must only have 'rust_tls' OR 'native2_tls', NOT both"
-);
-
 #[cfg(all(unix, feature = "rust_tls"))]
 pub mod rust_tls;
 #[cfg(all(unix, feature = "rust_tls", not(feature = "native2_tls")))]
