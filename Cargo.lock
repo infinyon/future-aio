@@ -323,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.8"
+version = "0.1.9"
 dependencies = [
  "async-fs",
  "async-io",
@@ -351,6 +351,7 @@ dependencies = [
  "pin-utils",
  "rustls",
  "thiserror",
+ "tokio",
  "tokio-util",
  "tracing",
  "tracing-subscriber",
@@ -1187,6 +1188,18 @@ dependencies = [
  "bytes",
  "futures-core",
  "pin-project-lite",
+ "tokio-macros",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "0.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
