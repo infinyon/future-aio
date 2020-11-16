@@ -2,18 +2,18 @@ pub use inner::*;
 
 mod inner {
 
-    use std::time::{Duration};
-    use std::task::{Context, Poll};
     use std::pin::Pin;
+    use std::task::{Context, Poll};
+    use std::time::Duration;
 
     use async_io::Timer;
     use futures_lite::future::Future;
-    
+
     use pin_project::pin_project;
 
-    /// same as `wait` but return () to make it compatible 
+    /// same as `wait` but return () to make it compatible
     pub fn sleep(duration: Duration) -> Sleeper {
-        Sleeper(wait(duration))
+        Sleeper(after(duration))
     }
 
     #[pin_project]
@@ -21,7 +21,7 @@ mod inner {
 
     impl Future for Sleeper {
         type Output = ();
-    
+
         fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
             let this = self.project();
             if let Poll::Ready(_) = this.0.poll(cx) {
@@ -46,7 +46,7 @@ mod inner {
     ///     wait(Duration::from_secs(1)).await;
     /// });
     /// ```
-    pub fn wait(duration: Duration) -> Timer {
+    pub fn after(duration: Duration) -> Timer {
         Timer::after(duration)
     }
 }
