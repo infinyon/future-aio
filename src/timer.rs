@@ -2,10 +2,35 @@ pub use inner::*;
 
 mod inner {
 
-    use std::time::{Duration, Instant};
+    use std::time::{Duration};
+    use std::task::{Context, Poll};
+    use std::pin::Pin;
 
     use async_io::Timer;
     use futures_lite::future::Future;
+    
+    use pin_project::pin_project;
+
+    /// same as `wait` but return () to make it compatible 
+    pub fn sleep(duration: Duration) -> Sleeper {
+        Sleeper(wait(duration))
+    }
+
+    #[pin_project]
+    pub struct Sleeper(#[pin] Timer);
+
+    impl Future for Sleeper {
+        type Output = ();
+    
+        fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+            let this = self.project();
+            if let Poll::Ready(_) = this.0.poll(cx) {
+                Poll::Ready(())
+            } else {
+                Poll::Pending
+            }
+        }
+    }
 
     /// wait for until `duration` has elapsed.
     ///
@@ -14,14 +39,14 @@ mod inner {
     /// # Examples
     ///
     /// ```
-    /// use fluvio_future::timer::sleep;
+    /// use fluvio_future::timer::wait;
     /// use std::time::{Duration, Instant};
     ///
     /// fluvio_future::task::run(async {
-    ///     sleep(Duration::from_secs(1)).await;
+    ///     wait(Duration::from_secs(1)).await;
     /// });
     /// ```
-    pub fn sleep(duration: Duration) -> impl Future<Output = Instant> {
+    pub fn wait(duration: Duration) -> Timer {
         Timer::after(duration)
     }
 }
@@ -60,6 +85,7 @@ mod test {
 
         debug!("total time elaspsed: {:#?}", elapsed);
         assert!(elapsed < Duration::from_millis(30));
+        assert!(elapsed > Duration::from_millis(10));
         assert_eq!(sleep_count, 10);
 
         Ok(())
