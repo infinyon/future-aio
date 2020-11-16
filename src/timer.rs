@@ -11,7 +11,7 @@ mod inner {
 
     use pin_project::pin_project;
 
-    /// same as `wait` but return () to make it compatible
+    /// same as `after` but return () to make it compatible as previous
     pub fn sleep(duration: Duration) -> Sleeper {
         Sleeper(after(duration))
     }
@@ -39,11 +39,11 @@ mod inner {
     /// # Examples
     ///
     /// ```
-    /// use fluvio_future::timer::wait;
+    /// use fluvio_future::timer::after;
     /// use std::time::{Duration, Instant};
     ///
     /// fluvio_future::task::run(async {
-    ///     wait(Duration::from_secs(1)).await;
+    ///     after(Duration::from_secs(1)).await;
     /// });
     /// ```
     pub fn after(duration: Duration) -> Timer {
