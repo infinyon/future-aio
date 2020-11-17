@@ -23,6 +23,8 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         override: true
+    - name: Build
+      run:  make build-all
     - name: Run unit tests
       run:  make test-all
 

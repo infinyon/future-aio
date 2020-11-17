@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.1.10"
+version = "0.1.11"
 edition = "2018"
 authors = ["fluvio.io"]
 description = "I/O futures for Fluvio project"
@@ -17,7 +17,7 @@ net = ["futures-lite", "async-net", "async-trait"]
 tls = ["rust_tls"]
 rust_tls = ["net", "rustls", "webpki", "fluvio-async-tls", "pin-project"]
 native2_tls = ["net","pin-project","async-native-tls","native-tls","openssl"]
-timer = ["async-io","pin-project"]
+timer = ["async-io","pin-project","futures-lite"]
 fs = ["async-fs", "futures-lite", "pin-utils"]
 zero_copy = ["nix", "task_unstable"]
 mmap = ["fs", "memmap", "task_unstable"]
