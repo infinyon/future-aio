@@ -63,6 +63,7 @@ mod connector {
 
         async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
+            tcp_stream.set_nodelay(true)?;
             let fd = tcp_stream.as_raw_fd();
             let connector = self.0.connect(domain, tcp_stream).await.map_err(|e| {
                 IoError::new(
@@ -92,6 +93,7 @@ mod connector {
         async fn connect(&self, addr: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
+            tcp_stream.set_nodelay(true)?;
             let fd = tcp_stream.as_raw_fd();
 
             debug!("connect to tls domain: {}", self.domain);
