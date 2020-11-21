@@ -5,7 +5,7 @@ build-all:
 
 test-all:
 	cargo test --all-features
-	
+
 install_windows_on_mac:
 	rustup target add x86_64-pc-windows-gnu
 	brew install mingw-w64
@@ -28,6 +28,11 @@ install-fmt:
 
 check-fmt:	install-fmt
 	cargo fmt -- --check
+
+TARGET_IOS=x86_64-apple-ios # the iOS simulator.
+build-ios:
+	rustup target add $(TARGET_IOS)
+	cargo build --target=$(TARGET_IOS)
 
 install-clippy:
 	rustup component add clippy

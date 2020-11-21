@@ -97,7 +97,7 @@ where
             })
         };
 
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
         let ft = {
             let offset = source.position();
             spawn_blocking(move || {

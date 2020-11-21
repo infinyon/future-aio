@@ -38,4 +38,6 @@ jobs:
     - name: Run unit tests
       timeout-minutes: 5
       run:  make test-all
-
+    - name: Build
+      if: startsWith(matrix.os, 'macOS')
+      run:  make build-ios
