@@ -84,7 +84,7 @@ mod test {
         let elapsed = time_now.elapsed();
 
         debug!("total time elaspsed: {:#?}", elapsed);
-        assert!(elapsed < Duration::from_millis(30));
+        assert!(elapsed < Duration::from_millis(50));
         assert!(elapsed > Duration::from_millis(10));
         assert_eq!(sleep_count, 10);
 
