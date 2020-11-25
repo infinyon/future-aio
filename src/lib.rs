@@ -35,6 +35,9 @@ pub mod native_tls;
 #[cfg(all(unix, feature = "native2_tls", not(feature = "rust_tls")))]
 pub use crate::native_tls as tls;
 
+#[cfg(feature = "openssl_tls")]
+pub mod openssl;
+
 #[cfg(feature = "subscriber")]
 pub mod subscriber {
     use tracing_subscriber::EnvFilter;

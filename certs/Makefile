@@ -1,10 +1,9 @@
-
 clean-cert:
 	mkdir -p certs
 	rm -rf certs/*
 
 
-generate-certs:	enerate-ca-crt generate-server-crt generate-client-crt
+generate-certs:	generate-ca-crt generate-server-crt generate-client-crt
 
 # run generate-certs first
 generate-pk12-certs:	generate-server-pk12 generate-client-pk12

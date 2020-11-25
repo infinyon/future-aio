@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.1.11"
+version = "0.1.12"
 dependencies = [
  "async-fs",
  "async-io",
@@ -354,6 +354,7 @@ dependencies = [
  "nix",
  "num_cpus",
  "openssl",
+ "openssl-sys",
  "pin-project",
  "pin-utils",
  "rustls",
