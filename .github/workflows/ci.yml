@@ -35,10 +35,6 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         override: true
-    - name: Clippy check
-      run:  make check-clippy
-    - name: Build
-      run:  make build-all
     - name: Run unit tests
       run:  make test-all
 
