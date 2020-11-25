@@ -207,7 +207,7 @@ mod tests {
     fn ensure_clean_file(log_path: &PathBuf) {
         debug!("removing log: {}", log_path.display());
         // delete message log if it exists
-        if let Ok(_) = remove_file(log_path) {
+        if remove_file(log_path).is_ok() {
             debug!("remove existing log file");
         } else {
             debug!("no existing log file");
@@ -230,7 +230,7 @@ mod tests {
         let test_file = temp_dir().join(TEST_FILE_NAME);
         let mut f = StdFile::open(test_file)?;
         let mut buffer = vec![0; 3];
-        f.read(&mut buffer)?;
+        f.read_exact(&mut buffer)?;
         assert_eq!(buffer[0], 0x01);
         assert_eq!(buffer[1], 0x02);
         assert_eq!(buffer[2], 0x03);

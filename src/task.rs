@@ -103,7 +103,6 @@ mod basic_test {
         let core_threads = num_cpus::get().max(1);
         debug!("num threads: {}", core_threads);
         let _ = zip(ft1, ft2).await;
-        assert!(true);
         Ok(())
     }
 
@@ -132,8 +131,6 @@ mod basic_test {
         spawn(ft2);
         // wait for all futures complete
         thread::sleep(time::Duration::from_millis(2000));
-
-        assert!(true);
 
         Ok(())
     }
