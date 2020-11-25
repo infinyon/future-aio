@@ -37,16 +37,13 @@ async fn test_async_tcp() -> Result<(), Error> {
         let listener = TcpListener::bind(&addr).await?;
         debug!("server: successfully binding. waiting for incoming");
         let mut incoming = listener.incoming();
-        while let Some(stream) = incoming.next().await {
-            debug!("server: got connection from client");
-            let tcp_stream = stream?;
-            let mut framed = Framed::new(tcp_stream.compat(), BytesCodec::new());
-            debug!("server: sending values to client");
-            let data = vec![0x05, 0x0a, 0x63];
-            framed.send(to_bytes(data)).await?;
-            return Ok(()) as Result<(), Error>;
-        }
-
+        let stream = incoming.next().await.expect("no stream");
+        debug!("server: got connection from client");
+        let tcp_stream = stream?;
+        let mut framed = Framed::new(tcp_stream.compat(), BytesCodec::new());
+        debug!("server: sending values to client");
+        let data = vec![0x05, 0x0a, 0x63];
+        framed.send(to_bytes(data)).await?;
         Ok(()) as Result<(), Error>
     };
 
@@ -57,18 +54,15 @@ async fn test_async_tcp() -> Result<(), Error> {
         let tcp_stream = TcpStream::connect(&addr).await?;
         let mut framed = Framed::new(tcp_stream.compat(), BytesCodec::new());
         debug!("client: got connection. waiting");
-        if let Some(value) = framed.next().await {
-            debug!("client :received first value from server");
-            let bytes = value?;
-            debug!("client :received bytes len: {}", bytes.len());
-            assert_eq!(bytes.len(), 3);
-            let values = bytes.take(3).into_inner();
-            assert_eq!(values[0], 0x05);
-            assert_eq!(values[1], 0x0a);
-            assert_eq!(values[2], 0x63);
-        } else {
-            assert!(false, "no value received");
-        }
+        let value = framed.next().await.expect("no value received");
+        debug!("client :received first value from server");
+        let bytes = value?;
+        debug!("client :received bytes len: {}", bytes.len());
+        assert_eq!(bytes.len(), 3);
+        let values = bytes.take(3).into_inner();
+        assert_eq!(values[0], 0x05);
+        assert_eq!(values[1], 0x0a);
+        assert_eq!(values[2], 0x63);
 
         Ok(()) as Result<(), Error>
     };

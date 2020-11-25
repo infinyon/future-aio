@@ -143,7 +143,7 @@ mod connector {
 
     impl AllDomainConnector {
         pub fn default_tcp() -> Self {
-            Self::Tcp(DefaultTcpDomainConnector::new())
+            Self::Tcp(DefaultTcpDomainConnector)
         }
 
         pub fn new_tls_domain(connector: TlsDomainConnector) -> Self {
@@ -274,6 +274,12 @@ mod builder {
         }
     }
 
+    impl Default for ConnectorBuilder {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     pub struct AcceptorBuilder(ServerConfig);
 
     impl AcceptorBuilder {
@@ -341,7 +347,7 @@ mod stream {
     use super::TcpStream;
     use futures_lite::{AsyncRead, AsyncWrite};
     use pin_project::pin_project;
-
+    #[allow(clippy::large_enum_variant)]
     #[pin_project(project = EnumProj)]
     pub enum AllTcpStream {
         Tcp(#[pin] TcpStream),
@@ -426,7 +432,7 @@ mod test {
 
     use super::{AcceptorBuilder, AllTcpStream, ConnectorBuilder};
 
-    const CA_PATH: &'static str = "certs/certs/ca.crt";
+    const CA_PATH: &str = "certs/certs/ca.crt";
     const ITER: u16 = 10;
 
     fn to_bytes(bytes: Vec<u8>) -> Bytes {

@@ -141,14 +141,11 @@ where
                             }
                         }
                         Err(err) => {
-                            match err {
-                                NixError::Sys(err_no) => {
-                                    if err_no == Errno::EAGAIN {
-                                        debug!("EAGAIN, try again");
-                                        continue;
-                                    }
+                            if let NixError::Sys(err_no) = err {
+                                if err_no == Errno::EAGAIN {
+                                    debug!("EAGAIN, try again");
+                                    continue;
                                 }
-                                _ => {}
                             }
 
                             log::error!("error sendfile: {}", err);
@@ -203,7 +200,7 @@ mod tests {
                 let len = tcp_stream.read(&mut buf).await?;
                 assert_eq!(len, 30);
             } else {
-                assert!(false, "client should connect");
+                panic!("client should connect");
             }
             Ok(()) as Result<(), SendFileError>
         };
@@ -271,22 +268,19 @@ mod tests {
             let mut incoming = listener.incoming();
 
             for i in 0..TEST_ITERATION {
-                if let Some(stream) = incoming.next().await {
-                    debug!("server {} got connection. waiting", i);
-                    let mut tcp_stream = stream?;
+                let stream = incoming.next().await.expect("client should connect");
+                debug!("server {} got connection. waiting", i);
+                let mut tcp_stream = stream?;
 
-                    debug!(
-                        "server {}, send back file using zero copy: {:#?}",
-                        i,
-                        f_slice.len()
-                    );
-                    tcp_stream
-                        .zero_copy_write(&f_slice)
-                        .await
-                        .expect("file slice");
-                } else {
-                    assert!(false, "client should connect");
-                }
+                debug!(
+                    "server {}, send back file using zero copy: {:#?}",
+                    i,
+                    f_slice.len()
+                );
+                tcp_stream
+                    .zero_copy_write(&f_slice)
+                    .await
+                    .expect("file slice");
             }
 
             Ok(()) as Result<(), SendFileError>

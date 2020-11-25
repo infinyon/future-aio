@@ -1,8 +1,4 @@
-TARGET_LINUX=x86_64-unknown-linux-musl
-TARGET_DARWIN=x86_64-apple-darwin
-RUSTV = 1.43.1
-RUST_DOCKER_IMAGE=rust:${RUSTV}
-
+RUST_DOCKER_IMAGE=rust:latest
 
 build-all:
 	cargo build --all-features
@@ -13,7 +9,7 @@ test-all:	test-tls-all
 test-tls-all:	test_rustls test_native_tls_pk12 test_native_tls_x509
 
 test_rustls:
-	cargo test --features tls test_async_tls
+	cargo test --features rust_tls
 
 test_native_tls_pk12:
 	cargo test --features native2_tls test_native_tls_pk12
@@ -28,8 +24,6 @@ install_windows_on_mac:
 install_linux:
 	rustup target add x86_64-unknown-linux-musl
 
-	cargo +$(RUSTV) clippy --all-targets --all-features -- -D warnings
-
 
 # build linux version
 build_linux:	install_linux
@@ -40,12 +34,17 @@ build_linux:	install_linux
 build-windows:
 	cargo build --target=x86_64-pc-windows-gnu
 
+install-fmt:
+	rustup component add rustfmt
+
+check-fmt:	install-fmt
+	cargo fmt -- --check
 
 install-clippy:
 	rustup component add clippy
 
 check-clippy:	install-clippy
-	cargo  clippy --all-targets --all-features -- -D warnings
+	cargo clippy --all-targets --all-features -- -D warnings
 
 
 cargo_cache_dir:

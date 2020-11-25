@@ -56,12 +56,10 @@ impl MemoryMappedMutFile {
 
     /// write bytes at location,
     /// return number bytes written
-    pub fn write_bytes(&mut self, pos: usize, bytes: &Vec<u8>) {
+    pub fn write_bytes(&mut self, pos: usize, bytes: &[u8]) {
         let mut m_file = self.mut_inner();
         let m_array = &mut m_file[..];
-        for i in 0..bytes.len() {
-            m_array[i + pos] = bytes[i];
-        }
+        m_array[pos..(pos + bytes.len())].clone_from_slice(bytes);
     }
 
     pub async fn flush_ft(&self) -> Result<(), IoError> {
@@ -160,7 +158,7 @@ mod tests {
 
         let mut f = File::open(&index_path)?;
         let mut buffer = vec![0; 3];
-        f.read(&mut buffer)?;
+        f.read_exact(&mut buffer)?;
         assert_eq!(buffer[0], 0x01);
         assert_eq!(buffer[1], 0x02);
         assert_eq!(buffer[2], 0x03);
@@ -211,7 +209,7 @@ mod tests {
 
         let mut f = File::open(&index_path)?;
         let mut buffer = vec![0; 10];
-        f.read(&mut buffer)?;
+        f.read_exact(&mut buffer)?;
         assert_eq!(buffer[5], 0x05);
         assert_eq!(buffer[6], 0x10);
         assert_eq!(buffer[7], 0x44);

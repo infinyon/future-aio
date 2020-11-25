@@ -7,6 +7,16 @@ on:
     branches: [ master ]
 
 jobs:
+  check_clippy:
+    name: Check clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+      - name: Check formatting
+        run: make check-fmt
+      - name: Check clippy
+        run: make check-clippy
 
   smoke_test:
     name: Smoke test
@@ -23,6 +33,8 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         override: true
+    - name: Clippy check
+      run:  make check-clippy
     - name: Build
       run:  make build-all
     - name: Run unit tests

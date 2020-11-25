@@ -29,13 +29,7 @@ mod connector {
     }
 
     #[derive(Clone)]
-    pub struct DefaultTcpDomainConnector {}
-
-    impl DefaultTcpDomainConnector {
-        pub fn new() -> Self {
-            Self {}
-        }
-    }
+    pub struct DefaultTcpDomainConnector;
 
     #[async_trait]
     impl TcpDomainConnector for DefaultTcpDomainConnector {

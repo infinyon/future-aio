@@ -20,6 +20,7 @@ mod test {
 
     use futures_lite::future::poll_fn;
     use futures_lite::Future;
+    use log::debug;
 
     use crate::test_async;
 
@@ -27,14 +28,14 @@ mod test {
 
     #[test_async]
     async fn async_derive_test() -> Result<(), Error> {
-        assert!(true, "I am live");
+        debug!("I am live");
         Ok(())
     }
 
     #[test]
     fn test_1_sync_example() {
         async fn test_1() -> Result<(), Error> {
-            assert!(true, "works");
+            debug!("works");
             Ok(())
         }
 

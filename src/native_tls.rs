@@ -123,7 +123,7 @@ mod connector {
 
     impl AllDomainConnector {
         pub fn default_tcp() -> Self {
-            Self::Tcp(DefaultTcpDomainConnector::new())
+            Self::Tcp(DefaultTcpDomainConnector)
         }
 
         pub fn new_tls_domain(connector: TlsDomainConnector) -> Self {
