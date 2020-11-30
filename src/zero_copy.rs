@@ -264,7 +264,7 @@ mod tests {
                 .await
                 .expect("failed bind");
 
-            debug!("server: listening");
+            debug!("large server: listening");
             let mut incoming = listener.incoming();
 
             for i in 0..TEST_ITERATION {
@@ -295,7 +295,7 @@ mod tests {
 
             for i in 0..TEST_ITERATION {
                 debug!("client: Test loop: {}", i);
-                let mut stream = TcpStream::connect(&addr).await?;
+                let mut stream = TcpStream::connect(&addr).await.expect("unable to connect");
                 debug!("client: {} connected trying to read", i);
                 let mut buffer = Vec::with_capacity(MAX_BYTES);
                 stream
