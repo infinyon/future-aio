@@ -36,5 +36,6 @@ jobs:
         toolchain: ${{ matrix.rust }}
         override: true
     - name: Run unit tests
+      timeout-minutes: 5
       run:  make test-all
 
