@@ -33,10 +33,7 @@ mod connector {
 
     impl DefaultTcpDomainConnector {
         #[allow(clippy::new_without_default)]
-        #[deprecated(
-            since = "0.1.13",
-            note = "Please use directly as ZST"
-        )]
+        #[deprecated(since = "0.1.13", note = "Please use directly as ZST")]
         pub fn new() -> Self {
             Self
         }
