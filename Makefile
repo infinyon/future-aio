@@ -4,7 +4,7 @@ build-all:
 	cargo build --all-features
 
 test-all:
-	cargo test --all-features
+	RUST_LOG=info,fluvio_future=trace cargo test --all-features -- --nocapture
 	
 install_windows_on_mac:
 	rustup target add x86_64-pc-windows-gnu
