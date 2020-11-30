@@ -31,6 +31,17 @@ mod connector {
     #[derive(Clone)]
     pub struct DefaultTcpDomainConnector;
 
+    impl DefaultTcpDomainConnector {
+        #[allow(clippy::new_without_default)]
+        #[deprecated(
+            since = "0.1.13",
+            note = "Please use directly as ZST"
+        )]
+        pub fn new() -> Self {
+            Self
+        }
+    }
+
     #[async_trait]
     impl TcpDomainConnector for DefaultTcpDomainConnector {
         type WrapperStream = TcpStream;
