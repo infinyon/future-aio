@@ -90,8 +90,16 @@ mod connector {
             }
         }
 
+        pub fn domain(&self) -> &str {
+            &self.domain
+        }
+
         pub fn set_domain(&mut self, domain: String) {
             self.domain = domain;
+        }
+
+        pub fn connector(&self) -> &TlsConnector {
+            &self.connector
         }
     }
 
