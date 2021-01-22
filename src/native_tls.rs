@@ -89,6 +89,10 @@ mod connector {
                 connector: Arc::new(connector),
             }
         }
+
+        pub fn set_domain(&mut self, domain: String) {
+            self.domain = domain;
+        }
     }
 
     #[async_trait]
