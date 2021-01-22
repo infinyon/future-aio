@@ -84,9 +84,9 @@ mod connector {
 
     impl TlsDomainConnector {
         pub fn new(connector: TlsConnector, domain: String) -> Self {
-            Self { 
-                domain, 
-                connector: Arc::new(connector) 
+            Self {
+                domain,
+                connector: Arc::new(connector),
             }
         }
     }
