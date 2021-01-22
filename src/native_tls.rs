@@ -15,6 +15,7 @@ mod connector {
 
     use std::io::Error as IoError;
     use std::io::ErrorKind;
+    use std::sync::Arc;
 
     use std::os::unix::io::AsRawFd;
     use std::os::unix::io::RawFd;
@@ -49,11 +50,12 @@ mod connector {
     }
 
     /// connect as anonymous client
-    pub struct TlsAnonymousConnector(TlsConnector);
+    #[derive(Clone)]
+    pub struct TlsAnonymousConnector(Arc<TlsConnector>);
 
     impl From<TlsConnector> for TlsAnonymousConnector {
         fn from(connector: TlsConnector) -> Self {
-            Self(connector)
+            Self(Arc::new(connector))
         }
     }
 
@@ -74,14 +76,22 @@ mod connector {
         }
     }
 
+    #[derive(Clone)]
     pub struct TlsDomainConnector {
         domain: String,
-        connector: TlsConnector,
+        connector: Arc<TlsConnector>,
     }
 
     impl TlsDomainConnector {
         pub fn new(connector: TlsConnector, domain: String) -> Self {
-            Self { domain, connector }
+            Self {
+                domain,
+                connector: Arc::new(connector),
+            }
+        }
+
+        pub fn set_domain(&mut self, domain: String) {
+            self.domain = domain;
         }
     }
 
@@ -109,6 +119,7 @@ mod connector {
         }
     }
 
+    #[derive(Clone)]
     pub enum AllDomainConnector {
         Tcp(DefaultTcpDomainConnector),
         TlsDomain(TlsDomainConnector),
@@ -145,7 +156,6 @@ mod connector {
                     let (stream, fd) = connector.connect(domain).await?;
                     Ok((AllTcpStream::tcp(stream), fd))
                 }
-
                 Self::TlsDomain(connector) => {
                     let (stream, fd) = connector.connect(domain).await?;
                     Ok((AllTcpStream::tls(stream), fd))
