@@ -24,7 +24,7 @@ mod inner {
 
         fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
             let this = self.project();
-            if let Poll::Ready(_) = this.0.poll(cx) {
+            if this.0.poll(cx).is_ready() {
                 Poll::Ready(())
             } else {
                 Poll::Pending

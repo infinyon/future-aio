@@ -441,7 +441,7 @@ mod test {
 
     use async_native_tls::TlsAcceptor;
     use async_native_tls::TlsConnector;
-    use bytes::buf::ext::BufExt;
+    use bytes::Buf;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
