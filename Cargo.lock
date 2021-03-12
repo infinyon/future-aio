@@ -340,7 +340,8 @@ dependencies = [
 [[package]]
 name = "fluvio-async-tls"
 version = "0.2.0"
-source = "git+https://github.com/infinyon/fluvio-async-tls#32ecb858c86db790990774cc133ae9c01b31e64c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54126ce6fe585aea438300ad7ae143a6798770314b2c44485e1626be776bedc1"
 dependencies = [
  "futures-core",
  "futures-io",
