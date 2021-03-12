@@ -2,7 +2,7 @@ use std::io::Error;
 use std::net::SocketAddr;
 use std::time;
 
-use bytes::buf::ext::BufExt;
+use bytes::Buf;
 use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
