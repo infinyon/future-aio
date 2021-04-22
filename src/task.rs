@@ -29,10 +29,16 @@ where
         spawn_closure.await;
         // do infinite loop for now
         loop {
-            sleep(Duration::from_secs(3600)).await;
+            let _ = sleep(Duration::from_secs(3600)).await;
         }
     });
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+use async_std::task::spawn as async_std_spawn;
+
+#[cfg(target_arch = "wasm32")]
+use async_std::task::spawn_local as async_std_spawn;
 
 pub fn spawn<F, T>(future: F) -> JoinHandle<T>
 where
@@ -40,23 +46,35 @@ where
     T: Send + 'static,
 {
     trace!("spawning future");
-    task::spawn(future)
+    async_std_spawn(future)
 }
 
 #[cfg(feature = "task_unstable")]
+#[cfg(not(target_arch = "wasm32"))]
 pub fn spawn_blocking<F, T>(future: F) -> JoinHandle<T>
 where
     F: FnOnce() -> T + Send + 'static,
     T: Send + 'static,
 {
     trace!("spawning blocking");
-    task::spawn_blocking(future)
+    async_std::task::spawn_blocking(future)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 /// same as async async std block on
 pub fn run_block_on<F, T>(f: F) -> T
 where
     F: Future<Output = T>,
+{
+    task::block_on(f)
+}
+
+#[cfg(target_arch = "wasm32")]
+/// same as async async std block on
+pub fn run_block_on<F, T>(f: F)
+where
+    F: Future<Output = T> + 'static,
+    T: 'static,
 {
     task::block_on(f)
 }

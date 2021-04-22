@@ -21,20 +21,23 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
         fn #out_fn_iden()  {
 
             ::fluvio_future::subscriber::init_logger();
-          
+
             #input
-            
+
             let ft = async {
                 #name().await
             };
 
+            #[cfg(not(target_arch = "wasm32"))]
             if let Err(err) = ::fluvio_future::task::run_block_on(ft) {
                 assert!(false,"error: {:?}",err);
-            }            
-            
+            }
+            #[cfg(target_arch = "wasm32")]
+            ::fluvio_future::task::run_block_on(ft);
+
         }
     };
-    
+
     expression.into()
-   
+
 }

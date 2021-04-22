@@ -5,7 +5,16 @@ build-all:
 
 test-all:
 	cargo test --all-features
-	
+
+install-wasm-cli:
+	cargo install wasm-bindgen-cli
+
+test-wasm: install-wasm32 install-wasm-cli
+	cargo test --all-features --target wasm32-unknown-unknown
+
+check-wasm: install-wasm32
+	cargo build --target wasm32-unknown-unknown --all-features
+
 install_windows_on_mac:
 	rustup target add x86_64-pc-windows-gnu
 	brew install mingw-w64
@@ -13,11 +22,9 @@ install_windows_on_mac:
 install_linux:
 	rustup target add x86_64-unknown-linux-musl
 
-
 # build linux version
 build_linux:	install_linux
 	cargo build --target ${TARGET_LINUX}
-
 
 # build windows version
 build-windows:
@@ -32,8 +39,12 @@ check-fmt:	install-fmt
 install-clippy:
 	rustup component add clippy
 
-check-clippy:	install-clippy
+install-wasm32:
+	rustup target add wasm32-unknown-unknown
+
+check-clippy:	install-clippy install-wasm32
 	cargo clippy --all-targets --all-features -- -D warnings
+	cargo clippy --target wasm32-unknown-unknown --all-targets --all-features -- -D warnings
 
 
 cargo_cache_dir:

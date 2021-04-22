@@ -36,6 +36,24 @@ jobs:
         toolchain: ${{ matrix.rust }}
         override: true
     - name: Run unit tests
-      timeout-minutes: 5
       run:  make test-all
 
+  wasm_test:
+    name: Wasm Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ${{ matrix.rust }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+        target: wasm32-unknown-unknown
+
+    - name: Run wasm tests
+      run:  make test-wasm

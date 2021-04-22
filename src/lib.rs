@@ -1,10 +1,11 @@
 #[cfg(unix)]
 pub mod file_slice;
 
-#[cfg(feature = "fs")]
+#[cfg(all(feature = "fs", not(target_arch = "wasm32")))]
 pub mod fs;
 
 #[cfg(feature = "io")]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod io;
 
 #[cfg(feature = "task")]
@@ -23,6 +24,7 @@ pub use fluvio_test_derive::test_async;
 pub mod zero_copy;
 
 #[cfg(feature = "net")]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod net;
 
 #[cfg(all(unix, feature = "rust_tls"))]
@@ -36,6 +38,7 @@ pub mod native_tls;
 pub use crate::native_tls as tls;
 
 #[cfg(feature = "openssl_tls")]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod openssl;
 
 #[cfg(feature = "subscriber")]

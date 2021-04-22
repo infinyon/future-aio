@@ -188,7 +188,7 @@ mod tests {
     use std::fs::File as StdFile;
     use std::io::Read;
     use std::io::SeekFrom;
-    use std::path::PathBuf;
+    use std::path::Path;
 
     use log::debug;
 
@@ -204,7 +204,7 @@ mod tests {
     const TEST_FILE_NAME: &str = "file_test_01";
     const MAX_TEST_FILE_NAME: &str = "file_test_max";
 
-    fn ensure_clean_file(log_path: &PathBuf) {
+    fn ensure_clean_file(log_path: &Path) {
         debug!("removing log: {}", log_path.display());
         // delete message log if it exists
         if remove_file(log_path).is_ok() {
