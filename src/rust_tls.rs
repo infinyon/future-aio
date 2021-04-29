@@ -90,10 +90,10 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsAnonymousConnector {
-        async fn connect(&self, domain: &str) -> Result<(Box<dyn Connection>, RawFd), IoError> {
+        async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
             let fd = tcp_stream.as_raw_fd();
-            Ok((self.0.connect(domain, tcp_stream).await?, fd))
+            Ok((Box::new(self.0.connect(domain, tcp_stream).await?), fd))
         }
     }
 

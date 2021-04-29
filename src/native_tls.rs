@@ -24,7 +24,6 @@ mod connector {
     use async_trait::async_trait;
     use log::debug;
 
-    use crate::net::DefaultTcpDomainConnector;
     use crate::net::{Connection, TcpDomainConnector};
 
     use super::*;
