@@ -3,10 +3,14 @@
 macro_rules! assert_async_block {
     ($ft_exp:expr) => {{
         let ft = $ft_exp;
+
+        #[cfg(not(target_arch = "wasm32"))]
         match fluvio_future::task::run_block_on(ft) {
             Ok(_) => log::debug!("finished run"),
             Err(err) => assert!(false, "error {:?}", err),
         }
+        #[cfg(target_arch = "wasm32")]
+        fluvio_future::task::run_block_on(ft);
     }};
 }
 

@@ -1,5 +1,6 @@
 pub use inner::*;
 
+#[cfg(not(target_arch = "wasm32"))]
 mod inner {
 
     use std::pin::Pin;
@@ -50,8 +51,17 @@ mod inner {
         Timer::after(duration)
     }
 }
+#[cfg(target_arch = "wasm32")]
+mod inner {
+    use std::time::Duration;
+    use wasm_timer::Delay;
+    pub fn sleep(duration: Duration) -> Delay {
+        Delay::new(duration)
+    }
+}
 
 #[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
 mod test {
 
     use std::time::Duration;
