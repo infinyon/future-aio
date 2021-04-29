@@ -6,28 +6,35 @@ mod tcp_stream;
 #[cfg(unix)]
 pub use connector::*;
 
+pub use conn::*;
+
+mod conn {
+    use futures_lite::io::{AsyncRead, AsyncWrite};
+
+    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin {}
+    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin> Connection for T {}
+
+    pub type BoxConnection = Box<dyn Connection>;
+}
+
 #[cfg(unix)]
 mod connector {
     use std::io::Error as IoError;
-    #[cfg(unix)]
     use std::os::unix::io::AsRawFd;
-    #[cfg(unix)]
     use std::os::unix::io::RawFd;
 
     use async_trait::async_trait;
-    use futures_lite::{AsyncRead, AsyncWrite};
     use log::debug;
 
-    use super::TcpStream;
+    use super::*;
 
-    /// transform raw tcp stream to another stream
+    /// connect to domain and return connection
     #[async_trait]
     pub trait TcpDomainConnector {
-        type WrapperStream: AsyncRead + AsyncWrite + Unpin + Send;
-
-        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), IoError>;
+        async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError>;
     }
 
+    /// creatges TcpStream connection
     #[derive(Clone)]
     pub struct DefaultTcpDomainConnector;
 
@@ -41,13 +48,11 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for DefaultTcpDomainConnector {
-        type WrapperStream = TcpStream;
-
-        async fn connect(&self, addr: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
+        async fn connect(&self, addr: &str) -> Result<(BoxConnection, RawFd), IoError> {
             debug!("connect to tcp addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
-            Ok((tcp_stream, fd))
+            Ok((Box::new(tcp_stream), fd))
         }
     }
 }

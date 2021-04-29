@@ -24,6 +24,7 @@ pub use fluvio_test_derive::test_async;
 pub mod zero_copy;
 
 #[cfg(feature = "net")]
+#[cfg(unix)]
 #[cfg(not(target_arch = "wasm32"))]
 pub mod net;
 
