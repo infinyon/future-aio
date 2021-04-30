@@ -11,12 +11,14 @@ pub use conn::*;
 mod conn {
 
     use futures_lite::io::{AsyncRead, AsyncWrite};
+    use dyn_clone::DynClone;
 
-    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin {}
-    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin> Connection for T {}
+    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone {}
+    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone > Connection for T {}
 
     pub type BoxConnection = Box<dyn Connection>;
 
+    /* 
     pub trait ConnectionClone {
         fn clone_box(&self) -> BoxConnection;
     }
@@ -35,6 +37,7 @@ mod conn {
             self.clone_box()
         }
     }
+    */
 
    
 }
@@ -137,7 +140,7 @@ mod test {
             sleep(time::Duration::from_millis(100)).await;
             let tcp_stream = TcpStream::connect(&addr).await.expect("test");
             let read: BoxConnection = Box::new(tcp_stream);
-            let write = read.clone_box();
+            let write =  dyn_clone::clone_box(&*read);
             assert!(true);
         };
 
