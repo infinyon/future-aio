@@ -89,9 +89,7 @@ mod connector {
             &self.domain
         }
 
-        pub fn set_domain(&mut self, domain: String) {
-            self.domain = domain;
-        }
+        
 
         pub fn connector(&self) -> &TlsConnector {
             &self.connector
@@ -117,6 +115,10 @@ mod connector {
                     )
                 })?;
             Ok((Box::new(connector), fd))
+        }
+
+        fn set_domain(&mut self, domain: String) {
+            self.domain = domain;
         }
     }
 }
