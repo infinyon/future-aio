@@ -40,7 +40,7 @@ mod conn {
 
 #[cfg(unix)]
 mod connector {
-    use std::{io::Error as IoError};
+    use std::io::Error as IoError;
     use std::os::unix::io::AsRawFd;
     use std::os::unix::io::RawFd;
 
@@ -56,13 +56,11 @@ mod connector {
     pub trait TcpDomainConnector: Send + Sync {
         async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError>;
 
-        fn set_domain(&mut self, _domain: String) {
-
-        }
-
+        // create new version of my self with new domain
+        fn new_domain(&self, domain: String) -> Self;
     }
 
-    /* 
+    /*
     trait DomainConnectorClone {
         fn clone_box(&self) -> DomainConnector;
     }
@@ -94,6 +92,10 @@ mod connector {
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
             Ok((Box::new(tcp_stream), fd))
+        }
+
+        fn new_domain(&self, _domain: String) -> Self {
+            self.clone()
         }
     }
 }

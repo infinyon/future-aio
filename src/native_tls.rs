@@ -68,6 +68,10 @@ mod connector {
             })?;
             Ok((Box::new(connector), fd))
         }
+
+        fn new_domain(&self, _domain: String) -> Self {
+            self.clone()
+        }
     }
 
     /// Connect to TLS
@@ -88,8 +92,6 @@ mod connector {
         pub fn domain(&self) -> &str {
             &self.domain
         }
-
-        
 
         pub fn connector(&self) -> &TlsConnector {
             &self.connector
@@ -117,8 +119,10 @@ mod connector {
             Ok((Box::new(connector), fd))
         }
 
-        fn set_domain(&mut self, domain: String) {
-            self.domain = domain;
+        fn new_domain(&self, domain: String) -> Self {
+            let mut connector = self.clone();
+            connector.domain = domain;
+            connector
         }
     }
 }

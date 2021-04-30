@@ -122,6 +122,10 @@ impl TcpDomainConnector for TlsAnonymousConnector {
             fd,
         ))
     }
+
+    fn new_domain(&self, _domain: String) -> Self {
+        self.clone()
+    }
 }
 
 #[derive(Clone)]
@@ -153,5 +157,11 @@ impl TcpDomainConnector for TlsDomainConnector {
             ),
             fd,
         ))
+    }
+
+    fn new_domain(&self, domain: String) -> Self {
+        let mut connector = self.clone();
+        connector.domain = domain;
+        connector
     }
 }

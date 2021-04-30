@@ -95,6 +95,11 @@ mod connector {
             let fd = tcp_stream.as_raw_fd();
             Ok((Box::new(self.0.connect(domain, tcp_stream).await?), fd))
         }
+
+        fn new_domain(&self, _domain: String) -> Self {
+            let connector = self.clone();
+            connector
+        }
     }
 
     #[derive(Clone)]
@@ -121,6 +126,12 @@ mod connector {
                 Box::new(self.connector.connect(&self.domain, tcp_stream).await?),
                 fd,
             ))
+        }
+
+        fn new_domain(&self, domain: String) -> Self {
+            let mut connector = self.clone();
+            connector.domain = domain;
+            connector
         }
     }
 }
