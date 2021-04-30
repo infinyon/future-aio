@@ -11,14 +11,32 @@ pub use conn::*;
 mod conn {
 
     use futures_lite::io::{AsyncRead, AsyncWrite};
-    use dyn_clone::DynClone;
 
-    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone {}
-    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone > Connection for T {}
+    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin {}
+    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin> Connection for T {}
 
     pub type BoxConnection = Box<dyn Connection>;
-    
-    
+
+    pub trait ConnectionClone {
+        fn clone_box(&self) -> BoxConnection;
+    }
+
+    impl<T> ConnectionClone for T
+    where
+        T: 'static + Connection + Clone,
+    {
+        fn clone_box(&self) -> BoxConnection {
+            Box::new(self.clone())
+        }
+    }
+
+    impl Clone for BoxConnection {
+        fn clone(&self) -> BoxConnection {
+            self.clone_box()
+        }
+    }
+
+   
 }
 
 #[cfg(unix)]
@@ -45,20 +63,7 @@ mod connector {
         fn domain(&self) -> &str;
     }
 
-    /*
-    trait DomainConnectorClone {
-        fn clone_box(&self) -> DomainConnector;
-    }
 
-    impl<T> DomainConnectorClone for T
-    where
-        T: 'static + TcpDomainConnector + Clone,
-    {
-        fn clone_box(&self) -> DomainConnector {
-            Box::new(self.clone())
-        }
-    }
-    */
 
     /// creatges TcpStream connection
     #[derive(Clone, Default)]
@@ -89,26 +94,24 @@ mod connector {
     }
 }
 
-
-#[cfg(test)] 
+#[cfg(test)]
 mod test {
     use std::time;
 
-    use log::debug;
+
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
-    use dyn_clone::clone_box;
+    use log::debug;
 
-    use crate::test_async;
-    use crate::timer::sleep;
     use crate::net::TcpListener;
     use crate::net::TcpStream;
-    
+    use crate::test_async;
+    use crate::timer::sleep;
+
     use super::*;
 
     #[test_async]
-    async fn test_clone() -> Result<(),()> {
-
+    async fn test_clone() -> Result<(), ()> {
         let addr = format!("127.0.0.1:{}", 39000)
             .parse::<SocketAddr>()
             .expect("parse");
@@ -134,13 +137,11 @@ mod test {
             sleep(time::Duration::from_millis(100)).await;
             let tcp_stream = TcpStream::connect(&addr).await.expect("test");
             let read: BoxConnection = Box::new(tcp_stream);
-            let write = clone_box(&*read);
+            let write = read.clone_box();
             assert!(true);
         };
 
         let _ = zip(client_ft, server_ft).await;
-
-    
 
         Ok(())
     }
