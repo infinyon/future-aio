@@ -2,7 +2,6 @@ use std::io::Error as IoError;
 use std::os::unix::io::{AsRawFd, RawFd};
 use thiserror::Error;
 
-use async_trait::async_trait;
 #[allow(unused)]
 use nix::libc::off_t;
 use nix::sys::sendfile::sendfile;
@@ -39,10 +38,14 @@ impl ZeroCopy {
     {
         Self(fd.as_raw_fd())
     }
+
+    pub fn raw(fd: RawFd) -> Self {
+        Self(fd)
+    }
 }
 
 impl ZeroCopy {
-    pub async fn copy_from(&self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
+    pub async fn copy_slice(&self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
         let size = source.len();
         let target_fd = self.0;
         let source_fd = source.fd();
@@ -216,7 +219,7 @@ mod tests {
             let f_slice = file.as_slice(0, None).await?;
             debug!("client: send back file using zero copy");
             let writer = ZeroCopy::from(&mut stream);
-            writer.copy_from(&f_slice).await?;
+            writer.copy_slice(&f_slice).await?;
             Ok(()) as Result<(), SendFileError>
         };
 
@@ -281,7 +284,7 @@ mod tests {
                 );
 
                 let writer = ZeroCopy::from(&mut tcp_stream);
-                writer.copy_from(&f_slice).await.expect("file slice");
+                writer.copy_slice(&f_slice).await.expect("file slice");
             }
 
             Ok(()) as Result<(), SendFileError>

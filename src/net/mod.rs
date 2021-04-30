@@ -36,8 +36,6 @@ mod conn {
             self.clone_box()
         }
     }
-
-    pub trait ZeroWriteConnection: Connection {}
 }
 
 #[cfg(unix)]
@@ -51,21 +49,34 @@ mod connector {
 
     use super::*;
 
+    pub type DomainConnector = Box<dyn TcpDomainConnector>;
+
     /// connect to domain and return connection
     #[async_trait]
-    pub trait TcpDomainConnector {
+    pub trait TcpDomainConnector: Send + Sync {
         async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError>;
+    }
+
+    trait DomainConnectorClone {
+        fn clone_box(&self) -> DomainConnector;
+    }
+
+    impl<T> DomainConnectorClone for T
+    where
+        T: 'static + TcpDomainConnector + Clone,
+    {
+        fn clone_box(&self) -> DomainConnector {
+            Box::new(self.clone())
+        }
     }
 
     /// creatges TcpStream connection
     #[derive(Clone)]
-    pub struct DefaultTcpDomainConnector;
+    pub struct DefaultTcpDomainConnector {}
 
     impl DefaultTcpDomainConnector {
-        #[allow(clippy::new_without_default)]
-        #[deprecated(since = "0.1.13", note = "Please use directly as ZST")]
         pub fn new() -> Self {
-            Self
+            Self {}
         }
     }
 
