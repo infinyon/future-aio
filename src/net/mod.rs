@@ -9,12 +9,35 @@ pub use connector::*;
 pub use conn::*;
 
 mod conn {
+
     use futures_lite::io::{AsyncRead, AsyncWrite};
 
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin {}
     impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin> Connection for T {}
 
     pub type BoxConnection = Box<dyn Connection>;
+
+    trait ConnectionClone {
+        fn clone_box(&self) -> BoxConnection;
+    }
+
+    impl<T> ConnectionClone for T
+    where
+        T: 'static + Connection + Clone,
+    {
+        fn clone_box(&self) -> BoxConnection {
+            Box::new(self.clone())
+        }
+    }
+
+    // trick from: https://chaoslibrary.blot.im/rust-cloning-a-trait-object
+    impl Clone for BoxConnection {
+        fn clone(&self) -> BoxConnection {
+            self.clone_box()
+        }
+    }
+
+    pub trait ZeroWriteConnection: Connection {}
 }
 
 #[cfg(unix)]
