@@ -57,9 +57,9 @@ mod connector {
         async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError>;
 
         // create new version of my self with new domain
-        fn new_domain(&self, domain: String) -> Self
-        where
-            Self: Sized;
+        fn new_domain(&self, domain: String) -> DomainConnector;
+
+        fn domain(&self) -> &str;
     }
 
     /*
@@ -96,8 +96,12 @@ mod connector {
             Ok((Box::new(tcp_stream), fd))
         }
 
-        fn new_domain(&self, _domain: String) -> Self {
-            self.clone()
+        fn new_domain(&self, _domain: String) -> DomainConnector {
+            Box::new(self.clone())
+        }
+
+        fn domain(&self) -> &str {
+            "localhost"
         }
     }
 }

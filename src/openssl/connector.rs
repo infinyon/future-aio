@@ -9,7 +9,7 @@ use futures_lite::io::{AsyncRead, AsyncWrite};
 use log::debug;
 use openssl::ssl;
 
-use crate::net::{BoxConnection, TcpDomainConnector, TcpStream};
+use crate::net::{BoxConnection, DomainConnector, TcpDomainConnector, TcpStream};
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
 use super::certificate::Certificate;
@@ -123,8 +123,12 @@ impl TcpDomainConnector for TlsAnonymousConnector {
         ))
     }
 
-    fn new_domain(&self, _domain: String) -> Self {
-        self.clone()
+    fn new_domain(&self, _domain: String) -> DomainConnector {
+        Box::new(self.clone())
+    }
+
+    fn domain(&self) -> &str {
+        "localhost"
     }
 }
 
@@ -159,9 +163,13 @@ impl TcpDomainConnector for TlsDomainConnector {
         ))
     }
 
-    fn new_domain(&self, domain: String) -> Self {
+    fn new_domain(&self, domain: String) -> DomainConnector {
         let mut connector = self.clone();
         connector.domain = domain;
-        connector
+        Box::new(connector)
+    }
+
+    fn domain(&self) -> &str {
+        "localhost"
     }
 }

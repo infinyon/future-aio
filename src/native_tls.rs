@@ -24,7 +24,7 @@ mod connector {
     use async_trait::async_trait;
     use log::debug;
 
-    use crate::net::{Connection, TcpDomainConnector};
+    use crate::net::{Connection, DomainConnector, TcpDomainConnector};
 
     use super::*;
 
@@ -69,8 +69,12 @@ mod connector {
             Ok((Box::new(connector), fd))
         }
 
-        fn new_domain(&self, _domain: String) -> Self {
-            self.clone()
+        fn new_domain(&self, _domain: String) -> DomainConnector {
+            Box::new(self.clone())
+        }
+
+        fn domain(&self) -> &str {
+            "localhost"
         }
     }
 
@@ -119,10 +123,14 @@ mod connector {
             Ok((Box::new(connector), fd))
         }
 
-        fn new_domain(&self, domain: String) -> Self {
+        fn new_domain(&self, domain: String) -> DomainConnector {
             let mut connector = self.clone();
             connector.domain = domain;
-            connector
+            Box::new(connector)
+        }
+
+        fn domain(&self) -> &str {
+            &self.domain
         }
     }
 }
