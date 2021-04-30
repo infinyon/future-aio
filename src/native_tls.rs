@@ -411,10 +411,10 @@ mod test {
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-    use fluvio_future::net::TcpListener;
-    use fluvio_future::net::TcpStream;
-    use fluvio_future::test_async;
-    use fluvio_future::timer::sleep;
+    use crate::net::TcpListener;
+    use crate::net::TcpStream;
+    use crate::test_async;
+    use crate::timer::sleep;
 
     use super::{
         AcceptorBuilder, AllTcpStream, CertBuilder, ConnectorBuilder, IdentityBuilder,

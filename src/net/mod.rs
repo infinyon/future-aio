@@ -11,31 +11,14 @@ pub use conn::*;
 mod conn {
 
     use futures_lite::io::{AsyncRead, AsyncWrite};
+    use dyn_clone::DynClone;
 
-    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin {}
-    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin> Connection for T {}
+    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone {}
+    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone > Connection for T {}
 
     pub type BoxConnection = Box<dyn Connection>;
-
-    trait ConnectionClone {
-        fn clone_box(&self) -> BoxConnection;
-    }
-
-    impl<T> ConnectionClone for T
-    where
-        T: 'static + Connection + Clone,
-    {
-        fn clone_box(&self) -> BoxConnection {
-            Box::new(self.clone())
-        }
-    }
-
-    // trick from: https://chaoslibrary.blot.im/rust-cloning-a-trait-object
-    impl Clone for BoxConnection {
-        fn clone(&self) -> BoxConnection {
-            self.clone_box()
-        }
-    }
+    
+    
 }
 
 #[cfg(unix)]
@@ -103,5 +86,62 @@ mod connector {
         fn domain(&self) -> &str {
             "localhost"
         }
+    }
+}
+
+
+#[cfg(test)] 
+mod test {
+    use std::time;
+
+    use log::debug;
+    use futures_lite::future::zip;
+    use futures_lite::stream::StreamExt;
+    use dyn_clone::clone_box;
+
+    use crate::test_async;
+    use crate::timer::sleep;
+    use crate::net::TcpListener;
+    use crate::net::TcpStream;
+    
+    use super::*;
+
+    #[test_async]
+    async fn test_clone() -> Result<(),()> {
+
+        let addr = format!("127.0.0.1:{}", 39000)
+            .parse::<SocketAddr>()
+            .expect("parse");
+
+        let server_ft = async {
+            debug!("server: binding");
+            let listener = TcpListener::bind(&addr).await.expect("listener failed");
+            debug!("server: successfully binding. waiting for incoming");
+
+            let mut incoming = listener.incoming();
+            let incoming_stream = incoming.next().await.expect("incoming");
+
+            debug!("server: got connection from client");
+            let _ = incoming_stream.expect("no stream");
+
+            // sleep 1 seconds so we don't lost connection
+            sleep(time::Duration::from_secs(1)).await;
+
+            Ok(()) as Result<(), ()>
+        };
+
+        let client_ft = async {
+            sleep(time::Duration::from_millis(100)).await;
+            let tcp_stream = TcpStream::connect(&addr).await.expect("test");
+            let read: BoxConnection = Box::new(tcp_stream);
+            let write = clone_box(&*read);
+            assert!(true);
+        };
+
+        let _ = zip(client_ft, server_ft).await;
+
+    
+
+        Ok(())
     }
 }

@@ -334,6 +334,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "dyn-clone"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee2626afccd7561a06cf1367e2950c4718ea04565e20fb5029b6c7d8ad09abcf"
+
+[[package]]
 name = "event-listener"
 version = "2.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -373,6 +379,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "bytes",
+ "dyn-clone",
  "fluvio-async-tls",
  "fluvio-future",
  "fluvio-test-derive",
