@@ -97,8 +97,7 @@ mod connector {
         }
 
         fn new_domain(&self, _domain: String) -> Self {
-            let connector = self.clone();
-            connector
+            self.clone()
         }
     }
 

@@ -57,7 +57,9 @@ mod connector {
         async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError>;
 
         // create new version of my self with new domain
-        fn new_domain(&self, domain: String) -> Self;
+        fn new_domain(&self, domain: String) -> Self
+        where
+            Self: Sized;
     }
 
     /*
@@ -76,7 +78,7 @@ mod connector {
     */
 
     /// creatges TcpStream connection
-    #[derive(Clone)]
+    #[derive(Clone, Default)]
     pub struct DefaultTcpDomainConnector {}
 
     impl DefaultTcpDomainConnector {
