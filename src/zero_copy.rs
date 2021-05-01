@@ -1,8 +1,7 @@
 use std::io::Error as IoError;
-use std::os::unix::io::AsRawFd;
+use std::os::unix::io::{AsRawFd, RawFd};
 use thiserror::Error;
 
-use async_trait::async_trait;
 #[allow(unused)]
 use nix::libc::off_t;
 use nix::sys::sendfile::sendfile;
@@ -30,19 +29,25 @@ pub enum SendFileError {
 }
 
 /// zero copy write
-#[async_trait]
-pub trait ZeroCopyWrite {
-    async fn zero_copy_write(&mut self, source: &AsyncFileSlice) -> Result<usize, SendFileError>;
+pub struct ZeroCopy(RawFd);
+
+impl ZeroCopy {
+    pub fn from<S>(fd: &mut S) -> Self
+    where
+        S: AsRawFd,
+    {
+        Self(fd.as_raw_fd())
+    }
+
+    pub fn raw(fd: RawFd) -> Self {
+        Self(fd)
+    }
 }
 
-#[async_trait]
-impl<T> ZeroCopyWrite for T
-where
-    T: AsRawFd + Send,
-{
-    async fn zero_copy_write(&mut self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
+impl ZeroCopy {
+    pub async fn copy_slice(&self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
         let size = source.len();
-        let target_fd = self.as_raw_fd();
+        let target_fd = self.0;
         let source_fd = source.fd();
 
         #[cfg(target_os = "linux")]
@@ -170,13 +175,12 @@ mod tests {
     use futures_util::stream::StreamExt;
     use log::debug;
 
-    use crate::fs::util as file_util;
     use crate::fs::AsyncFileExtension;
     use crate::net::TcpListener;
     use crate::net::TcpStream;
     use crate::test_async;
     use crate::timer::sleep;
-    use crate::zero_copy::ZeroCopyWrite;
+    use crate::{fs::util as file_util, zero_copy::ZeroCopy};
     use futures_lite::AsyncReadExt;
 
     use super::SendFileError;
@@ -214,7 +218,8 @@ mod tests {
             debug!("client: connected to server");
             let f_slice = file.as_slice(0, None).await?;
             debug!("client: send back file using zero copy");
-            stream.zero_copy_write(&f_slice).await?;
+            let writer = ZeroCopy::from(&mut stream);
+            writer.copy_slice(&f_slice).await?;
             Ok(()) as Result<(), SendFileError>
         };
 
@@ -277,10 +282,9 @@ mod tests {
                     i,
                     f_slice.len()
                 );
-                tcp_stream
-                    .zero_copy_write(&f_slice)
-                    .await
-                    .expect("file slice");
+
+                let writer = ZeroCopy::from(&mut tcp_stream);
+                writer.copy_slice(&f_slice).await.expect("file slice");
             }
 
             Ok(()) as Result<(), SendFileError>

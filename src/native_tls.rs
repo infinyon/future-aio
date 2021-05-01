@@ -11,6 +11,22 @@ pub type DefaultClientTlsStream = TlsStream<TcpStream>;
 pub use connector::*;
 pub use stream::*;
 
+mod split {
+
+    use async_net::TcpStream;
+    use futures_util::AsyncReadExt;
+
+    use super::*;
+    use crate::net::{BoxReadConnection, BoxWriteConnection, SplitConnection};
+
+    impl SplitConnection for TlsStream<TcpStream> {
+        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
+            let (read, write) = self.split();
+            (Box::new(write), Box::new(read))
+        }
+    }
+}
+
 mod connector {
 
     use std::io::Error as IoError;
@@ -24,13 +40,11 @@ mod connector {
     use async_trait::async_trait;
     use log::debug;
 
-    use crate::net::DefaultTcpDomainConnector;
-    use crate::net::TcpDomainConnector;
+    use crate::net::{
+        BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector,
+    };
 
-    use super::AllTcpStream;
-    use super::DefaultClientTlsStream;
-    use super::TcpStream;
-    use super::TlsConnector;
+    use super::*;
 
     pub enum TlsError {
         Io(IoError),
@@ -61,21 +75,36 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsAnonymousConnector {
-        type WrapperStream = DefaultClientTlsStream;
-
-        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
+        async fn connect(
+            &self,
+            domain: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
             let fd = tcp_stream.as_raw_fd();
-            let connector = self.0.connect(domain, tcp_stream).await.map_err(|e| {
-                IoError::new(
-                    ErrorKind::ConnectionRefused,
-                    format!("failed to connect: {}", e),
-                )
-            })?;
-            Ok((connector, fd))
+            let (write, read) = self
+                .0
+                .connect(domain, tcp_stream)
+                .await
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::ConnectionRefused,
+                        format!("failed to connect: {}", e),
+                    )
+                })?
+                .split_connection();
+            Ok((write, read, fd))
+        }
+
+        fn new_domain(&self, _domain: String) -> DomainConnector {
+            Box::new(self.clone())
+        }
+
+        fn domain(&self) -> &str {
+            "localhost"
         }
     }
 
+    /// Connect to TLS
     #[derive(Clone)]
     pub struct TlsDomainConnector {
         domain: String,
@@ -94,10 +123,6 @@ mod connector {
             &self.domain
         }
 
-        pub fn set_domain(&mut self, domain: String) {
-            self.domain = domain;
-        }
-
         pub fn connector(&self) -> &TlsConnector {
             &self.connector
         }
@@ -105,15 +130,16 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsDomainConnector {
-        type WrapperStream = DefaultClientTlsStream;
-
-        async fn connect(&self, addr: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
+        async fn connect(
+            &self,
+            addr: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
 
             debug!("connect to tls domain: {}", self.domain);
-            let connector = self
+            let (write, read) = self
                 .connector
                 .connect(&self.domain, tcp_stream)
                 .await
@@ -122,57 +148,19 @@ mod connector {
                         ErrorKind::ConnectionRefused,
                         format!("failed to connect: {}", e),
                     )
-                })?;
-            Ok((connector, fd))
-        }
-    }
-
-    #[derive(Clone)]
-    pub enum AllDomainConnector {
-        Tcp(DefaultTcpDomainConnector),
-        TlsDomain(TlsDomainConnector),
-        TlsAnonymous(TlsAnonymousConnector),
-    }
-
-    impl Default for AllDomainConnector {
-        fn default() -> Self {
-            Self::default_tcp()
-        }
-    }
-
-    impl AllDomainConnector {
-        pub fn default_tcp() -> Self {
-            Self::Tcp(DefaultTcpDomainConnector)
+                })?
+                .split_connection();
+            Ok((write, read, fd))
         }
 
-        pub fn new_tls_domain(connector: TlsDomainConnector) -> Self {
-            Self::TlsDomain(connector)
+        fn new_domain(&self, domain: String) -> DomainConnector {
+            let mut connector = self.clone();
+            connector.domain = domain;
+            Box::new(connector)
         }
 
-        pub fn new_tls_anonymous(connector: TlsAnonymousConnector) -> Self {
-            Self::TlsAnonymous(connector)
-        }
-    }
-
-    #[async_trait]
-    impl TcpDomainConnector for AllDomainConnector {
-        type WrapperStream = AllTcpStream;
-
-        async fn connect(&self, domain: &str) -> Result<(Self::WrapperStream, RawFd), IoError> {
-            match self {
-                Self::Tcp(connector) => {
-                    let (stream, fd) = connector.connect(domain).await?;
-                    Ok((AllTcpStream::tcp(stream), fd))
-                }
-                Self::TlsDomain(connector) => {
-                    let (stream, fd) = connector.connect(domain).await?;
-                    Ok((AllTcpStream::tls(stream), fd))
-                }
-                Self::TlsAnonymous(connector) => {
-                    let (stream, fd) = connector.connect(domain).await?;
-                    Ok((AllTcpStream::tls(stream), fd))
-                }
-            }
+        fn domain(&self) -> &str {
+            &self.domain
         }
     }
 }
@@ -453,10 +441,10 @@ mod test {
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-    use fluvio_future::net::TcpListener;
-    use fluvio_future::net::TcpStream;
-    use fluvio_future::test_async;
-    use fluvio_future::timer::sleep;
+    use crate::net::TcpListener;
+    use crate::net::TcpStream;
+    use crate::test_async;
+    use crate::timer::sleep;
 
     use super::{
         AcceptorBuilder, AllTcpStream, CertBuilder, ConnectorBuilder, IdentityBuilder,

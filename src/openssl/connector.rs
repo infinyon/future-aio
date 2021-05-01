@@ -9,13 +9,16 @@ use futures_lite::io::{AsyncRead, AsyncWrite};
 use log::debug;
 use openssl::ssl;
 
-use crate::net::{DefaultTcpDomainConnector, TcpDomainConnector, TcpStream};
+use crate::net::{
+    BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector,
+    TcpStream,
+};
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
 use super::certificate::Certificate;
 use super::error::Result;
 use super::handshake::HandshakeFuture;
-use super::stream::{AllTcpStream, TlsStream};
+use super::stream::TlsStream;
 
 #[derive(Clone, Debug)]
 pub struct TlsConnector {
@@ -109,18 +112,28 @@ impl From<TlsConnector> for TlsAnonymousConnector {
 
 #[async_trait]
 impl TcpDomainConnector for TlsAnonymousConnector {
-    type WrapperStream = TlsStream<TcpStream>;
-
-    async fn connect(&self, domain: &str) -> io::Result<(Self::WrapperStream, RawFd)> {
+    async fn connect(
+        &self,
+        domain: &str,
+    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
         let tcp_stream = TcpStream::connect(domain).await?;
         let fd = tcp_stream.as_raw_fd();
-        Ok((
-            self.0
-                .connect(domain, tcp_stream)
-                .await
-                .map_err(|err| err.into_io_error())?,
-            fd,
-        ))
+        let (write, read) = self
+            .0
+            .connect(domain, tcp_stream)
+            .await
+            .map_err(|err| err.into_io_error())?
+            .split_connection();
+
+        Ok((write, read, fd))
+    }
+
+    fn new_domain(&self, _domain: String) -> DomainConnector {
+        Box::new(self.clone())
+    }
+
+    fn domain(&self) -> &str {
+        "localhost"
     }
 }
 
@@ -138,70 +151,32 @@ impl TlsDomainConnector {
 
 #[async_trait]
 impl TcpDomainConnector for TlsDomainConnector {
-    type WrapperStream = TlsStream<TcpStream>;
-
-    async fn connect(&self, addr: &str) -> io::Result<(Self::WrapperStream, RawFd)> {
+    async fn connect(
+        &self,
+        addr: &str,
+    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
         debug!("connect to tls addr: {}", addr);
         let tcp_stream = TcpStream::connect(addr).await?;
         let fd = tcp_stream.as_raw_fd();
 
+        let (write, read) = self
+            .connector
+            .connect(&self.domain, tcp_stream)
+            .await
+            .map_err(|err| err.into_io_error())?
+            .split_connection();
+
         debug!("connect to tls domain: {}", self.domain);
-        Ok((
-            self.connector
-                .connect(&self.domain, tcp_stream)
-                .await
-                .map_err(|err| err.into_io_error())?,
-            fd,
-        ))
-    }
-}
-
-#[derive(Clone)]
-pub enum AllDomainConnector {
-    Tcp(DefaultTcpDomainConnector),
-    TlsDomain(TlsDomainConnector),
-    TlsAnonymous(TlsAnonymousConnector),
-}
-
-impl Default for AllDomainConnector {
-    fn default() -> Self {
-        Self::default_tcp()
-    }
-}
-
-impl AllDomainConnector {
-    pub fn default_tcp() -> Self {
-        Self::Tcp(DefaultTcpDomainConnector)
+        Ok((write, read, fd))
     }
 
-    pub fn new_tls_domain(connector: TlsDomainConnector) -> Self {
-        Self::TlsDomain(connector)
+    fn new_domain(&self, domain: String) -> DomainConnector {
+        let mut connector = self.clone();
+        connector.domain = domain;
+        Box::new(connector)
     }
 
-    pub fn new_tls_anonymous(connector: TlsAnonymousConnector) -> Self {
-        Self::TlsAnonymous(connector)
-    }
-}
-
-#[async_trait]
-impl TcpDomainConnector for AllDomainConnector {
-    type WrapperStream = AllTcpStream;
-
-    async fn connect(&self, domain: &str) -> io::Result<(Self::WrapperStream, RawFd)> {
-        match self {
-            Self::Tcp(connector) => {
-                let (stream, fd) = connector.connect(domain).await?;
-                Ok((AllTcpStream::tcp(stream), fd))
-            }
-
-            Self::TlsDomain(connector) => {
-                let (stream, fd) = connector.connect(domain).await?;
-                Ok((AllTcpStream::tls(stream), fd))
-            }
-            Self::TlsAnonymous(connector) => {
-                let (stream, fd) = connector.connect(domain).await?;
-                Ok((AllTcpStream::tls(stream), fd))
-            }
-        }
+    fn domain(&self) -> &str {
+        "localhost"
     }
 }
