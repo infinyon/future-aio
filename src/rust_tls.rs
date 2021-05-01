@@ -18,6 +18,28 @@ pub use builder::*;
 pub use cert::*;
 pub use connector::*;
 
+mod split {
+
+    use futures_util::AsyncReadExt;
+
+    use super::*;
+    use crate::net::{BoxReadConnection, BoxWriteConnection, SplitConnection};
+
+    impl SplitConnection for DefaultClientTlsStream {
+        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
+            let (read, write) = self.split();
+            (Box::new(write), Box::new(read))
+        }
+    }
+
+    impl SplitConnection for DefaultServerTlsStream {
+        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
+            let (read, write) = self.split();
+            (Box::new(write), Box::new(read))
+        }
+    }
+}
+
 mod cert {
     use std::fs::File;
     use std::io::BufRead;
@@ -299,76 +321,6 @@ mod builder {
     }
 }
 
-pub use stream::AllTcpStream;
-
-mod stream {
-
-    use std::io;
-    use std::pin::Pin;
-    use std::task::{Context, Poll};
-
-    use super::DefaultClientTlsStream;
-    use super::TcpStream;
-    use futures_lite::{AsyncRead, AsyncWrite};
-    use pin_project::pin_project;
-    #[allow(clippy::large_enum_variant)]
-    #[pin_project(project = EnumProj)]
-    pub enum AllTcpStream {
-        Tcp(#[pin] TcpStream),
-        Tls(#[pin] DefaultClientTlsStream),
-    }
-
-    impl AllTcpStream {
-        pub fn tcp(stream: TcpStream) -> Self {
-            Self::Tcp(stream)
-        }
-
-        pub fn tls(stream: DefaultClientTlsStream) -> Self {
-            Self::Tls(stream)
-        }
-    }
-
-    impl AsyncRead for AllTcpStream {
-        fn poll_read(
-            self: Pin<&mut Self>,
-            cx: &mut Context<'_>,
-            buf: &mut [u8],
-        ) -> Poll<io::Result<usize>> {
-            match self.project() {
-                EnumProj::Tcp(stream) => stream.poll_read(cx, buf),
-                EnumProj::Tls(stream) => stream.poll_read(cx, buf),
-            }
-        }
-    }
-
-    impl AsyncWrite for AllTcpStream {
-        fn poll_write(
-            self: Pin<&mut Self>,
-            cx: &mut Context,
-            buf: &[u8],
-        ) -> Poll<Result<usize, io::Error>> {
-            match self.project() {
-                EnumProj::Tcp(stream) => stream.poll_write(cx, buf),
-                EnumProj::Tls(stream) => stream.poll_write(cx, buf),
-            }
-        }
-
-        fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
-            match self.project() {
-                EnumProj::Tcp(stream) => stream.poll_flush(cx),
-                EnumProj::Tls(stream) => stream.poll_flush(cx),
-            }
-        }
-
-        fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
-            match self.project() {
-                EnumProj::Tcp(stream) => stream.poll_close(cx),
-                EnumProj::Tls(stream) => stream.poll_close(cx),
-            }
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
 
@@ -394,7 +346,7 @@ mod test {
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 
-    use super::{AcceptorBuilder, AllTcpStream, ConnectorBuilder};
+    use super::{AcceptorBuilder, ConnectorBuilder};
 
     const CA_PATH: &str = "certs/certs/ca.crt";
     const ITER: u16 = 10;
@@ -492,7 +444,7 @@ mod test {
                 .connect("localhost", tcp_stream)
                 .await
                 .expect("tls failed");
-            let all_stream = AllTcpStream::Tls(tls_stream);
+            let all_stream = Box::new(tls_stream);
             let mut framed = Framed::new(all_stream.compat(), BytesCodec::new());
             debug!("client: got connection. waiting");
 

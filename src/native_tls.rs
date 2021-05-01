@@ -11,6 +11,22 @@ pub type DefaultClientTlsStream = TlsStream<TcpStream>;
 pub use connector::*;
 pub use stream::*;
 
+mod split {
+
+    use async_net::TcpStream;
+    use futures_util::AsyncReadExt;
+
+    use super::*;
+    use crate::net::{BoxReadConnection, BoxWriteConnection, SplitConnection};
+
+    impl SplitConnection for TlsStream<TcpStream> {
+        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
+            let (read, write) = self.split();
+            (Box::new(write), Box::new(read))
+        }
+    }
+}
+
 mod connector {
 
     use std::io::Error as IoError;

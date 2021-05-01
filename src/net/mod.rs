@@ -15,24 +15,28 @@ mod conn {
     use super::TcpStream;
 
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
-    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection > Connection for T {}
+    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
+
+    pub trait ReadConnection: AsyncRead + Send + Sync + Unpin {}
+    impl<T: AsyncRead + Send + Sync + Unpin> ReadConnection for T {}
+
+    pub trait WriteConnection: AsyncWrite + Send + Sync + Unpin {}
+    impl<T: AsyncWrite + Send + Sync + Unpin> WriteConnection for T {}
 
     pub type BoxConnection = Box<dyn Connection>;
-
+    pub type BoxReadConnection = Box<dyn ReadConnection>;
+    pub type BoxWriteConnection = Box<dyn WriteConnection>;
 
     pub trait SplitConnection {
-        fn split(self) -> (BoxConnection,BoxConnection);
+        // split into write and read
+        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection);
     }
 
-
-    
     impl SplitConnection for TcpStream {
-        fn split(self) -> (BoxConnection,BoxConnection) {
-            (Box::new(self.clone()),Box::new(self))
+        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
+            (Box::new(self.clone()), Box::new(self))
         }
     }
-
-   
 }
 
 #[cfg(unix)]
@@ -58,8 +62,6 @@ mod connector {
 
         fn domain(&self) -> &str;
     }
-
-
 
     /// creatges TcpStream connection
     #[derive(Clone, Default)]
@@ -94,9 +96,9 @@ mod connector {
 mod test {
     use std::time;
 
-
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
+    use futures_util::AsyncReadExt;
     use log::debug;
 
     use crate::net::TcpListener;
@@ -132,8 +134,8 @@ mod test {
         let client_ft = async {
             sleep(time::Duration::from_millis(100)).await;
             let tcp_stream = TcpStream::connect(&addr).await.expect("test");
-            let (_read,_write) = tcp_stream.split();
-            assert!(true);
+            let (_read, _write) = tcp_stream.split();
+            
         };
 
         let _ = zip(client_ft, server_ft).await;
