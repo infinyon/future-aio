@@ -55,7 +55,10 @@ mod connector {
     /// connect to domain and return connection
     #[async_trait]
     pub trait TcpDomainConnector: Send + Sync {
-        async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError>;
+        async fn connect(
+            &self,
+            domain: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError>;
 
         // create new version of my self with new domain
         fn new_domain(&self, domain: String) -> DomainConnector;
@@ -75,11 +78,14 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for DefaultTcpDomainConnector {
-        async fn connect(&self, addr: &str) -> Result<(BoxConnection, RawFd), IoError> {
+        async fn connect(
+            &self,
+            addr: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             debug!("connect to tcp addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
-            Ok((Box::new(tcp_stream), fd))
+            Ok((Box::new(tcp_stream.clone()), Box::new(tcp_stream), fd))
         }
 
         fn new_domain(&self, _domain: String) -> DomainConnector {
@@ -135,7 +141,6 @@ mod test {
             sleep(time::Duration::from_millis(100)).await;
             let tcp_stream = TcpStream::connect(&addr).await.expect("test");
             let (_read, _write) = tcp_stream.split();
-            
         };
 
         let _ = zip(client_ft, server_ft).await;

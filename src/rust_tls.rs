@@ -93,7 +93,9 @@ mod connector {
     use async_trait::async_trait;
     use log::debug;
 
-    use crate::net::{BoxConnection, DomainConnector, TcpDomainConnector};
+    use crate::net::{
+        BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector,
+    };
 
     use super::TcpStream;
     use super::TlsConnector;
@@ -112,10 +114,14 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsAnonymousConnector {
-        async fn connect(&self, domain: &str) -> Result<(BoxConnection, RawFd), IoError> {
+        async fn connect(
+            &self,
+            domain: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
             let fd = tcp_stream.as_raw_fd();
-            Ok((Box::new(self.0.connect(domain, tcp_stream).await?), fd))
+            let (write, read) = self.0.connect(domain, tcp_stream).await?.split_connection();
+            Ok((write, read, fd))
         }
 
         fn new_domain(&self, _domain: String) -> DomainConnector {
@@ -141,16 +147,20 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsDomainConnector {
-        async fn connect(&self, addr: &str) -> Result<(BoxConnection, RawFd), IoError> {
+        async fn connect(
+            &self,
+            addr: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
-
             debug!("connect to tls domain: {}", self.domain);
-            Ok((
-                Box::new(self.connector.connect(&self.domain, tcp_stream).await?),
-                fd,
-            ))
+            let (write, read) = self
+                .connector
+                .connect(&self.domain, tcp_stream)
+                .await?
+                .split_connection();
+            Ok((write, read, fd))
         }
 
         fn new_domain(&self, domain: String) -> DomainConnector {

@@ -40,7 +40,9 @@ mod connector {
     use async_trait::async_trait;
     use log::debug;
 
-    use crate::net::{Connection, DomainConnector, TcpDomainConnector};
+    use crate::net::{
+        BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector,
+    };
 
     use super::*;
 
@@ -73,16 +75,24 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsAnonymousConnector {
-        async fn connect(&self, domain: &str) -> Result<(Box<dyn Connection>, RawFd), IoError> {
+        async fn connect(
+            &self,
+            domain: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
             let fd = tcp_stream.as_raw_fd();
-            let connector = self.0.connect(domain, tcp_stream).await.map_err(|e| {
-                IoError::new(
-                    ErrorKind::ConnectionRefused,
-                    format!("failed to connect: {}", e),
-                )
-            })?;
-            Ok((Box::new(connector), fd))
+            let (write, read) = self
+                .0
+                .connect(domain, tcp_stream)
+                .await
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::ConnectionRefused,
+                        format!("failed to connect: {}", e),
+                    )
+                })?
+                .split_connection();
+            Ok((write, read, fd))
         }
 
         fn new_domain(&self, _domain: String) -> DomainConnector {
@@ -120,13 +130,16 @@ mod connector {
 
     #[async_trait]
     impl TcpDomainConnector for TlsDomainConnector {
-        async fn connect(&self, addr: &str) -> Result<(Box<dyn Connection>, RawFd), IoError> {
+        async fn connect(
+            &self,
+            addr: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
 
             debug!("connect to tls domain: {}", self.domain);
-            let connector = self
+            let (write, read) = self
                 .connector
                 .connect(&self.domain, tcp_stream)
                 .await
@@ -135,8 +148,9 @@ mod connector {
                         ErrorKind::ConnectionRefused,
                         format!("failed to connect: {}", e),
                     )
-                })?;
-            Ok((Box::new(connector), fd))
+                })?
+                .split_connection();
+            Ok((write, read, fd))
         }
 
         fn new_domain(&self, domain: String) -> DomainConnector {

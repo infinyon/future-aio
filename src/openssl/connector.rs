@@ -9,7 +9,10 @@ use futures_lite::io::{AsyncRead, AsyncWrite};
 use log::debug;
 use openssl::ssl;
 
-use crate::net::{BoxConnection, DomainConnector, TcpDomainConnector, TcpStream};
+use crate::net::{
+    BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector,
+    TcpStream,
+};
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
 use super::certificate::Certificate;
@@ -109,18 +112,20 @@ impl From<TlsConnector> for TlsAnonymousConnector {
 
 #[async_trait]
 impl TcpDomainConnector for TlsAnonymousConnector {
-    async fn connect(&self, domain: &str) -> io::Result<(BoxConnection, RawFd)> {
+    async fn connect(
+        &self,
+        domain: &str,
+    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
         let tcp_stream = TcpStream::connect(domain).await?;
         let fd = tcp_stream.as_raw_fd();
-        Ok((
-            Box::new(
-                self.0
-                    .connect(domain, tcp_stream)
-                    .await
-                    .map_err(|err| err.into_io_error())?,
-            ),
-            fd,
-        ))
+        let (write, read) = self
+            .0
+            .connect(domain, tcp_stream)
+            .await
+            .map_err(|err| err.into_io_error())?
+            .split_connection();
+
+        Ok((write, read, fd))
     }
 
     fn new_domain(&self, _domain: String) -> DomainConnector {
@@ -146,21 +151,23 @@ impl TlsDomainConnector {
 
 #[async_trait]
 impl TcpDomainConnector for TlsDomainConnector {
-    async fn connect(&self, addr: &str) -> io::Result<(BoxConnection, RawFd)> {
+    async fn connect(
+        &self,
+        addr: &str,
+    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
         debug!("connect to tls addr: {}", addr);
         let tcp_stream = TcpStream::connect(addr).await?;
         let fd = tcp_stream.as_raw_fd();
 
+        let (write, read) = self
+            .connector
+            .connect(&self.domain, tcp_stream)
+            .await
+            .map_err(|err| err.into_io_error())?
+            .split_connection();
+
         debug!("connect to tls domain: {}", self.domain);
-        Ok((
-            Box::new(
-                self.connector
-                    .connect(&self.domain, tcp_stream)
-                    .await
-                    .map_err(|err| err.into_io_error())?,
-            ),
-            fd,
-        ))
+        Ok((write, read, fd))
     }
 
     fn new_domain(&self, domain: String) -> DomainConnector {
