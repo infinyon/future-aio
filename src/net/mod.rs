@@ -11,33 +11,26 @@ pub use conn::*;
 mod conn {
 
     use futures_lite::io::{AsyncRead, AsyncWrite};
-    use dyn_clone::DynClone;
 
-    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone {}
-    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + DynClone > Connection for T {}
+    use super::TcpStream;
+
+    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
+    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection > Connection for T {}
 
     pub type BoxConnection = Box<dyn Connection>;
 
-    /* 
-    pub trait ConnectionClone {
-        fn clone_box(&self) -> BoxConnection;
+
+    pub trait SplitConnection {
+        fn split(self) -> (BoxConnection,BoxConnection);
     }
 
-    impl<T> ConnectionClone for T
-    where
-        T: 'static + Connection + Clone,
-    {
-        fn clone_box(&self) -> BoxConnection {
-            Box::new(self.clone())
-        }
-    }
 
-    impl Clone for BoxConnection {
-        fn clone(&self) -> BoxConnection {
-            self.clone_box()
+    
+    impl SplitConnection for TcpStream {
+        fn split(self) -> (BoxConnection,BoxConnection) {
+            (Box::new(self.clone()),Box::new(self))
         }
     }
-    */
 
    
 }
@@ -139,8 +132,7 @@ mod test {
         let client_ft = async {
             sleep(time::Duration::from_millis(100)).await;
             let tcp_stream = TcpStream::connect(&addr).await.expect("test");
-            let read: BoxConnection = Box::new(tcp_stream);
-            let write =  dyn_clone::clone_box(&*read);
+            let (_read,_write) = tcp_stream.split();
             assert!(true);
         };
 
