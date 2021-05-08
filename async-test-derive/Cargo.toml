@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-test-derive"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 authors = ["fluvio.io"]
 description = "Procedure macro to run async fn as test"
@@ -15,3 +15,8 @@ proc-macro = true
 proc-macro2 = "1.0"
 quote = "1.0.2"
 syn = { version = "1.0.14" }
+
+
+[dev-dependencies]
+trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
+fluvio-future = { path = "..", features = ["fixture"]}
