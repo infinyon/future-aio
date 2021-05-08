@@ -70,12 +70,11 @@ mod test {
     use log::debug;
     use tokio::select;
 
-    use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 
     /// test timer loop
-    #[test_async]
-    async fn test_sleep() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_sleep() {
         let mut sleep_count: u16 = 0;
         let time_now = Instant::now();
 
@@ -94,10 +93,9 @@ mod test {
         let elapsed = time_now.elapsed();
 
         debug!("total time elaspsed: {:#?}", elapsed);
-        assert!(elapsed < Duration::from_millis(50));
+
+        assert!(elapsed < Duration::from_millis(1000)); // make this generous to handle slow CI
         assert!(elapsed > Duration::from_millis(10));
         assert_eq!(sleep_count, 10);
-
-        Ok(())
     }
 }
