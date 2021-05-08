@@ -2,7 +2,7 @@
 name = "fluvio-test-derive"
 version = "0.1.1"
 edition = "2018"
-authors = ["fluvio.io"]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Procedure macro to run async fn as test"
 repository = "https://github.com/infinyon/flv-future"
 license = "Apache-2.0"
@@ -14,7 +14,7 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0.2"
-syn = { version = "1.0.14" }
+syn = { version = "1.0.14", features = ["full"] }
 
 
 [dev-dependencies]

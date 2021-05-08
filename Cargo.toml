@@ -2,7 +2,7 @@
 name = "fluvio-future"
 version = "0.3.1"
 edition = "2018"
-authors = ["fluvio.io"]
+authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
 repository = "https://github.com/infinyon/future-aio"
 license = "Apache-2.0"
