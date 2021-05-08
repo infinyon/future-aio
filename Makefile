@@ -3,7 +3,7 @@ RUST_DOCKER_IMAGE=rust:latest
 build-all:
 	cargo build --all-features
 
-test-all:
+test-all:	test-derive
 	cargo test --all-features
 
 install-wasm-cli:
@@ -11,6 +11,9 @@ install-wasm-cli:
 
 test-wasm: install-wasm32 install-wasm-cli
 	cargo test --all-features --target wasm32-unknown-unknown
+
+test-derive:
+	cd async-test-derive; cargo test
 
 check-wasm: install-wasm32
 	cargo build --target wasm32-unknown-unknown --all-features

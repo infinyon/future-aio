@@ -20,6 +20,9 @@ mod test_util;
 #[cfg(any(test, feature = "fixture"))]
 pub use fluvio_test_derive::test_async;
 
+#[cfg(any(test, feature = "fixture"))]
+pub use fluvio_test_derive::test;
+
 #[cfg(all(unix, feature = "zero_copy"))]
 pub mod zero_copy;
 

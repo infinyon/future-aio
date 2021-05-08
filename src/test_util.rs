@@ -36,6 +36,22 @@ mod test {
         Ok(())
     }
 
+    #[test_async(ignore)]
+    async fn async_derive_test_ignore() -> Result<(), Error> {
+        debug!("I am live");
+        Ok(())
+    }
+
+    #[fluvio_future::test]
+    async fn simple_test() {
+        assert_eq!(1, "x".len());
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn simple_test_ignore() {
+        assert_eq!(1, "x".len());
+    }
+
     #[test]
     fn test_1_sync_example() {
         async fn test_1() -> Result<(), Error> {
