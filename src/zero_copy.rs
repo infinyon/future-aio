@@ -228,7 +228,7 @@ mod tests {
     }
 
     #[fluvio_future::test]
-    async fn test_zero_copy_large_size()  {
+    async fn test_zero_copy_large_size() {
         const MAX_BYTES: usize = 300000;
 
         use futures_lite::AsyncWriteExt;
@@ -284,7 +284,6 @@ mod tests {
                 let writer = ZeroCopy::from(&mut tcp_stream);
                 writer.copy_slice(&f_slice).await.expect("file slice");
             }
-
         };
 
         let client = async {
