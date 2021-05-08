@@ -178,7 +178,6 @@ mod tests {
     use crate::fs::AsyncFileExtension;
     use crate::net::TcpListener;
     use crate::net::TcpStream;
-    use crate::test_async;
     use crate::timer::sleep;
     use crate::{fs::util as file_util, zero_copy::ZeroCopy};
     use futures_lite::AsyncReadExt;
@@ -188,8 +187,8 @@ mod tests {
     const CONST_TEST_ADDR: &str = "127.0.0.1:9999";
     const ZERO_COPY_PORT: u16 = 8888;
 
-    #[test_async]
-    async fn test_zero_copy_from_fs_to_socket() -> Result<(), SendFileError> {
+    #[fluvio_future::test]
+    async fn test_zero_copy_from_fs_to_socket() {
         // spawn tcp client and check contents
         let server = async {
             #[allow(unused_mut)]
@@ -226,11 +225,10 @@ mod tests {
         // read file and zero copy to tcp stream
 
         let _ = zip(client, server).await;
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_zero_copy_large_size() -> Result<(), SendFileError> {
+    #[fluvio_future::test]
+    async fn test_zero_copy_large_size() {
         const MAX_BYTES: usize = 300000;
 
         use futures_lite::AsyncWriteExt;
@@ -275,7 +273,7 @@ mod tests {
             for i in 0..TEST_ITERATION {
                 let stream = incoming.next().await.expect("client should connect");
                 debug!("server {} got connection. waiting", i);
-                let mut tcp_stream = stream?;
+                let mut tcp_stream = stream.expect("stream");
 
                 debug!(
                     "server {}, send back file using zero copy: {:#?}",
@@ -286,12 +284,11 @@ mod tests {
                 let writer = ZeroCopy::from(&mut tcp_stream);
                 writer.copy_slice(&f_slice).await.expect("file slice");
             }
-
-            Ok(()) as Result<(), SendFileError>
         };
 
         let client = async {
-            sleep(time::Duration::from_millis(100)).await;
+            // wait 1 seconds to give server to be ready
+            sleep(time::Duration::from_millis(1000)).await;
             let addr = format!("127.0.0.1:{}", ZERO_COPY_PORT)
                 .parse::<SocketAddr>()
                 .expect("parse");
@@ -318,6 +315,5 @@ mod tests {
 
         // read file and zero copy to tcp stream
         let _ = zip(client, server).await;
-        Ok(())
     }
 }
