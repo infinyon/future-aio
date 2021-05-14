@@ -34,19 +34,24 @@ where
     });
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-use async_std::task::spawn as async_std_spawn;
-
 #[cfg(target_arch = "wasm32")]
-use async_std::task::spawn_local as async_std_spawn;
+pub fn spawn<F, T>(future: F) -> JoinHandle<T>
+where
+    F: Future<Output = T> + 'static,
+    T: Send + 'static,
+{
+    trace!("spawning future");
+    async_std::task::spawn_local(future)
+}
 
+#[cfg(not(target_arch = "wasm32"))]
 pub fn spawn<F, T>(future: F) -> JoinHandle<T>
 where
     F: Future<Output = T> + 'static + Send,
     T: Send + 'static,
 {
     trace!("spawning future");
-    async_std_spawn(future)
+    async_std::task::spawn(future)
 }
 
 #[cfg(feature = "task_unstable")]
