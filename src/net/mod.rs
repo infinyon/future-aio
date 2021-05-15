@@ -14,7 +14,6 @@ mod conn {
 
     use futures_lite::io::{AsyncRead, AsyncWrite};
 
-
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
     impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
 
@@ -32,7 +31,6 @@ mod conn {
         // split into write and read
         fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection);
     }
-
 }
 
 #[cfg(unix)]
