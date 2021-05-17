@@ -99,6 +99,7 @@ mod connector {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 mod test {
     use std::time;
 

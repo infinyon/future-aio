@@ -54,7 +54,9 @@ mod inner {
 #[cfg(target_arch = "wasm32")]
 mod inner {
     use std::time::Duration;
-    use wasm_timer::Delay;
+    // TODO: when https://github.com/tomaka/wasm-timer/pull/13 is merged, move this back to
+    // wasm-timer
+    use fluvio_wasm_timer::Delay;
     pub fn sleep(duration: Duration) -> Delay {
         Delay::new(duration)
     }
