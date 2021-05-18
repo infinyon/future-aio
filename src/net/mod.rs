@@ -1,6 +1,8 @@
+#[cfg(unix)]
 pub use async_net::*;
 
 #[cfg(test)]
+#[cfg(unix)]
 mod tcp_stream;
 
 #[cfg(unix)]
@@ -11,8 +13,6 @@ pub use conn::*;
 mod conn {
 
     use futures_lite::io::{AsyncRead, AsyncWrite};
-
-    use super::TcpStream;
 
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
     impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
@@ -31,19 +31,19 @@ mod conn {
         // split into write and read
         fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection);
     }
+}
 
+#[cfg(unix)]
+mod connector {
+    use super::TcpStream;
+    use std::io::Error as IoError;
+    use std::os::unix::io::AsRawFd;
+    use std::os::unix::io::RawFd;
     impl SplitConnection for TcpStream {
         fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
             (Box::new(self.clone()), Box::new(self))
         }
     }
-}
-
-#[cfg(unix)]
-mod connector {
-    use std::io::Error as IoError;
-    use std::os::unix::io::AsRawFd;
-    use std::os::unix::io::RawFd;
 
     use async_trait::async_trait;
     use log::debug;
@@ -99,6 +99,7 @@ mod connector {
 }
 
 #[cfg(test)]
+#[cfg(unix)]
 mod test {
     use std::time;
 

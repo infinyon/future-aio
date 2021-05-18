@@ -27,8 +27,6 @@ pub use fluvio_test_derive::test;
 pub mod zero_copy;
 
 #[cfg(feature = "net")]
-#[cfg(unix)]
-#[cfg(not(target_arch = "wasm32"))]
 pub mod net;
 
 #[cfg(all(unix, feature = "rust_tls"))]
