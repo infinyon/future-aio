@@ -9,7 +9,7 @@ license = "Apache-2.0"
 resolver = "2"
 
 [features]
-task = ["async-std/default", "timer"]
+task = ["async-std/default", "timer","cfg-if"]
 subscriber = ["tracing-subscriber"]
 fixture = ["subscriber", "task", "fluvio-test-derive"]
 task_unstable = ["task", "async-std/unstable"]

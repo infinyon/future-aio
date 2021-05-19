@@ -1,12 +1,11 @@
 use std::future::Future;
 
 use async_std::task;
-use async_std::task::JoinHandle;
-
-//use async_std::task::JoinHandle;
-use log::trace;
 
 use crate::timer::sleep;
+
+#[cfg(feature = "task_unstable")]
+pub use async_std::task::spawn_local;
 
 /// run future and wait forever
 /// this is typically used in the server
@@ -34,54 +33,30 @@ where
     });
 }
 
-#[cfg(target_arch = "wasm32")]
-pub fn spawn<F, T>(future: F) -> JoinHandle<T>
-where
-    F: Future<Output = T> + 'static,
-    T: Send + 'static,
-{
-    trace!("spawning future");
-    async_std::task::spawn_local(future)
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub fn spawn<F, T>(future: F) -> JoinHandle<T>
-where
-    F: Future<Output = T> + 'static + Send,
-    T: Send + 'static,
-{
-    trace!("spawning future");
-    async_std::task::spawn(future)
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        pub use async_std::task::spawn_local as spawn;
+    } else {
+        pub use async_std::task::spawn;
+    }
 }
 
 #[cfg(feature = "task_unstable")]
 #[cfg(not(target_arch = "wasm32"))]
-pub fn spawn_blocking<F, T>(future: F) -> JoinHandle<T>
-where
-    F: FnOnce() -> T + Send + 'static,
-    T: Send + 'static,
-{
-    trace!("spawning blocking");
-    async_std::task::spawn_blocking(future)
-}
+pub use async_std::task::spawn_blocking;
 
-#[cfg(not(target_arch = "wasm32"))]
-/// same as async async std block on
-pub fn run_block_on<F, T>(f: F) -> T
-where
-    F: Future<Output = T>,
-{
-    task::block_on(f)
-}
-
-#[cfg(target_arch = "wasm32")]
-/// same as async async std block on
-pub fn run_block_on<F, T>(f: F)
-where
-    F: Future<Output = T> + 'static,
-    T: 'static,
-{
-    task::block_on(f)
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        pub fn run_block_on<F, T>(f: F)
+            where
+                F: Future<Output = T> + 'static,
+                T: 'static,
+            {
+                task::block_on(f)
+            }
+    } else {
+        pub use async_std::task::block_on as run_block_on;
+    }
 }
 
 #[cfg(test)]
