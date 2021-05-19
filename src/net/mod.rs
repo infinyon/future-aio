@@ -5,13 +5,16 @@ pub use async_net::*;
 #[cfg(unix)]
 mod tcp_stream;
 
-#[cfg(unix)]
-pub use connector::*;
-
 pub use conn::*;
+
+#[cfg(unix)]
+pub use unix_connector::*;
 
 mod conn {
 
+    use std::io::Error as IoError;
+
+    use async_trait::async_trait;
     use futures_lite::io::{AsyncRead, AsyncWrite};
 
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
@@ -31,24 +34,16 @@ mod conn {
         // split into write and read
         fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection);
     }
-}
 
-#[cfg(unix)]
-mod connector {
-    use super::TcpStream;
-    use std::io::Error as IoError;
-    use std::os::unix::io::AsRawFd;
-    use std::os::unix::io::RawFd;
-    impl SplitConnection for TcpStream {
-        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
-            (Box::new(self.clone()), Box::new(self))
+    cfg_if::cfg_if! {
+        if #[cfg(unix)] {
+            pub type ConnectionFd = std::os::unix::io::RawFd;
+        } else if #[cfg(windows)] {
+            pub type ConnectionFd = std::os::windows::raw::SOCKET;
+        } else {
+            pub type ConnectionFd = String;
         }
     }
-
-    use async_trait::async_trait;
-    use log::debug;
-
-    use super::*;
 
     pub type DomainConnector = Box<dyn TcpDomainConnector>;
 
@@ -58,12 +53,29 @@ mod connector {
         async fn connect(
             &self,
             domain: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError>;
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError>;
 
         // create new version of my self with new domain
         fn new_domain(&self, domain: String) -> DomainConnector;
 
         fn domain(&self) -> &str;
+    }
+}
+
+#[cfg(unix)]
+mod unix_connector {
+    use std::io::Error as IoError;
+    use std::os::unix::io::AsRawFd;
+
+    use async_trait::async_trait;
+    use log::debug;
+
+    use super::*;
+
+    impl SplitConnection for TcpStream {
+        fn split_connection(self) -> (BoxWriteConnection, BoxReadConnection) {
+            (Box::new(self.clone()), Box::new(self))
+        }
     }
 
     /// creatges TcpStream connection
@@ -81,7 +93,7 @@ mod connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tcp addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             let fd = tcp_stream.as_raw_fd();
