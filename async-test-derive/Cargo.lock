@@ -260,18 +260,18 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "async-io",
  "async-std",
  "fluvio-test-derive",
+ "fluvio-wasm-timer",
  "futures-lite",
  "log",
  "pin-project",
  "thiserror",
  "tracing",
  "tracing-subscriber",
- "wasm-timer",
 ]
 
 [[package]]
@@ -283,6 +283,20 @@ dependencies = [
  "quote",
  "syn",
  "trybuild",
+]
+
+[[package]]
+name = "fluvio-wasm-timer"
+version = "0.2.5"
+source = "git+https://github.com/infinyon/wasm-timer.git?branch=fluvio-wasm-timer#4a3361ca02b186b57ebd4141001c07d1913db643"
+dependencies = [
+ "futures",
+ "js-sys",
+ "parking_lot",
+ "pin-utils",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -427,6 +441,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61124eeebbd69b8190558df225adf7e4caafce0d743919e5d6b19652314ec5ec"
 dependencies = [
  "cfg-if",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -999,21 +1016,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9a543ae66aa233d14bb765ed9af4a33e81b8b58d1584cf1b47ff8cd0b9e4489"
-
-[[package]]
-name = "wasm-timer"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
-dependencies = [
- "futures",
- "js-sys",
- "parking_lot",
- "pin-utils",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
 
 [[package]]
 name = "web-sys"
