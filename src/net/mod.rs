@@ -41,10 +41,10 @@ mod conn {
             impl<T: AsyncWrite + Unpin> WriteConnection for T {}
         }
     }
-
-    pub type BoxConnection = Box<dyn Connection>;
-    pub type BoxReadConnection = Box<dyn ReadConnection>;
+    pub type BoxConnection      = Box<dyn Connection>;
+    pub type BoxReadConnection  = Box<dyn ReadConnection>;
     pub type BoxWriteConnection = Box<dyn WriteConnection>;
+
 
     pub trait SplitConnection {
         // split into write and read
@@ -100,10 +100,11 @@ mod wasm_connector {
             &self,
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
-            let (mut _ws, wsstream) = WsMeta::connect("ws://127.0.0.1:3012", None).await.unwrap();
-            let (mut _ws, wsstream2) = WsMeta::connect("ws://127.0.0.1:3012", None).await.unwrap();
-            Ok((Box::new(wsstream.into_io()), Box::new(wsstream2.into_io()), addr.into()))
-            //unimplemented!()
+            let (mut _ws, wsstream) = WsMeta::connect(addr, None).await.unwrap();
+            // wsstream implements both AsyncRead and AsyncWrite but there's not a good way to
+            // split them.
+            let _wsstream = wsstream.into_io();
+            unimplemented!();
         }
 
         fn new_domain(&self, _domain: String) -> DomainConnector {
