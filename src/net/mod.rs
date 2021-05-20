@@ -41,10 +41,9 @@ mod conn {
             impl<T: AsyncWrite + Unpin> WriteConnection for T {}
         }
     }
-    pub type BoxConnection      = Box<dyn Connection>;
-    pub type BoxReadConnection  = Box<dyn ReadConnection>;
+    pub type BoxConnection = Box<dyn Connection>;
+    pub type BoxReadConnection = Box<dyn ReadConnection>;
     pub type BoxWriteConnection = Box<dyn WriteConnection>;
-
 
     pub trait SplitConnection {
         // split into write and read
@@ -79,16 +78,14 @@ mod conn {
     }
 }
 
-
 #[cfg(target_arch = "wasm32")]
 mod wasm_connector {
     use super::*;
-    use std::io::Error as IoError;
     use async_trait::async_trait;
+    use std::io::Error as IoError;
     use ws_stream_wasm::WsMeta;
     #[derive(Clone, Default)]
-    pub struct DefaultDomainWebsocketConnector {
-    }
+    pub struct DefaultDomainWebsocketConnector {}
     impl DefaultDomainWebsocketConnector {
         pub fn new() -> Self {
             Self {}
@@ -115,7 +112,6 @@ mod wasm_connector {
             "localhost"
         }
     }
-
 }
 
 #[cfg(unix)]
