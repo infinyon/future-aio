@@ -8,7 +8,10 @@ mod tcp_stream;
 pub use conn::*;
 
 #[cfg(unix)]
-pub use unix_connector::*;
+pub use unix_connector::DefaultTcpDomainConnector as DefaultDomainConnector;
+
+#[cfg(target_arch = "wasm32")]
+pub use wasm_connector::DefaultDomainWebsocketConnector as DefaultDomainConnector;
 
 mod conn {
 
@@ -48,8 +51,9 @@ mod conn {
     pub type DomainConnector = Box<dyn TcpDomainConnector>;
 
     /// connect to domain and return connection
-    #[async_trait]
-    pub trait TcpDomainConnector: Send + Sync {
+    #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+    #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+    pub trait TcpDomainConnector {
         async fn connect(
             &self,
             domain: &str,
@@ -60,6 +64,44 @@ mod conn {
 
         fn domain(&self) -> &str;
     }
+}
+
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_connector {
+    use super::*;
+    use std::io::Error as IoError;
+    use async_trait::async_trait;
+    use ws_stream_wasm::WsMeta;
+    #[derive(Clone, Default)]
+    pub struct DefaultDomainWebsocketConnector {
+    }
+    impl DefaultDomainWebsocketConnector {
+        pub fn new() -> Self {
+            Self {}
+        }
+    }
+    #[async_trait(?Send)]
+    impl TcpDomainConnector for DefaultDomainWebsocketConnector {
+        async fn connect(
+            &self,
+            addr: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
+            let (mut _ws, wsstream) = WsMeta::connect("ws://127.0.0.1:3012", None).await.unwrap();
+            let (mut _ws, wsstream2) = WsMeta::connect("ws://127.0.0.1:3012", None).await.unwrap();
+            Ok((Box::new(wsstream.into_io()), Box::new(wsstream2.into_io()), addr.into()))
+            //unimplemented!()
+        }
+
+        fn new_domain(&self, _domain: String) -> DomainConnector {
+            Box::new(self.clone())
+        }
+
+        fn domain(&self) -> &str {
+            "localhost"
+        }
+    }
+
 }
 
 #[cfg(unix)]
@@ -78,7 +120,7 @@ mod unix_connector {
         }
     }
 
-    /// creatges TcpStream connection
+    /// creates TcpStream connection
     #[derive(Clone, Default)]
     pub struct DefaultTcpDomainConnector {}
 
