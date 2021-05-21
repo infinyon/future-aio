@@ -99,13 +99,11 @@ mod wasm_connector {
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             let (mut _ws, wsstream) = WsMeta::connect(addr, None).await.unwrap();
             let wsstream_clone = wsstream.clone();
-            Ok(
-                (
-                    Box::new(wsstream.into_io()),
-                    Box::new(wsstream_clone.into_io()),
-                    String::from(addr),
-                )
-            )
+            Ok((
+                Box::new(wsstream.into_io()),
+                Box::new(wsstream_clone.into_io()),
+                String::from(addr),
+            ))
         }
 
         fn new_domain(&self, _domain: String) -> DomainConnector {
@@ -221,16 +219,12 @@ mod test {
 #[cfg(target_arch = "wasm32")]
 mod test {
     use super::*;
+    use futures_util::{AsyncReadExt, AsyncWriteExt};
     use wasm_bindgen_test::*;
-    use futures_util::{
-        AsyncReadExt,
-        AsyncWriteExt,
-    };
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
     #[wasm_bindgen_test]
     async fn test_connect() {
-
         tracing_wasm::set_as_global_default();
 
         let addr = "ws://echo.websocket.org";
@@ -239,7 +233,10 @@ mod test {
         let websocket_stream = DefaultDomainConnector::default();
         let (mut writer, mut reader, _id) = websocket_stream.connect(addr).await.expect("test");
 
-        writer.write(input_msg.as_bytes()).await.expect("Failed to write");
+        writer
+            .write(input_msg.as_bytes())
+            .await
+            .expect("Failed to write");
 
         let mut output = vec![0; input_msg.len()];
         let size = reader.read(&mut output).await.expect("Failed to read");
