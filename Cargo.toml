@@ -9,6 +9,7 @@ license = "Apache-2.0"
 resolver = "2"
 
 [features]
+default = ["net"]
 task = ["async-std/default", "timer","cfg-if"]
 subscriber = ["tracing-subscriber"]
 fixture = ["subscriber", "task", "fluvio-test-derive"]
@@ -72,7 +73,8 @@ rustls = { version = "0.19.0", features = ["dangerous_configuration"], optional 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 fluvio-wasm-timer = "0.2.5"
 async-std = { version = "1.6.2", default-features = false, features = ["unstable"], optional = true }
-ws_stream_wasm = "0.7.0"
+ws_stream_wasm = { git = "https://github.com/simlay/ws_stream_wasm", branch = "add-clone-to-wsstream" }
+futures = { version = "0.3.15", features = ["bilock", "unstable"] }
 
 [dev-dependencies]
 bytes = "1.0.0"
@@ -87,4 +89,5 @@ fluvio-test-derive = { path = "async-test-derive", version = "0.1.0" }
 fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
-wasm-bindgen-test = "0.2"
+wasm-bindgen-test = "0.3.24"
+wasm-bindgen-futures = "0.4.24"

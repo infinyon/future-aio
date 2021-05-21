@@ -98,10 +98,13 @@ mod wasm_connector {
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             let (mut _ws, wsstream) = WsMeta::connect(addr, None).await.unwrap();
-            // wsstream implements both AsyncRead and AsyncWrite but there's not a good way to
-            // split them.
-            let _wsstream = wsstream.into_io();
-            unimplemented!();
+            Ok(
+                (
+                    Box::new(wsstream.clone().into_io()),
+                    Box::new(wsstream.clone().into_io()),
+                    String::from(addr),
+                )
+            )
         }
 
         fn new_domain(&self, _domain: String) -> DomainConnector {
@@ -211,5 +214,29 @@ mod test {
         let _ = zip(client_ft, server_ft).await;
 
         Ok(())
+    }
+}
+#[cfg(test)]
+#[cfg(target_arch = "wasm32")]
+mod test {
+    use super::*;
+    use wasm_bindgen_test::*;
+    use futures_util::{
+        AsyncWrite,
+        AsyncRead,
+        AsyncReadExt,
+        AsyncWriteExt,
+    };
+    use crate::timer::sleep;
+    use std::time;
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    #[wasm_bindgen_test]
+    async fn test_connect() {
+        let websocket_stream = DefaultDomainConnector::default();
+        let (mut writer, mut reader, id) = websocket_stream.connect(&"ws://echo.websocket.org").await.expect("test");
+        sleep(time::Duration::from_secs(1)).await;
+        writer.write(&[42u8]).await.expect("Failed to write");
+        let mut buf = vec![];
+        reader.read(&mut buf).await.expect("Failed to read");
     }
 }
