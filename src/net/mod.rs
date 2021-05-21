@@ -98,10 +98,11 @@ mod wasm_connector {
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             let (mut _ws, wsstream) = WsMeta::connect(addr, None).await.unwrap();
+            let wsstream_clone = wsstream.clone();
             Ok(
                 (
-                    Box::new(wsstream.clone().into_io()),
-                    Box::new(wsstream.clone().into_io()),
+                    Box::new(wsstream.into_io()),
+                    Box::new(wsstream_clone.into_io()),
                     String::from(addr),
                 )
             )
@@ -222,21 +223,27 @@ mod test {
     use super::*;
     use wasm_bindgen_test::*;
     use futures_util::{
-        AsyncWrite,
-        AsyncRead,
         AsyncReadExt,
         AsyncWriteExt,
     };
-    use crate::timer::sleep;
-    use std::time;
+
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
     #[wasm_bindgen_test]
     async fn test_connect() {
+
+        tracing_wasm::set_as_global_default();
+
+        let addr = "ws://echo.websocket.org";
+        let input_msg = "foobar".to_string();
+
         let websocket_stream = DefaultDomainConnector::default();
-        let (mut writer, mut reader, id) = websocket_stream.connect(&"ws://echo.websocket.org").await.expect("test");
-        sleep(time::Duration::from_secs(1)).await;
-        writer.write(&[42u8]).await.expect("Failed to write");
-        let mut buf = vec![];
-        reader.read(&mut buf).await.expect("Failed to read");
+        let (mut writer, mut reader, _id) = websocket_stream.connect(addr).await.expect("test");
+
+        writer.write(input_msg.as_bytes()).await.expect("Failed to write");
+
+        let mut output = vec![0; input_msg.len()];
+        let size = reader.read(&mut output).await.expect("Failed to read");
+        assert_eq!(output, input_msg.as_bytes());
+        assert_eq!(size, input_msg.len());
     }
 }

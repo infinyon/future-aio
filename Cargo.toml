@@ -73,7 +73,7 @@ rustls = { version = "0.19.0", features = ["dangerous_configuration"], optional 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 fluvio-wasm-timer = "0.2.5"
 async-std = { version = "1.6.2", default-features = false, features = ["unstable"], optional = true }
-ws_stream_wasm = { git = "https://github.com/simlay/ws_stream_wasm", branch = "add-clone-to-wsstream" }
+ws_stream_wasm = { git = "https://github.com/simlay/ws_stream_wasm", branch = "add-clone-to-wsstream-again" }
 futures = { version = "0.3.15", features = ["bilock", "unstable"] }
 
 [dev-dependencies]
@@ -91,3 +91,4 @@ fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs"] }
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.24"
 wasm-bindgen-futures = "0.4.24"
+tracing-wasm = "0.2.0"
