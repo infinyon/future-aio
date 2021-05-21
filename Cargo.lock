@@ -390,7 +390,6 @@ dependencies = [
  "fluvio-test-derive",
  "fluvio-wasm-timer",
  "flv-util",
- "futures",
  "futures-lite",
  "futures-timer",
  "futures-util",
@@ -1703,7 +1702,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 [[package]]
 name = "ws_stream_wasm"
 version = "0.7.0"
-source = "git+https://github.com/simlay/ws_stream_wasm?branch=add-clone-to-wsstream-again#74e6512b5040ab96e1c5739ad7d420e8f9d39c52"
+source = "git+https://github.com/infinyon/ws_stream_wasm?branch=add-clone-to-wsstream-again#74e6512b5040ab96e1c5739ad7d420e8f9d39c52"
 dependencies = [
  "async_io_stream",
  "futures",
