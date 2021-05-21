@@ -414,7 +414,8 @@ dependencies = [
 [[package]]
 name = "fluvio-wasm-timer"
 version = "0.2.5"
-source = "git+https://github.com/infinyon/wasm-timer.git?branch=fluvio-wasm-timer#4a3361ca02b186b57ebd4141001c07d1913db643"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b768c170dc045fa587a8f948c91f9bcfb87f774930477c6215addf54317f137f"
 dependencies = [
  "futures 0.3.15",
  "js-sys",
