@@ -8,7 +8,14 @@ mod tcp_stream;
 pub use conn::*;
 
 #[cfg(unix)]
-pub use unix_connector::*;
+pub use unix_connector::DefaultTcpDomainConnector as DefaultDomainConnector;
+
+#[cfg(unix)]
+#[deprecated(since = "0.3.3", note = "Please use the bar DefaultDomainConnector")]
+pub use unix_connector::DefaultTcpDomainConnector;
+
+#[cfg(target_arch = "wasm32")]
+pub use wasm_connector::DefaultDomainWebsocketConnector as DefaultDomainConnector;
 
 mod conn {
 
@@ -17,15 +24,27 @@ mod conn {
     use async_trait::async_trait;
     use futures_lite::io::{AsyncRead, AsyncWrite};
 
-    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
-    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
+    cfg_if::cfg_if! {
+        if #[cfg(not(target_arch = "wasm32"))] {
+            pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
+            impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
 
-    pub trait ReadConnection: AsyncRead + Send + Sync + Unpin {}
-    impl<T: AsyncRead + Send + Sync + Unpin> ReadConnection for T {}
+            pub trait ReadConnection: AsyncRead + Send + Sync + Unpin {}
+            impl<T: AsyncRead + Send + Sync + Unpin> ReadConnection for T {}
 
-    pub trait WriteConnection: AsyncWrite + Send + Sync + Unpin {}
-    impl<T: AsyncWrite + Send + Sync + Unpin> WriteConnection for T {}
+            pub trait WriteConnection: AsyncWrite + Send + Sync + Unpin {}
+            impl<T: AsyncWrite + Send + Sync + Unpin> WriteConnection for T {}
+        } else if #[cfg(target_arch = "wasm32")] {
+            pub trait Connection: AsyncRead + AsyncWrite + Unpin + SplitConnection {}
+            impl<T: AsyncRead + AsyncWrite  + Unpin + SplitConnection> Connection for T {}
 
+            pub trait ReadConnection: AsyncRead + Unpin {}
+            impl<T: AsyncRead + Unpin> ReadConnection for T {}
+
+            pub trait WriteConnection: AsyncWrite + Unpin {}
+            impl<T: AsyncWrite + Unpin> WriteConnection for T {}
+        }
+    }
     pub type BoxConnection = Box<dyn Connection>;
     pub type BoxReadConnection = Box<dyn ReadConnection>;
     pub type BoxWriteConnection = Box<dyn WriteConnection>;
@@ -48,8 +67,9 @@ mod conn {
     pub type DomainConnector = Box<dyn TcpDomainConnector>;
 
     /// connect to domain and return connection
-    #[async_trait]
-    pub trait TcpDomainConnector: Send + Sync {
+    #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+    #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+    pub trait TcpDomainConnector {
         async fn connect(
             &self,
             domain: &str,
@@ -59,6 +79,46 @@ mod conn {
         fn new_domain(&self, domain: String) -> DomainConnector;
 
         fn domain(&self) -> &str;
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+mod wasm_connector {
+    use super::*;
+    use async_trait::async_trait;
+    use std::io::Error as IoError;
+    use ws_stream_wasm::WsMeta;
+    #[derive(Clone, Default)]
+    pub struct DefaultDomainWebsocketConnector {}
+    impl DefaultDomainWebsocketConnector {
+        pub fn new() -> Self {
+            Self {}
+        }
+    }
+    #[async_trait(?Send)]
+    impl TcpDomainConnector for DefaultDomainWebsocketConnector {
+        async fn connect(
+            &self,
+            addr: &str,
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
+            let (mut _ws, wsstream) = WsMeta::connect(addr, None)
+                .await
+                .map_err(|e| IoError::new(std::io::ErrorKind::Other, e))?;
+            let wsstream_clone = wsstream.clone();
+            Ok((
+                Box::new(wsstream.into_io()),
+                Box::new(wsstream_clone.into_io()),
+                String::from(addr),
+            ))
+        }
+
+        fn new_domain(&self, _domain: String) -> DomainConnector {
+            Box::new(self.clone())
+        }
+
+        fn domain(&self) -> &str {
+            "localhost"
+        }
     }
 }
 
@@ -78,7 +138,7 @@ mod unix_connector {
         }
     }
 
-    /// creatges TcpStream connection
+    /// creates TcpStream connection
     #[derive(Clone, Default)]
     pub struct DefaultTcpDomainConnector {}
 
@@ -159,5 +219,34 @@ mod test {
         let _ = zip(client_ft, server_ft).await;
 
         Ok(())
+    }
+}
+#[cfg(test)]
+#[cfg(target_arch = "wasm32")]
+mod test {
+    use super::*;
+    use futures_util::{AsyncReadExt, AsyncWriteExt};
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    #[wasm_bindgen_test]
+    async fn test_connect() {
+        tracing_wasm::set_as_global_default();
+
+        let addr = "ws://echo.websocket.org";
+        let input_msg = "foobar".to_string();
+
+        let websocket_stream = DefaultDomainConnector::default();
+        let (mut writer, mut reader, _id) = websocket_stream.connect(addr).await.expect("test");
+
+        writer
+            .write(input_msg.as_bytes())
+            .await
+            .expect("Failed to write");
+
+        let mut output = vec![0; input_msg.len()];
+        let size = reader.read(&mut output).await.expect("Failed to read");
+        assert_eq!(output, input_msg.as_bytes());
+        assert_eq!(size, input_msg.len());
     }
 }

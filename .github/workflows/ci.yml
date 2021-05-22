@@ -58,3 +58,23 @@ jobs:
 
     - name: Run wasm tests
       run:  make test-wasm
+
+  wasm_test_macos:
+    name: Wasm Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
+        rust: [stable]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install ${{ matrix.rust }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        override: true
+        target: wasm32-unknown-unknown
+
+    - name: Run wasm tests
+      run:  make test-wasm-safari

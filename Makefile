@@ -6,11 +6,15 @@ build-all:
 test-all:	test-derive
 	cargo test --all-features
 
-install-wasm-cli:
-	cargo install wasm-bindgen-cli
+install-wasm-pack:
+	which wasm-pack || curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-test-wasm: install-wasm32 install-wasm-cli
-	cargo test --all-features --target wasm32-unknown-unknown
+test-wasm: install-wasm32 install-wasm-pack
+	wasm-pack test --firefox --headless
+	wasm-pack test --chrome --headless
+
+test-wasm-safari: install-wasm32 install-wasm-pack
+	wasm-pack test --safari --headless
 
 test-derive:
 	cd async-test-derive; cargo test
