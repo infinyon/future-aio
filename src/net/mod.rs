@@ -10,6 +10,13 @@ pub use conn::*;
 #[cfg(unix)]
 pub use unix_connector::DefaultTcpDomainConnector as DefaultDomainConnector;
 
+#[cfg(unix)]
+#[deprecated(
+    since = "0.3.3",
+    note = "Please use the bar DefaultDomainConnector"
+)]
+pub use unix_connector::DefaultTcpDomainConnector;
+
 #[cfg(target_arch = "wasm32")]
 pub use wasm_connector::DefaultDomainWebsocketConnector as DefaultDomainConnector;
 
