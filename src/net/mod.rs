@@ -104,7 +104,7 @@ mod wasm_connector {
             &self,
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
-            let (mut _ws, wsstream) = WsMeta::connect(addr, None).await.unwrap();
+            let (mut _ws, wsstream) = WsMeta::connect(addr, None).await.map_err(|e| IoError::new(std::io::ErrorKind::Other, e))?;
             let wsstream_clone = wsstream.clone();
             Ok((
                 Box::new(wsstream.into_io()),
