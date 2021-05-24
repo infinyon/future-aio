@@ -97,8 +97,8 @@ mod conn {
 mod wasm_connector {
     use super::*;
     use async_trait::async_trait;
-    use std::io::Error as IoError;
     use fluvio_ws_stream_wasm::WsMeta;
+    use std::io::Error as IoError;
     #[derive(Clone, Default)]
     pub struct DefaultDomainWebsocketConnector {}
     impl DefaultDomainWebsocketConnector {
