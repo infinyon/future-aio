@@ -66,10 +66,21 @@ mod conn {
 
     pub type DomainConnector = Box<dyn TcpDomainConnector>;
 
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            pub trait AsyncConnector {}
+            impl <T: TcpDomainConnector> AsyncConnector for T {}
+        } else {
+            pub trait AsyncConnector: Send + Sync {}
+
+            impl<T: Send + Sync> AsyncConnector for T {}
+        }
+    }
+
     /// connect to domain and return connection
     #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
     #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-    pub trait TcpDomainConnector {
+    pub trait TcpDomainConnector: AsyncConnector {
         async fn connect(
             &self,
             domain: &str,
