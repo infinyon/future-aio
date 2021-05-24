@@ -80,7 +80,7 @@ mod conn {
     /// connect to domain and return connection
     #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
     #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-    pub trait TcpDomainConnector:  AsyncConnector {
+    pub trait TcpDomainConnector: AsyncConnector {
         async fn connect(
             &self,
             domain: &str,
