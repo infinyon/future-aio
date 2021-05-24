@@ -72,7 +72,7 @@ rustls = { version = "0.19.0", features = ["dangerous_configuration"], optional 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 fluvio-wasm-timer = "0.2.5"
 async-std = { version = "1.6.2", default-features = false, features = ["unstable"], optional = true }
-ws_stream_wasm = { git = "https://github.com/infinyon/ws_stream_wasm", branch = "add-clone-to-wsstream-again" }
+fluvio_ws_stream_wasm = "0.7.0"
 
 [dev-dependencies]
 bytes = "1.0.0"
