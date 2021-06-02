@@ -432,11 +432,12 @@ mod test {
 
     use crate::net::TcpListener;
     use crate::net::TcpStream;
+    use crate::net::certs::CertBuilder;
     use crate::test_async;
     use crate::timer::sleep;
 
     use super::{
-        AcceptorBuilder, AllTcpStream, CertBuilder, ConnectorBuilder, IdentityBuilder,
+        AcceptorBuilder, AllTcpStream, ConnectorBuilder, IdentityBuilder,
         PrivateKeyBuilder, X509PemBuilder,
     };
 

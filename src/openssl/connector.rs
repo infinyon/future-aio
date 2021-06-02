@@ -42,9 +42,8 @@ pub mod certs {
     mod identity_impl {
 
 
-        use openssl::pkey::PKey;
-        use openssl::x509::X509;
-        use openssl::pkey::Private;      
+        use openssl::pkey::{PKey,Private};
+        use openssl::x509::X509;     
         use openssl::pkcs12::Pkcs12;
         use openssl::error::ErrorStack;
 
@@ -70,7 +69,7 @@ pub mod certs {
                 &self.cert
             }
 
-            pub fn pkey(&self) -> Pkey<Private> {
+            pub fn pkey(&self) -> &PKey<Private> {
                 &self.pkey
             }
         }
@@ -247,7 +246,6 @@ impl TlsConnectorBuilder {
         self.inner.set_private_key(identity.pkey())?;
         Ok(self)
     }
-
 
     pub fn build(self) -> TlsConnector {
         TlsConnector {
