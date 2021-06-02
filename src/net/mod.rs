@@ -93,6 +93,32 @@ mod conn {
     }
 }
 
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod certs {
+
+    use std::fs::File;
+    use std::path::Path;
+    use std::io::Error as IoError;
+    use std::io::BufRead;
+    use std::io::BufReader;
+
+    pub trait CertBuilder: Sized {
+        fn new(bytes: Vec<u8>) -> Self;
+
+        fn from_reader(reader: &mut dyn BufRead) -> Result<Self, IoError> {
+            let mut bytes = vec![];
+            reader.read_to_end(&mut bytes)?;
+            Ok(Self::new(bytes))
+        }
+
+        fn from_path(path: impl AsRef<Path>) -> Result<Self, IoError> {
+            let mut reader = BufReader::new(File::open(path)?);
+            Self::from_reader(&mut reader)
+        }
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 mod wasm_connector {
     use super::*;

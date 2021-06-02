@@ -20,6 +20,154 @@ use super::error::Result;
 use super::handshake::HandshakeFuture;
 use super::stream::TlsStream;
 
+// same code but without native builder
+// TODO: simplification
+pub mod certs {
+
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+
+    use openssl::pkcs12::Pkcs12;
+    use openssl::pkey::Private;
+    use crate::net::certs::CertBuilder;
+
+    
+    pub type PrivateKey = openssl::pkey::PKey<Private>;
+    pub type Certificate = openssl::x509::X509;
+
+   // use identity_impl::Certificate;
+    use identity_impl::Identity;
+
+    // copied from https://github.com/sfackler/rust-native-tls/blob/master/src/imp/openssl.rs
+    mod identity_impl {
+
+
+        use openssl::pkey::PKey;
+        use openssl::x509::X509;
+        use openssl::pkey::Private;      
+        use openssl::pkcs12::Pkcs12;
+        use openssl::error::ErrorStack;
+
+        #[derive(Clone)]
+        pub struct Identity {
+            pkey: PKey<Private>,
+            cert: X509,
+            chain: Vec<X509>,
+        }
+
+        impl Identity {
+            pub fn from_pkcs12(buf: &[u8], pass: &str) -> Result<Identity, ErrorStack> {
+                let pkcs12 = Pkcs12::from_der(buf)?;
+                let parsed = pkcs12.parse(pass)?;
+                Ok(Identity {
+                    pkey: parsed.pkey,
+                    cert: parsed.cert,
+                    chain: parsed.chain.into_iter().flatten().collect(),
+                })
+            }
+
+            pub fn cert(&self) -> &X509 {
+                &self.cert
+            }
+
+            pub fn pkey(&self) -> Pkey<Private> {
+                &self.pkey
+            }
+        }
+
+        #[derive(Clone)]
+        pub struct Certificate(X509);
+
+        impl Certificate {
+            pub fn from_der(buf: &[u8]) -> Result<Certificate, ErrorStack> {
+                let cert = X509::from_der(buf)?;
+                Ok(Certificate(cert))
+            }
+
+            pub fn from_pem(buf: &[u8]) -> Result<Certificate, ErrorStack> {
+                let cert = X509::from_pem(buf)?;
+                Ok(Certificate(cert))
+            }
+
+            pub fn to_der(&self) -> Result<Vec<u8>, ErrorStack> {
+                let der = self.0.to_der()?;
+                Ok(der)
+            }
+        }
+    }
+
+    pub struct X509PemBuilder(Vec<u8>);
+
+    impl CertBuilder for X509PemBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl X509PemBuilder {
+        pub fn build(self) -> Result<Certificate, IoError> {
+            let cert = Certificate::from_pem(&self.0).map_err(|err| {
+                IoError::new(ErrorKind::InvalidInput, format!("invalid cert: {}", err))
+            })?;
+            Ok(cert)
+        }
+    }
+
+    const PASSWORD: &str = "test";
+
+    pub struct PrivateKeyBuilder(Vec<u8>);
+
+    impl CertBuilder for PrivateKeyBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl PrivateKeyBuilder {
+        pub fn build(self) -> Result<PrivateKey, IoError> {
+            let key = PrivateKey::private_key_from_pem(&self.0).map_err(|err| {
+                IoError::new(ErrorKind::InvalidInput, format!("invalid key: {}", err))
+            })?;
+            Ok(key)
+        }
+    }
+
+
+    pub struct IdentityBuilder(Vec<u8>);
+
+    impl CertBuilder for IdentityBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl IdentityBuilder {
+        /// load pk12 from x509 certs
+        pub fn from_x509(x509: X509PemBuilder, key: PrivateKeyBuilder) -> Result<Self, IoError> {
+            let server_key = key.build()?;
+            let server_crt = x509.build()?;
+            let p12 = Pkcs12::builder()
+                .build(PASSWORD, "", &server_key, &server_crt)
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::InvalidData,
+                        format!("Failed to create Pkcs12: {}", e),
+                    )
+                })?;
+
+            let der = p12.to_der()?;
+            Ok(Self(der))
+        }
+
+        pub fn build(self) -> Result<Identity, IoError> {
+            Identity::from_pkcs12(&self.0, PASSWORD).map_err(|e| {
+                IoError::new(ErrorKind::InvalidData, format!("Failed to load der: {}", e))
+            })
+        }
+    }
+
+}
+
 #[derive(Clone, Debug)]
 pub struct TlsConnector {
     pub inner: ssl::SslConnector,
@@ -91,6 +239,15 @@ impl TlsConnectorBuilder {
         self.inner.cert_store_mut().add_cert(cert.0)?;
         Ok(self)
     }
+
+    /// set identity
+    pub fn with_identity(mut self,builder: certs::IdentityBuilder) -> Result<Self> {
+        let identity = builder.build()?;
+        self.inner.set_certificate(identity.cert())?;
+        self.inner.set_private_key(identity.pkey())?;
+        Ok(self)
+    }
+
 
     pub fn build(self) -> TlsConnector {
         TlsConnector {
