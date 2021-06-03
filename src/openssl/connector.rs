@@ -29,23 +29,22 @@ pub mod certs {
 
     use openssl::pkcs12::Pkcs12;
     use openssl::pkey::Private;
+
+    use super::Certificate;
     use crate::net::certs::CertBuilder;
 
-    
     pub type PrivateKey = openssl::pkey::PKey<Private>;
-    pub type Certificate = openssl::x509::X509;
 
-   // use identity_impl::Certificate;
+    // use identity_impl::Certificate;
     use identity_impl::Identity;
 
     // copied from https://github.com/sfackler/rust-native-tls/blob/master/src/imp/openssl.rs
     mod identity_impl {
 
-
-        use openssl::pkey::{PKey,Private};
-        use openssl::x509::X509;     
-        use openssl::pkcs12::Pkcs12;
         use openssl::error::ErrorStack;
+        use openssl::pkcs12::Pkcs12;
+        use openssl::pkey::{PKey, Private};
+        use openssl::x509::X509;
 
         #[derive(Clone)]
         pub struct Identity {
@@ -72,25 +71,9 @@ pub mod certs {
             pub fn pkey(&self) -> &PKey<Private> {
                 &self.pkey
             }
-        }
 
-        #[derive(Clone)]
-        pub struct Certificate(X509);
-
-        impl Certificate {
-            pub fn from_der(buf: &[u8]) -> Result<Certificate, ErrorStack> {
-                let cert = X509::from_der(buf)?;
-                Ok(Certificate(cert))
-            }
-
-            pub fn from_pem(buf: &[u8]) -> Result<Certificate, ErrorStack> {
-                let cert = X509::from_pem(buf)?;
-                Ok(Certificate(cert))
-            }
-
-            pub fn to_der(&self) -> Result<Vec<u8>, ErrorStack> {
-                let der = self.0.to_der()?;
-                Ok(der)
+            pub fn chain(&self) -> &Vec<X509> {
+                &self.chain
             }
         }
     }
@@ -131,7 +114,6 @@ pub mod certs {
         }
     }
 
-
     pub struct IdentityBuilder(Vec<u8>);
 
     impl CertBuilder for IdentityBuilder {
@@ -146,7 +128,7 @@ pub mod certs {
             let server_key = key.build()?;
             let server_crt = x509.build()?;
             let p12 = Pkcs12::builder()
-                .build(PASSWORD, "", &server_key, &server_crt)
+                .build(PASSWORD, "", &server_key, server_crt.inner())
                 .map_err(|e| {
                     IoError::new(
                         ErrorKind::InvalidData,
@@ -164,7 +146,6 @@ pub mod certs {
             })
         }
     }
-
 }
 
 #[derive(Clone, Debug)]
@@ -186,10 +167,13 @@ impl TlsConnector {
     where
         S: AsyncRead + AsyncWrite + fmt::Debug + Unpin + Send + Sync + 'static,
     {
+        debug!("tls connecting to: {}", domain);
         let client_configuration = self
             .inner
             .configure()?
             .verify_hostname(self.verify_hostname);
+        //let ssl = client_configuration.connect(domain, stream)?;
+        //debug!("client config: {:#?}",client_configuration.ssl_context());
         HandshakeFuture::Initial(
             move |stream| client_configuration.connect(domain, stream),
             AsyncToSyncWrapper::new(stream),
@@ -240,14 +224,18 @@ impl TlsConnectorBuilder {
     }
 
     /// set identity
-    pub fn with_identity(mut self,builder: certs::IdentityBuilder) -> Result<Self> {
+    pub fn with_identity(mut self, builder: certs::IdentityBuilder) -> Result<Self> {
         let identity = builder.build()?;
         self.inner.set_certificate(identity.cert())?;
         self.inner.set_private_key(identity.pkey())?;
+        for cert in identity.chain().iter().rev() {
+            self.inner.add_extra_chain_cert(cert.to_owned())?;
+        }
         Ok(self)
     }
 
     pub fn build(self) -> TlsConnector {
+        // openssl_probe::init_ssl_cert_env_vars();
         TlsConnector {
             inner: self.inner.build(),
             verify_hostname: self.verify_hostname,
@@ -271,6 +259,7 @@ impl TcpDomainConnector for TlsAnonymousConnector {
         &self,
         domain: &str,
     ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
+        debug!("tcp connect: {}", domain);
         let tcp_stream = TcpStream::connect(domain).await?;
         let fd = tcp_stream.as_raw_fd();
         let (write, read) = self
@@ -318,20 +307,29 @@ impl TcpDomainConnector for TlsDomainConnector {
             .connector
             .connect(&self.domain, tcp_stream)
             .await
+            .expect("fail")
+            .split_connection();
+        /*
+        let (write, read) = self
+            .connector
+            .connect(&self.domain, tcp_stream)
+            .await
             .map_err(|err| err.into_io_error())?
             .split_connection();
+        */
 
         debug!("connect to tls domain: {}", self.domain);
         Ok((write, read, fd))
     }
 
     fn new_domain(&self, domain: String) -> DomainConnector {
+        debug!("setting new domain: {}", domain);
         let mut connector = self.clone();
         connector.domain = domain;
         Box::new(connector)
     }
 
     fn domain(&self) -> &str {
-        "localhost"
+        &self.domain
     }
 }

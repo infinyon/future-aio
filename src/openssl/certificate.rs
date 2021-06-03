@@ -16,5 +16,9 @@ impl Certificate {
     pub fn to_der(&self) -> Result<Vec<u8>> {
         Ok(self.0.to_der()?)
     }
+
+    pub fn inner(&self) -> &X509 {
+        &self.0
+    }
 }
 pub struct PrivateKey(pub PKey<Private>);

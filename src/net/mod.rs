@@ -103,6 +103,8 @@ pub mod certs {
     use std::io::BufRead;
     use std::io::BufReader;
 
+    use log::debug;
+
     pub trait CertBuilder: Sized {
         fn new(bytes: Vec<u8>) -> Self;
 
@@ -113,6 +115,7 @@ pub mod certs {
         }
 
         fn from_path(path: impl AsRef<Path>) -> Result<Self, IoError> {
+            debug!("loading cert from: {}",path.as_ref().display());
             let mut reader = BufReader::new(File::open(path)?);
             Self::from_reader(&mut reader)
         }
