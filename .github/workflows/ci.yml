@@ -2,31 +2,36 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - staging
+      - trying
   pull_request:
     branches: [ master ]
 
 jobs:
-  check_clippy:
-    name: Check clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Check formatting
-        run: make check-fmt
-      - name: Check clippy
-        run: make check-clippy
-
-  smoke_test:
-    name: Smoke test
+  test:
+    name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
         rust: [stable]
+        task:
+          - name: Run unit tests
+            run: make test-all
+
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            task:
+              name: Rustfmt
+              run: make check-fmt
+
+          - os: ubuntu-latest
+            rust: stable
+            task:
+              name: Clippy
+              run: make check-clippy
 
     steps:
     - uses: actions/checkout@v2
@@ -35,17 +40,27 @@ jobs:
       with:
         toolchain: ${{ matrix.rust }}
         override: true
-    - name: Run unit tests
+    - name: ${{ matrix.task.name }}
+      run: ${{ matrix.task.run }}
       timeout-minutes: 15
-      run:  make test-all
 
   wasm_test:
-    name: Wasm Test
+    name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            task:
+              name: Run WASM tests
+              run: make test-wasm
+
+          - os: macos-latest
+            rust: stable
+            task:
+              name: Run MacOS WASM tests
+              run: make test-wasm-safari
 
     steps:
     - uses: actions/checkout@v2
@@ -56,25 +71,14 @@ jobs:
         override: true
         target: wasm32-unknown-unknown
 
-    - name: Run wasm tests
-      run:  make test-wasm
+    - name: ${{ matrix.task.name }}
+      run: ${{ matrix.task.run }}
 
-  wasm_test_macos:
-    name: Wasm Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest]
-        rust: [stable]
-
+  done:
+    name: Done
+    needs: [test, wasm_test]
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Install ${{ matrix.rust }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-        target: wasm32-unknown-unknown
+      - name: Done
+        run: echo "Done!"
 
-    - name: Run wasm tests
-      run:  make test-wasm-safari
