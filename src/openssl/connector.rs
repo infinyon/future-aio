@@ -274,7 +274,7 @@ impl TcpDomainConnector for TlsAnonymousConnector {
     }
 
     fn domain(&self) -> &str {
-        &self.domain
+        "localhost"
     }
 }
 
