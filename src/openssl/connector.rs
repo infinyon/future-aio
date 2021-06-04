@@ -258,6 +258,7 @@ impl TcpDomainConnector for TlsAnonymousConnector {
     ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
         debug!("tcp connect: {}", domain);
         let tcp_stream = TcpStream::connect(domain).await?;
+        tcp_stream.set_nodelay(true)?;
         let fd = tcp_stream.as_raw_fd();
         let (write, read) = self
             .0
