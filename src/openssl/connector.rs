@@ -304,7 +304,7 @@ impl TcpDomainConnector for TlsDomainConnector {
             .connector
             .connect(&self.domain, tcp_stream)
             .await
-            .expect("fail")
+            .map_err(|err| err.into_io_error())?
             .split_connection();
 
         debug!("connect to tls domain: {}", self.domain);
