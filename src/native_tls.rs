@@ -333,7 +333,6 @@ mod builder {
     }
 }
 
-
 #[deprecated]
 #[allow(deprecated)]
 pub use stream::AllTcpStream;
@@ -611,7 +610,7 @@ mod test {
                 .connect("localhost", tcp_stream)
                 .await
                 .expect("tls failed");
-            
+
             #[allow(deprecated)]
             let all_stream = AllTcpStream::Tls(tls_stream);
             let mut framed = Framed::new(all_stream.compat(), BytesCodec::new());

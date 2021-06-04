@@ -172,8 +172,6 @@ impl TlsConnector {
             .inner
             .configure()?
             .verify_hostname(self.verify_hostname);
-        //let ssl = client_configuration.connect(domain, stream)?;
-        //debug!("client config: {:#?}",client_configuration.ssl_context());
         HandshakeFuture::Initial(
             move |stream| client_configuration.connect(domain, stream),
             AsyncToSyncWrapper::new(stream),
@@ -235,7 +233,6 @@ impl TlsConnectorBuilder {
     }
 
     pub fn build(self) -> TlsConnector {
-        // openssl_probe::init_ssl_cert_env_vars();
         TlsConnector {
             inner: self.inner.build(),
             verify_hostname: self.verify_hostname,
@@ -277,7 +274,7 @@ impl TcpDomainConnector for TlsAnonymousConnector {
     }
 
     fn domain(&self) -> &str {
-        "localhost"
+        &self.domain
     }
 }
 
@@ -309,14 +306,6 @@ impl TcpDomainConnector for TlsDomainConnector {
             .await
             .expect("fail")
             .split_connection();
-        /*
-        let (write, read) = self
-            .connector
-            .connect(&self.domain, tcp_stream)
-            .await
-            .map_err(|err| err.into_io_error())?
-            .split_connection();
-        */
 
         debug!("connect to tls domain: {}", self.domain);
         Ok((write, read, fd))

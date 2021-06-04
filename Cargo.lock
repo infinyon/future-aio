@@ -401,7 +401,6 @@ dependencies = [
  "nix",
  "num_cpus",
  "openssl",
- "openssl-probe",
  "openssl-sys",
  "pin-project",
  "pin-utils",
