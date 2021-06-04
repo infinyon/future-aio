@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.3.3"
+version = "0.3.4"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
@@ -9,7 +9,7 @@ license = "Apache-2.0"
 resolver = "2"
 
 [features]
-task = ["async-std/default", "timer","cfg-if"]
+task = ["async-std/default", "timer", "cfg-if"]
 subscriber = ["tracing-subscriber"]
 fixture = ["subscriber", "task", "fluvio-test-derive"]
 task_unstable = ["task", "async-std/unstable"]
@@ -32,7 +32,7 @@ native2_tls = [
     "openssl",
     "futures-util",
 ]
-openssl_tls = ["net", "openssl", "openssl-sys", "pin-project", "futures-util"]
+openssl_tls = ["net", "openssl", "openssl-sys","pin-project", "futures-util"]
 timer = ["async-io", "pin-project", "futures-lite"]
 fs = ["async-fs", "futures-lite", "pin-utils"]
 zero_copy = ["nix", "task_unstable"]

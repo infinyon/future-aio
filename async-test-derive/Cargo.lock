@@ -271,20 +271,20 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "async-io",
  "async-std",
  "cfg-if",
  "fluvio-test-derive",
  "fluvio-wasm-timer",
+ "fluvio_ws_stream_wasm",
  "futures-lite",
  "log",
  "pin-project",
  "thiserror",
  "tracing",
  "tracing-subscriber",
- "ws_stream_wasm",
 ]
 
 [[package]]
@@ -308,6 +308,24 @@ dependencies = [
  "js-sys",
  "parking_lot",
  "pin-utils",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "fluvio_ws_stream_wasm"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9875a7ffd1467f052ee51d936dc916f3b040ee3989d6abc875a10f0d2b204cdf"
+dependencies = [
+ "async_io_stream",
+ "futures",
+ "js-sys",
+ "pharos",
+ "rustc_version 0.3.3",
+ "send_wrapper",
+ "thiserror",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -1162,20 +1180,3 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-
-[[package]]
-name = "ws_stream_wasm"
-version = "0.7.0"
-source = "git+https://github.com/infinyon/ws_stream_wasm?branch=add-clone-to-wsstream-again#74e6512b5040ab96e1c5739ad7d420e8f9d39c52"
-dependencies = [
- "async_io_stream",
- "futures",
- "js-sys",
- "pharos",
- "rustc_version 0.3.3",
- "send_wrapper",
- "thiserror",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]

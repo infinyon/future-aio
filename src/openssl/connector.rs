@@ -20,6 +20,134 @@ use super::error::Result;
 use super::handshake::HandshakeFuture;
 use super::stream::TlsStream;
 
+// same code but without native builder
+// TODO: simplification
+pub mod certs {
+
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+
+    use openssl::pkcs12::Pkcs12;
+    use openssl::pkey::Private;
+
+    use super::Certificate;
+    use crate::net::certs::CertBuilder;
+
+    pub type PrivateKey = openssl::pkey::PKey<Private>;
+
+    // use identity_impl::Certificate;
+    use identity_impl::Identity;
+
+    // copied from https://github.com/sfackler/rust-native-tls/blob/master/src/imp/openssl.rs
+    mod identity_impl {
+
+        use openssl::error::ErrorStack;
+        use openssl::pkcs12::Pkcs12;
+        use openssl::pkey::{PKey, Private};
+        use openssl::x509::X509;
+
+        #[derive(Clone)]
+        pub struct Identity {
+            pkey: PKey<Private>,
+            cert: X509,
+            chain: Vec<X509>,
+        }
+
+        impl Identity {
+            pub fn from_pkcs12(buf: &[u8], pass: &str) -> Result<Identity, ErrorStack> {
+                let pkcs12 = Pkcs12::from_der(buf)?;
+                let parsed = pkcs12.parse(pass)?;
+                Ok(Identity {
+                    pkey: parsed.pkey,
+                    cert: parsed.cert,
+                    chain: parsed.chain.into_iter().flatten().collect(),
+                })
+            }
+
+            pub fn cert(&self) -> &X509 {
+                &self.cert
+            }
+
+            pub fn pkey(&self) -> &PKey<Private> {
+                &self.pkey
+            }
+
+            pub fn chain(&self) -> &Vec<X509> {
+                &self.chain
+            }
+        }
+    }
+
+    pub struct X509PemBuilder(Vec<u8>);
+
+    impl CertBuilder for X509PemBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl X509PemBuilder {
+        pub fn build(self) -> Result<Certificate, IoError> {
+            let cert = Certificate::from_pem(&self.0).map_err(|err| {
+                IoError::new(ErrorKind::InvalidInput, format!("invalid cert: {}", err))
+            })?;
+            Ok(cert)
+        }
+    }
+
+    const PASSWORD: &str = "test";
+
+    pub struct PrivateKeyBuilder(Vec<u8>);
+
+    impl CertBuilder for PrivateKeyBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl PrivateKeyBuilder {
+        pub fn build(self) -> Result<PrivateKey, IoError> {
+            let key = PrivateKey::private_key_from_pem(&self.0).map_err(|err| {
+                IoError::new(ErrorKind::InvalidInput, format!("invalid key: {}", err))
+            })?;
+            Ok(key)
+        }
+    }
+
+    pub struct IdentityBuilder(Vec<u8>);
+
+    impl CertBuilder for IdentityBuilder {
+        fn new(bytes: Vec<u8>) -> Self {
+            Self(bytes)
+        }
+    }
+
+    impl IdentityBuilder {
+        /// load pk12 from x509 certs
+        pub fn from_x509(x509: X509PemBuilder, key: PrivateKeyBuilder) -> Result<Self, IoError> {
+            let server_key = key.build()?;
+            let server_crt = x509.build()?;
+            let p12 = Pkcs12::builder()
+                .build(PASSWORD, "", &server_key, server_crt.inner())
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::InvalidData,
+                        format!("Failed to create Pkcs12: {}", e),
+                    )
+                })?;
+
+            let der = p12.to_der()?;
+            Ok(Self(der))
+        }
+
+        pub fn build(self) -> Result<Identity, IoError> {
+            Identity::from_pkcs12(&self.0, PASSWORD).map_err(|e| {
+                IoError::new(ErrorKind::InvalidData, format!("Failed to load der: {}", e))
+            })
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct TlsConnector {
     pub inner: ssl::SslConnector,
@@ -39,6 +167,7 @@ impl TlsConnector {
     where
         S: AsyncRead + AsyncWrite + fmt::Debug + Unpin + Send + Sync + 'static,
     {
+        debug!("tls connecting to: {}", domain);
         let client_configuration = self
             .inner
             .configure()?
@@ -92,6 +221,17 @@ impl TlsConnectorBuilder {
         Ok(self)
     }
 
+    /// set identity
+    pub fn with_identity(mut self, builder: certs::IdentityBuilder) -> Result<Self> {
+        let identity = builder.build()?;
+        self.inner.set_certificate(identity.cert())?;
+        self.inner.set_private_key(identity.pkey())?;
+        for cert in identity.chain().iter().rev() {
+            self.inner.add_extra_chain_cert(cert.to_owned())?;
+        }
+        Ok(self)
+    }
+
     pub fn build(self) -> TlsConnector {
         TlsConnector {
             inner: self.inner.build(),
@@ -116,7 +256,9 @@ impl TcpDomainConnector for TlsAnonymousConnector {
         &self,
         domain: &str,
     ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
+        debug!("tcp connect: {}", domain);
         let tcp_stream = TcpStream::connect(domain).await?;
+        tcp_stream.set_nodelay(true)?;
         let fd = tcp_stream.as_raw_fd();
         let (write, read) = self
             .0
@@ -171,12 +313,13 @@ impl TcpDomainConnector for TlsDomainConnector {
     }
 
     fn new_domain(&self, domain: String) -> DomainConnector {
+        debug!("setting new domain: {}", domain);
         let mut connector = self.clone();
         connector.domain = domain;
         Box::new(connector)
     }
 
     fn domain(&self) -> &str {
-        "localhost"
+        &self.domain
     }
 }
