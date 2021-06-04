@@ -10,6 +10,8 @@ pub type DefaultClientTlsStream = TlsStream<TcpStream>;
 
 pub use connector::*;
 
+pub use crate::net::certs::CertBuilder;
+
 mod split {
 
     use async_net::TcpStream;
