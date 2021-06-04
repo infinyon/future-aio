@@ -10,7 +10,6 @@ pub type DefaultClientTlsStream = TlsStream<TcpStream>;
 
 pub use connector::*;
 
-
 mod split {
 
     use async_net::TcpStream;
@@ -172,17 +171,14 @@ mod cert {
     use std::io::Error as IoError;
     use std::io::ErrorKind;
 
-
+    use crate::net::certs::CertBuilder;
     use native_tls::Certificate as NativeCertificate;
     use native_tls::Identity;
     use openssl::pkcs12::Pkcs12;
     use openssl::pkey::Private;
-    use crate::net::certs::CertBuilder;
-
 
     pub type Certificate = openssl::x509::X509;
     pub type PrivateKey = openssl::pkey::PKey<Private>;
-
 
     pub struct X509PemBuilder(Vec<u8>);
 
@@ -337,6 +333,9 @@ mod builder {
     }
 }
 
+
+#[deprecated]
+#[allow(deprecated)]
 pub use stream::AllTcpStream;
 
 mod stream {
@@ -357,16 +356,20 @@ mod stream {
         Tls(#[pin] DefaultClientTlsStream),
     }
 
+    #[allow(deprecated)]
     impl AllTcpStream {
         pub fn tcp(stream: TcpStream) -> Self {
+            #[allow(deprecated)]
             Self::Tcp(stream)
         }
 
         pub fn tls(stream: DefaultClientTlsStream) -> Self {
+            #[allow(deprecated)]
             Self::Tls(stream)
         }
     }
 
+    #[allow(deprecated)]
     impl AsyncRead for AllTcpStream {
         fn poll_read(
             self: Pin<&mut Self>,
@@ -380,6 +383,7 @@ mod stream {
         }
     }
 
+    #[allow(deprecated)]
     impl AsyncWrite for AllTcpStream {
         fn poll_write(
             self: Pin<&mut Self>,
@@ -408,7 +412,6 @@ mod stream {
     }
 }
 
-
 #[cfg(test)]
 mod test {
 
@@ -430,15 +433,16 @@ mod test {
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
+    use crate::net::certs::CertBuilder;
     use crate::net::TcpListener;
     use crate::net::TcpStream;
-    use crate::net::certs::CertBuilder;
     use crate::test_async;
     use crate::timer::sleep;
 
+    #[allow(deprecated)]
     use super::{
-        AcceptorBuilder, AllTcpStream, ConnectorBuilder, IdentityBuilder,
-        PrivateKeyBuilder, X509PemBuilder,
+        AcceptorBuilder, AllTcpStream, ConnectorBuilder, IdentityBuilder, PrivateKeyBuilder,
+        X509PemBuilder,
     };
 
     const CA_PATH: &str = "certs/certs/ca.crt";
@@ -607,6 +611,8 @@ mod test {
                 .connect("localhost", tcp_stream)
                 .await
                 .expect("tls failed");
+            
+            #[allow(deprecated)]
             let all_stream = AllTcpStream::Tls(tls_stream);
             let mut framed = Framed::new(all_stream.compat(), BytesCodec::new());
             debug!("client: got connection. waiting");

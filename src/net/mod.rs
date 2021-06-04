@@ -93,15 +93,14 @@ mod conn {
     }
 }
 
-
 #[cfg(not(target_arch = "wasm32"))]
 pub mod certs {
 
     use std::fs::File;
-    use std::path::Path;
-    use std::io::Error as IoError;
     use std::io::BufRead;
     use std::io::BufReader;
+    use std::io::Error as IoError;
+    use std::path::Path;
 
     use log::debug;
 
@@ -115,7 +114,7 @@ pub mod certs {
         }
 
         fn from_path(path: impl AsRef<Path>) -> Result<Self, IoError> {
-            debug!("loading cert from: {}",path.as_ref().display());
+            debug!("loading cert from: {}", path.as_ref().display());
             let mut reader = BufReader::new(File::open(path)?);
             Self::from_reader(&mut reader)
         }
