@@ -16,8 +16,8 @@ use log::debug;
 use openssl::ssl;
 
 use crate::net::{
-    BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector, ConnectionFd,
-    TcpStream,
+    BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector, SplitConnection,
+    TcpDomainConnector, TcpStream,
 };
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
