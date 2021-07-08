@@ -1,7 +1,13 @@
 use std::fmt;
 use std::io;
-use std::os::unix::io::AsRawFd;
-use std::os::unix::io::RawFd;
+
+cfg_if::cfg_if! {
+    if #[cfg(unix)] {
+        use std::os::unix::io::AsRawFd;
+    } else if #[cfg(windows)] {
+        use std::os::windows::io::AsRawSocket;
+    }
+}
 use std::path::Path;
 
 use async_trait::async_trait;
@@ -10,7 +16,7 @@ use log::debug;
 use openssl::ssl;
 
 use crate::net::{
-    BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector,
+    BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector, ConnectionFd,
     TcpStream,
 };
 
@@ -255,11 +261,15 @@ impl TcpDomainConnector for TlsAnonymousConnector {
     async fn connect(
         &self,
         domain: &str,
-    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
+    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
         debug!("tcp connect: {}", domain);
         let tcp_stream = TcpStream::connect(domain).await?;
         tcp_stream.set_nodelay(true)?;
+        #[cfg(unix)]
         let fd = tcp_stream.as_raw_fd();
+        #[cfg(windows)]
+        let fd = tcp_stream.as_raw_socket();
+
         let (write, read) = self
             .0
             .connect(domain, tcp_stream)
@@ -296,10 +306,14 @@ impl TcpDomainConnector for TlsDomainConnector {
     async fn connect(
         &self,
         addr: &str,
-    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, RawFd)> {
+    ) -> io::Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
         debug!("connect to tls addr: {}", addr);
         let tcp_stream = TcpStream::connect(addr).await?;
+        #[cfg(unix)]
         let fd = tcp_stream.as_raw_fd();
+
+        #[cfg(windows)]
+        let fd = tcp_stream.as_raw_socket();
 
         let (write, read) = self
             .connector
