@@ -34,18 +34,13 @@ mod connector {
     use std::io::ErrorKind;
     use std::sync::Arc;
 
-    #[cfg(unix)]
-    use std::os::unix::io::AsRawFd;
-    #[cfg(windows)]
-    use std::os::windows::io::AsRawSocket;
-
     use async_native_tls::Error as NativeTlsError;
     use async_trait::async_trait;
     use log::debug;
 
     use crate::net::{
         BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector, SplitConnection,
-        TcpDomainConnector,
+        TcpDomainConnector, AsConnectionFd,
     };
 
     use super::*;
@@ -84,10 +79,7 @@ mod connector {
             domain: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
-            #[cfg(unix)]
-            let fd = tcp_stream.as_raw_fd();
-            #[cfg(windows)]
-            let fd = tcp_stream.as_raw_socket();
+            let fd = tcp_stream.as_connection_fd();
             let (write, read) = self
                 .0
                 .connect(domain, tcp_stream)
@@ -144,10 +136,7 @@ mod connector {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
             tcp_stream.set_nodelay(true)?;
-            #[cfg(unix)]
-            let fd = tcp_stream.as_raw_fd();
-            #[cfg(windows)]
-            let fd = tcp_stream.as_raw_socket();
+            let fd = tcp_stream.as_connection_fd();
 
             debug!("connect to tls domain: {}", self.domain);
             let (write, read) = self
