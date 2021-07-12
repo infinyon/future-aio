@@ -39,8 +39,8 @@ mod connector {
     use log::debug;
 
     use crate::net::{
-        BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector, SplitConnection,
-        TcpDomainConnector, AsConnectionFd,
+        AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
+        SplitConnection, TcpDomainConnector,
     };
 
     use super::*;
