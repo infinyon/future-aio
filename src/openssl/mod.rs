@@ -5,6 +5,7 @@ mod connector;
 mod error;
 mod handshake;
 mod stream;
+
 #[cfg(test)]
 mod test;
 

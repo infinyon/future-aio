@@ -31,11 +31,13 @@ pub mod net;
 
 #[cfg(all(unix, feature = "rust_tls"))]
 pub mod rust_tls;
+
 #[cfg(all(unix, feature = "rust_tls", not(feature = "native2_tls")))]
 pub use rust_tls as tls;
 
 #[cfg(all(unix, feature = "native2_tls"))]
 pub mod native_tls;
+
 #[cfg(all(unix, feature = "native2_tls", not(feature = "rust_tls")))]
 pub use crate::native_tls as tls;
 
