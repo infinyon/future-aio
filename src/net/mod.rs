@@ -1,16 +1,16 @@
-#[cfg(unix)]
+#[cfg(not(target_arch = "wasm32"))]
 pub use async_net::*;
 
 #[cfg(test)]
-#[cfg(unix)]
+#[cfg(not(target_arch = "wasm32"))]
 mod tcp_stream;
 
 pub use conn::*;
 
-#[cfg(unix)]
+#[cfg(not(target_arch = "wasm32"))]
 pub use unix_connector::DefaultTcpDomainConnector as DefaultDomainConnector;
 
-#[cfg(unix)]
+#[cfg(not(target_arch = "wasm32"))]
 #[deprecated(since = "0.3.3", note = "Please use the bar DefaultDomainConnector")]
 pub use unix_connector::DefaultTcpDomainConnector;
 
@@ -57,8 +57,20 @@ mod conn {
     cfg_if::cfg_if! {
         if #[cfg(unix)] {
             pub type ConnectionFd = std::os::unix::io::RawFd;
+            pub trait AsConnectionFd: std::os::unix::io::AsRawFd {
+                fn as_connection_fd(&self) -> ConnectionFd {
+                    self.as_raw_fd()
+                }
+            }
+            impl AsConnectionFd for async_net::TcpStream { }
         } else if #[cfg(windows)] {
-            pub type ConnectionFd = std::os::windows::raw::SOCKET;
+            pub type ConnectionFd = std::os::windows::io::RawSocket;
+            pub trait AsConnectionFd: std::os::windows::io::AsRawSocket {
+                fn as_connection_fd(&self) -> ConnectionFd {
+                    self.as_raw_socket()
+                }
+            }
+            impl AsConnectionFd for async_net::TcpStream { }
         } else {
             pub type ConnectionFd = String;
         }
@@ -161,10 +173,9 @@ mod wasm_connector {
     }
 }
 
-#[cfg(unix)]
+#[cfg(not(target_arch = "wasm32"))]
 mod unix_connector {
     use std::io::Error as IoError;
-    use std::os::unix::io::AsRawFd;
 
     use async_trait::async_trait;
     use log::debug;
@@ -195,7 +206,8 @@ mod unix_connector {
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tcp addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
-            let fd = tcp_stream.as_raw_fd();
+
+            let fd = tcp_stream.as_connection_fd();
             Ok((Box::new(tcp_stream.clone()), Box::new(tcp_stream), fd))
         }
 
@@ -210,7 +222,7 @@ mod unix_connector {
 }
 
 #[cfg(test)]
-#[cfg(unix)]
+#[cfg(not(target_arch = "wasm32"))]
 mod test {
     use std::time;
 
