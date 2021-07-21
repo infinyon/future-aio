@@ -458,7 +458,6 @@ mod test {
         buf.freeze()
     }
 
-    #[cfg(not(windows))]
     #[test_async]
     async fn test_native_tls_pk12() -> Result<(), IoError> {
         const PK12_PORT: u16 = 9900;
@@ -500,6 +499,7 @@ mod test {
     }
 
     #[test_async]
+    #[cfg(not(windows))]
     async fn test_native_tls_x509() -> Result<(), IoError> {
         const X500_PORT: u16 = 9910;
 
