@@ -29,7 +29,7 @@ native2_tls = [
     "pin-project",
     "async-native-tls",
     "native-tls",
-    "openssl",
+    "openssl/vendored",
     "futures-util/io",
 ]
 openssl_tls = [

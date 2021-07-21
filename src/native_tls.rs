@@ -458,6 +458,7 @@ mod test {
         buf.freeze()
     }
 
+    #[cfg(not(windows))]
     #[test_async]
     async fn test_native_tls_pk12() -> Result<(), IoError> {
         const PK12_PORT: u16 = 9900;
@@ -638,19 +639,6 @@ mod test {
 
         let _ = zip(client_ft, server_ft).await;
 
-        Ok(())
-    }
-
-    #[test_async]
-    async fn test_tls_connector() -> Result<(), Box<dyn std::error::Error>> {
-        let host = "packages.fluvio.io";
-        println!("Establishing TCP stream");
-        let tcp_stream = crate::net::TcpStream::connect((host, 443)).await?;
-        println!("Established TCP stream");
-        let tls_connector = TlsConnector::new();
-        println!("Created TLS connector");
-        let tls_stream = tls_connector.connect(host, tcp_stream).await?;
-        println!("Opened TLS stream from TCP stream");
         Ok(())
     }
 
