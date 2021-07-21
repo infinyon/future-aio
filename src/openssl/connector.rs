@@ -278,6 +278,20 @@ impl TcpDomainConnector for TlsAnonymousConnector {
     }
 }
 
+#[cfg(test)]
+#[crate::test_async]
+async fn test_tls_connector() -> Result<()> {
+    let host = "packages.fluvio.io";
+    println!("Establishing TCP stream");
+    let tcp_stream = crate::net::TcpStream::connect((host, 443)).await?;
+    println!("Established TCP stream");
+    let tls_connector = TlsConnector::builder()?.build();
+    println!("Created TLS connector");
+    let tls_stream = tls_connector.connect(&host, tcp_stream).await?;
+    println!("Opened TLS stream from TCP stream");
+    Ok(())
+}
+
 #[derive(Clone)]
 pub struct TlsDomainConnector {
     domain: String,
