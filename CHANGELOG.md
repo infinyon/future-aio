@@ -1,6 +1,9 @@
 # Release Notes
 
-## 0.3.6 - Unreleased
+## 0.3.7 - Unreleased
+* Add native2_tls support for windows. ([#85](https://github.com/infinyon/future-aio/pull/85))
+
+## 0.3.6 - 2021-07-19
 * OpenSSL is now vendored by default ([#80](https://github.com/infinyon/future-aio/pull/80))
 * Added AsConnectionFd trait to retrieve windows and unix sockets. ([#80](https://github.com/infinyon/future-aio/pull/80))
 * Added windows support. ([#80](https://github.com/infinyon/future-aio/pull/80))
