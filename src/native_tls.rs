@@ -499,6 +499,7 @@ mod test {
     }
 
     #[test_async]
+    #[cfg(not(windows))]
     async fn test_native_tls_x509() -> Result<(), IoError> {
         const X500_PORT: u16 = 9910;
 

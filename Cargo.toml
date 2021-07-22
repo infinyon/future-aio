@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.3.6"
+version = "0.3.7"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
@@ -29,7 +29,7 @@ native2_tls = [
     "pin-project",
     "async-native-tls",
     "native-tls",
-    "openssl",
+    "openssl/vendored",
     "futures-util/io",
 ]
 openssl_tls = [
