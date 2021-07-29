@@ -77,7 +77,6 @@ impl ZeroCopy {
                     ) {
                         Ok(len) => {
                             total_transferred += len as usize;
-                            current_offset += len as off_t;
                             trace!(
                                 "actual: zero copy bytes transferred: {} out of {}",
                                 len,
@@ -90,6 +89,7 @@ impl ZeroCopy {
                                     total_transferred, size
                                 );
                             } else {
+                                
                                 return Ok(len as usize);
                             }
                         }
