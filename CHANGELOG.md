@@ -1,6 +1,8 @@
 # Release Notes
 
-## 0.3.7 - Unreleased
+## 0.3.8
+* Fix zero copy bug ([#91](https://github.com/infinyon/future-aio/pull/91))
+## 0.3.7
 * Add native2_tls support for windows. ([#85](https://github.com/infinyon/future-aio/pull/85))
 
 ## 0.3.6 - 2021-07-19

@@ -77,7 +77,6 @@ impl ZeroCopy {
                     ) {
                         Ok(len) => {
                             total_transferred += len as usize;
-                            current_offset += len as off_t;
                             trace!(
                                 "actual: zero copy bytes transferred: {} out of {}",
                                 len,
@@ -146,11 +145,9 @@ impl ZeroCopy {
                             }
                         }
                         Err(err) => {
-                            if let NixError::Sys(err_no) = err {
-                                if err_no == Errno::EAGAIN {
-                                    debug!("EAGAIN, try again");
-                                    continue;
-                                }
+                            if err == Errno::EAGAIN {
+                                debug!("EAGAIN, try again");
+                                continue;
                             }
 
                             log::error!("error sendfile: {}", err);

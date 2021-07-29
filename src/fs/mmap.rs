@@ -180,7 +180,7 @@ mod tests {
             let src: [(u32, u32); 3] = [(5, 10), (11, 22), (50, 100)];
             let (_, bytes, _) = unsafe { src.align_to::<u8>() };
             assert_eq!(bytes.len(), 24);
-            mm.copy_from_slice(&bytes);
+            mm.copy_from_slice(bytes);
         }
 
         mm_file.flush_ft().await?;
