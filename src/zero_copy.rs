@@ -89,7 +89,6 @@ impl ZeroCopy {
                                     total_transferred, size
                                 );
                             } else {
-                                
                                 return Ok(len as usize);
                             }
                         }
