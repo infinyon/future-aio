@@ -24,10 +24,10 @@ jobs:
         include:
           - os: ubuntu-latest
             rust: stable
-            check: [fmt]
+            check: fmt
           - os: ubuntu-latest
             rust: stable
-            check: [clippy]
+            check: clippy
 
     steps:
       - uses: actions/checkout@v2
