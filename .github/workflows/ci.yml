@@ -6,8 +6,7 @@ on:
       - staging
       - trying
   pull_request:
-    branches: [ master ]
-
+    branches: [master]
 
 concurrency:
   group: ci
@@ -21,33 +20,35 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         rust: [stable]
-        task:
-          - name: Run unit tests
-            run: make test-all
-
+        check: [test]
         include:
           - os: ubuntu-latest
             rust: stable
-            task:
-              name: Rustfmt
-              run: make check-fmt
-
+            check: [fmt]
           - os: ubuntu-latest
             rust: stable
-            task:
-              name: Clippy
-              run: make check-clippy
+            check: [clippy]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Install ${{ matrix.rust }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-    - name: ${{ matrix.task.name }}
-      run: ${{ matrix.task.run }}
-      timeout-minutes: 15
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.os }}-${{ matrix.check }}
+      - name: Clippy
+        if: ${{ matrix.check == 'clippy' }}
+        run: make check-clippy
+      - name: Fmt
+        if: ${{ matrix.check == 'fmt' }}
+        run: make check-fmt
+      - name: Test
+        if: ${{ matrix.check == 'test' }}
+        timeout-minutes: 15
+        run: test-all
 
   wasm_test:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
@@ -68,16 +69,16 @@ jobs:
               run: make test-wasm-safari
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Install ${{ matrix.rust }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        override: true
-        target: wasm32-unknown-unknown
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          override: true
+          target: wasm32-unknown-unknown
 
-    - name: ${{ matrix.task.name }}
-      run: ${{ matrix.task.run }}
+      - name: ${{ matrix.task.name }}
+        run: ${{ matrix.task.run }}
 
   done:
     name: Done
@@ -86,4 +87,3 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
-
