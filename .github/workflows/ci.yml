@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    name: check ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
