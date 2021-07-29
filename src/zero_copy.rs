@@ -145,11 +145,9 @@ impl ZeroCopy {
                             }
                         }
                         Err(err) => {
-                            if let ErroNo::Err(err_no) = err {
-                                if err_no == Errno::EAGAIN {
-                                    debug!("EAGAIN, try again");
-                                    continue;
-                                }
+                            if err == Errno::EAGAIN {
+                                debug!("EAGAIN, try again");
+                                continue;
                             }
 
                             log::error!("error sendfile: {}", err);
