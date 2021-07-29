@@ -48,7 +48,7 @@ jobs:
       - name: Test
         if: ${{ matrix.check == 'test' }}
         timeout-minutes: 15
-        run: test-all
+        run: make test-all
 
   wasm_test:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
