@@ -9,7 +9,7 @@ on:
     branches: [master]
 
 concurrency:
-  group: ci
+  group: ${{ github.head_ref || 'ci_staging' }}
   cancel-in-progress: true
 
 jobs:
