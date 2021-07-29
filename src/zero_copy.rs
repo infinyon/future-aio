@@ -145,7 +145,7 @@ impl ZeroCopy {
                             }
                         }
                         Err(err) => {
-                            if let NixError::Sys(err_no) = err {
+                            if let ErroNo::Err(err_no) = err {
                                 if err_no == Errno::EAGAIN {
                                     debug!("EAGAIN, try again");
                                     continue;
