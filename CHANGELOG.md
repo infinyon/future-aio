@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.3.9
+* Fix zero copy bug ([#96](https://github.com/infinyon/future-aio/pull/91))
+
 ## 0.3.8
 * Fix zero copy bug ([#91](https://github.com/infinyon/future-aio/pull/91))
 ## 0.3.7

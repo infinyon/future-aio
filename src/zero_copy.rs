@@ -51,34 +51,30 @@ impl ZeroCopy {
         let source_fd = source.fd();
 
         #[cfg(target_os = "linux")]
-        {
+        let ft = {
             let offset = source.position() as off_t;
 
-            let mut total_transferred: usize = 0; // total bytes transferred so far
-            let mut current_offset = offset;
+            spawn_blocking(move || {
+                let mut total_transferred: usize = 0; // total bytes transferred so far
+                let mut current_offset = offset;
 
-            loop {
-                let to_be_transfer = size as usize - total_transferred;
+                loop {
+                    let to_be_transfer = size as usize - total_transferred;
 
-                trace!(
-                    "trying: zero copy source fd: {} offset: {} len: {}, target: fd{}",
-                    source_fd,
-                    current_offset,
-                    to_be_transfer,
-                    target_fd
-                );
+                    trace!(
+                        "trying: zero copy source fd: {} offset: {} len: {}, target: fd{}",
+                        source_fd,
+                        current_offset,
+                        to_be_transfer,
+                        target_fd
+                    );
 
-                {
-                    match spawn_blocking(move || {
-                        sendfile(
-                            target_fd,
-                            source_fd,
-                            Some(&mut current_offset),
-                            to_be_transfer,
-                        )
-                    })
-                    .await
-                    {
+                    match sendfile(
+                        target_fd,
+                        source_fd,
+                        Some(&mut current_offset),
+                        to_be_transfer,
+                    ) {
                         Ok(len) => {
                             total_transferred += len as usize;
                             trace!(
@@ -107,10 +103,10 @@ impl ZeroCopy {
                                 log::error!("error sendfile: {}", err);
                                 return Err(err.into());
                             }
-                        },
+                        }
                     }
                 }
-            }
+            })
         };
 
         #[cfg(target_os = "macos")]
@@ -169,6 +165,8 @@ impl ZeroCopy {
                 }
             })
         };
+
+        ft.await
     }
 }
 
