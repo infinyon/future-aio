@@ -77,11 +77,6 @@ impl ZeroCopy {
                     ) {
                         Ok(len) => {
                             total_transferred += len as usize;
-                            trace!(
-                                "actual: zero copy bytes transferred: {} out of {}",
-                                len,
-                                size
-                            );
 
                             if total_transferred < size as usize {
                                 debug!(
@@ -89,13 +84,27 @@ impl ZeroCopy {
                                     total_transferred, size
                                 );
                             } else {
+                                trace!(
+                                    "actual: zero copy bytes transferred: {} out of {}, ",
+                                    len,
+                                    size
+                                );
+
                                 return Ok(len as usize);
                             }
                         }
-                        Err(err) => {
-                            log::error!("error sendfile: {}", err);
-                            return Err(err.into());
-                        }
+                        Err(err) => match err {
+                            nix::errno::Errno::EAGAIN => {
+                                debug!(
+                                    "EAGAIN, continuing source: {},target: {}",
+                                    source_fd, target_fd
+                                );
+                            }
+                            _ => {
+                                log::error!("error sendfile: {}", err);
+                                return Err(err.into());
+                            }
+                        },
                     }
                 }
             })
