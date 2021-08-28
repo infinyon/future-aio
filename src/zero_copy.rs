@@ -77,11 +77,6 @@ impl ZeroCopy {
                     ) {
                         Ok(len) => {
                             total_transferred += len as usize;
-                            trace!(
-                                "actual: zero copy bytes transferred: {} out of {}",
-                                len,
-                                size
-                            );
 
                             if total_transferred < size as usize {
                                 debug!(
@@ -89,6 +84,12 @@ impl ZeroCopy {
                                     total_transferred, size
                                 );
                             } else {
+                                trace!(
+                                    "actual: zero copy bytes transferred: {} out of {}, ",
+                                    len,
+                                    size
+                                );
+
                                 return Ok(len as usize);
                             }
                         }
@@ -103,7 +104,7 @@ impl ZeroCopy {
                                 log::error!("error sendfile: {}", err);
                                 return Err(err.into());
                             }
-                        }
+                        },
                     }
                 }
             })
