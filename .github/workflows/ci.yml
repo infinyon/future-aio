@@ -52,7 +52,6 @@ jobs:
 
   wasm_test:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
-    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
