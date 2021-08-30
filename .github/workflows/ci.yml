@@ -61,13 +61,19 @@ jobs:
             rust: stable
             task:
               name: Run WASM tests
-              run: make test-wasm
+              run: |
+                cargo install websocat
+                websocat -t ws-l:127.0.0.1:1234 mirror:
+                make test-wasm
 
           - os: macos-latest
             rust: stable
             task:
               name: Run MacOS WASM tests
-              run: make test-wasm-safari
+              run: |
+                brew install websocat
+                websocat -t ws-l:127.0.0.1:1234 mirror:
+                make test-wasm-safari
 
     steps:
       - uses: actions/checkout@v2
