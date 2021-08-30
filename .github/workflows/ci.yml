@@ -62,7 +62,7 @@ jobs:
               name: Run WASM tests
               run: |
                 cargo install websocat
-                websocat -t ws-l:127.0.0.1:1234 mirror:
+                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
                 make test-wasm
 
           - os: macos-latest
@@ -71,7 +71,7 @@ jobs:
               name: Run MacOS WASM tests
               run: |
                 brew install websocat
-                websocat -t ws-l:127.0.0.1:1234 mirror:
+                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
                 make test-wasm-safari
 
     steps:
