@@ -52,7 +52,6 @@ jobs:
 
   wasm_test:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
-    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -61,13 +60,19 @@ jobs:
             rust: stable
             task:
               name: Run WASM tests
-              run: make test-wasm
+              run: |
+                cargo install websocat
+                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
+                make test-wasm
 
           - os: macos-latest
             rust: stable
             task:
               name: Run MacOS WASM tests
-              run: make test-wasm-safari
+              run: |
+                brew install websocat
+                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
+                make test-wasm-safari
 
     steps:
       - uses: actions/checkout@v2

@@ -284,7 +284,7 @@ mod test {
     async fn test_connect() {
         tracing_wasm::set_as_global_default();
 
-        let addr = "ws://echo.websocket.org";
+        let addr = "ws://127.0.0.1:1234";
         let input_msg = "foobar".to_string();
 
         let websocket_stream = DefaultDomainConnector::default();
