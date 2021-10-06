@@ -3,7 +3,10 @@ RUST_DOCKER_IMAGE=rust:latest
 build-all:
 	cargo build --all-features
 
-test-all:	test-derive
+certs:
+	make -C certs generate-certs
+
+test-all:	certs test-derive
 	cargo test --all-features
 
 install-wasm-pack:
