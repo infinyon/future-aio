@@ -3,6 +3,7 @@ RUST_DOCKER_IMAGE=rust:latest
 build-all:
 	cargo build --all-features
 
+.PHONY: certs
 certs:
 	make -C certs generate-certs
 
