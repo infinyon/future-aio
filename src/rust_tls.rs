@@ -358,7 +358,7 @@ mod test {
 
     use super::{AcceptorBuilder, ConnectorBuilder};
 
-    const CA_PATH: &str = "certs/certs/ca.crt";
+    const CA_PATH: &str = "certs/test-certs/ca.crt";
     const ITER: u16 = 10;
 
     fn to_bytes(bytes: Vec<u8>) -> Bytes {
@@ -371,7 +371,7 @@ mod test {
     async fn test_async_tls() -> Result<(), IoError> {
         test_tls(
             AcceptorBuilder::new_no_client_authentication()
-                .load_server_certs("certs/certs/server.crt", "certs/certs/server.key")?
+                .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
                 .build(),
             ConnectorBuilder::new().no_cert_verification().build(),
         )
@@ -382,10 +382,10 @@ mod test {
 
         test_tls(
             AcceptorBuilder::new_client_authenticate(CA_PATH)?
-                .load_server_certs("certs/certs/server.crt", "certs/certs/server.key")?
+                .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
                 .build(),
             ConnectorBuilder::new()
-                .load_client_certs("certs/certs/client.crt", "certs/certs/client.key")?
+                .load_client_certs("certs/test-certs/client.crt", "certs/test-certs/client.key")?
                 .load_ca_cert(CA_PATH)?
                 .build(),
         )

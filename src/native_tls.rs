@@ -444,13 +444,13 @@ mod test {
         X509PemBuilder,
     };
 
-    const CA_PATH: &str = "certs/certs/ca.crt";
-    const SERVER_IDENTITY: &str = "certs/certs/server.pfx";
-    const CLIENT_IDENTITY: &str = "certs/certs/client.pfx";
-    const X509_SERVER: &str = "certs/certs/server.crt";
-    const X509_SERVER_KEY: &str = "certs/certs/server.key";
-    const X509_CLIENT: &str = "certs/certs/client.crt";
-    const X509_CLIENT_KEY: &str = "certs/certs/client.key";
+    const CA_PATH: &str = "certs/test-certs/ca.crt";
+    const SERVER_IDENTITY: &str = "certs/test-certs/server.pfx";
+    const CLIENT_IDENTITY: &str = "certs/test-certs/client.pfx";
+    const X509_SERVER: &str = "certs/test-certs/server.crt";
+    const X509_SERVER_KEY: &str = "certs/test-certs/server.key";
+    const X509_CLIENT: &str = "certs/test-certs/client.crt";
+    const X509_CLIENT_KEY: &str = "certs/test-certs/client.key";
 
     fn to_bytes(bytes: Vec<u8>) -> Bytes {
         let mut buf = BytesMut::with_capacity(bytes.len());

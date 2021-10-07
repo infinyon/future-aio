@@ -1,51 +1,54 @@
-clean-cert:
-	mkdir -p certs
-	rm -rf certs/*
+clean:
+	rm -rf test-certs
+
+setup:
+	mkdir -p test-certs
 
 
-generate-certs:	generate-ca-crt generate-server-crt generate-client-crt
+generate-certs:	setup generate-ca-crt generate-server-crt generate-client-crt generate-pk12-certs
 
 # run generate-certs first
 generate-pk12-certs:	generate-server-pk12 generate-client-pk12
 
 generate-ca-key:	
-	openssl genrsa  -out certs/ca.key 4096
+	openssl genrsa  -out test-certs/ca.key 4096
 
 # this is CA pem file
 generate-ca-crt:	generate-ca-key
-	openssl req -x509 -new -nodes -key certs/ca.key -out certs/ca.crt \
+	openssl req -x509 -new -nodes -key test-certs/ca.key -out test-certs/ca.crt \
 		-subj /C=US/ST=CA/L=Sunnyvale/O=Fluvio/OU=Eng/CN=fluvio.io
 
 
 
 generate-server-key:	
-	openssl genrsa -out certs/server.key 4096
+	openssl genrsa -out test-certs/server.key 4096
 
 
 generate-server-csr:	generate-server-key
-	openssl req -new -key certs/server.key \
-		-out certs/server.csr \
+	openssl req -new -key test-certs/server.key \
+		-out test-certs/server.csr \
 		-config  cert.conf 
 
 
 # generate anonymous pk12
-generate-server-pk12:
-	openssl pkcs12 -export -out certs/server.pfx -inkey certs/server.key -in certs/server.crt -certfile  certs/ca.crt -passout pass:test
+.PHONY: generate-server-pk12
+generate-server-pk12:	
+	openssl pkcs12 -export -out test-certs/server.pfx -inkey test-certs/server.key -in test-certs/server.crt -certfile  test-certs/ca.crt -passout pass:test
 
 
 
 verify-csr:
-	openssl req -in certs/server.csr -noout -text
+	openssl req -in test-certs/server.csr -noout -text
 
 decrypt-server-crt:
-	openssl x509 -in certs/server.crt   -noout -text
+	openssl x509 -in test-certs/server.crt   -noout -text
 
 generate-server-crt:	generate-server-csr
 	openssl x509 -req \
-		-in certs/server.csr \
-		-out certs/server.crt \
-		-CA certs/ca.crt \
-		-CAkey certs/ca.key \
+		-in test-certs/server.csr \
+		-out test-certs/server.crt \
+		-CA test-certs/ca.crt \
+		-CAkey test-certs/ca.key \
 		-CAcreateserial  \
 		-days 500 \
 		-extensions v3_end \
@@ -53,22 +56,22 @@ generate-server-crt:	generate-server-csr
 
 
 generate-client-key:
-	openssl genrsa -out certs/client.key 4096
+	openssl genrsa -out test-certs/client.key 4096
 
 generate-client-csr:	generate-client-key
-	openssl req -new -key certs/client.key -out certs/client.csr \
+	openssl req -new -key test-certs/client.key -out test-certs/client.csr \
 		-subj "/C=US/ST=CA/O=MyOrg, Inc./CN=client.com"
 
 generate-client-crt:	generate-client-csr
 	openssl x509 -req \
-		-days 365 -in certs/client.csr \
-		-out certs/client.crt \
-		-CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial \
+		-days 365 -in test-certs/client.csr \
+		-out test-certs/client.crt \
+		-CA test-certs/ca.crt -CAkey test-certs/ca.key -CAcreateserial \
 		-extensions v3_end \
 		-extfile openssl.cnf
 
 generate-client-pk12:
-	openssl pkcs12 -export -out certs/client.pfx -inkey certs/client.key -in certs/client.crt -certfile  certs/ca.crt -passout pass:test
+	openssl pkcs12 -export -out test-certs/client.pfx -inkey test-certs/client.key -in test-certs/client.crt -certfile  test-certs/ca.crt -passout pass:test
 
 
 # for non mac

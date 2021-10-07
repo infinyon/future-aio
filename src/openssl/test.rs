@@ -20,7 +20,7 @@ use crate::timer::sleep;
 use super::TlsError;
 use super::{AllTcpStream, TlsAcceptor, TlsConnector};
 
-const CA_PATH: &str = "certs/certs/ca.crt";
+const CA_PATH: &str = "certs/test-certs/ca.crt";
 const ITER: u16 = 10;
 
 fn to_bytes(bytes: Vec<u8>) -> Bytes {
@@ -34,8 +34,8 @@ async fn test_tls() -> Result<(), TlsError> {
     run_test(
         TlsAcceptor::builder()?
             .with_certifiate_and_key_from_pem_files(
-                "certs/certs/server.crt",
-                "certs/certs/server.key",
+                "certs/test-certs/server.crt",
+                "certs/test-certs/server.key",
             )?
             .build(),
         TlsConnector::builder()?
@@ -50,15 +50,15 @@ async fn test_tls() -> Result<(), TlsError> {
     run_test(
         TlsAcceptor::builder()?
             .with_certifiate_and_key_from_pem_files(
-                "certs/certs/server.crt",
-                "certs/certs/server.key",
+                "certs/test-certs/server.crt",
+                "certs/test-certs/server.key",
             )?
             .with_ca_from_pem_file(CA_PATH)?
             .build(),
         TlsConnector::builder()?
             .with_certifiate_and_key_from_pem_files(
-                "certs/certs/client.crt",
-                "certs/certs/client.key",
+                "certs/test-certs/client.crt",
+                "certs/test-certs/client.key",
             )?
             .with_ca_from_pem_file(CA_PATH)?
             .build(),
