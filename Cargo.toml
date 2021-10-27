@@ -10,7 +10,7 @@ resolver = "2"
 
 [features]
 task = ["async-std/default", "timer", "cfg-if"]
-subscriber = ["tracing-subscriber"]
+subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
 fixture = ["subscriber", "task", "fluvio-test-derive"]
 task_unstable = ["task", "async-std/unstable"]
 io = ["async-std/default"]
@@ -53,7 +53,7 @@ async-fs = { version = "1.3.0", optional = true }
 pin-utils = { version = "0.1.0", optional = true }
 pin-project = { version = "1.0.8", optional = true }
 tracing = { version = "0.1.0" }
-tracing-subscriber = { version = "0.3.0", features = ["std", "env-filter"], optional = true }
+tracing-subscriber = { version = "0.3.0", optional = true }
 nix = { version = "0.23.0", optional = true }
 bytes = { version = "1.0.0", optional = true }
 async-trait = { version = "0.1.40", optional = true }
