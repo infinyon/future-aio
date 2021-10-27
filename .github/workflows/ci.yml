@@ -28,6 +28,9 @@ jobs:
           - os: ubuntu-latest
             rust: stable
             check: clippy
+          - os: ubuntu-latest
+            rust: stable
+            check: audit
 
     steps:
       - uses: actions/checkout@v2
@@ -49,6 +52,12 @@ jobs:
         if: ${{ matrix.check == 'test' }}
         timeout-minutes: 15
         run: make test-all
+      - name: cargo audit
+        if: ${{ matrix.check == 'audit' }}
+        timeout-minutes: 15
+        uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
   wasm_test:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
