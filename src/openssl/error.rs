@@ -6,16 +6,16 @@ use super::async_to_sync_wrapper::AsyncToSyncWrapper;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("OpenSslError")]
+    #[error("OpenSslError: {0}")]
     OpenSslError(#[from] openssl::error::Error),
 
-    #[error("HandshakeError")]
+    #[error("HandshakeError: {0}")]
     HandshakeError(Box<dyn std::error::Error + Send + Sync + 'static>),
 
-    #[error("ErrorStack")]
+    #[error("ErrorStack: {0}")]
     ErrorStack(#[from] openssl::error::ErrorStack),
 
-    #[error("IoError")]
+    #[error("IoError: {0}")]
     IoError(#[from] std::io::Error),
 }
 
