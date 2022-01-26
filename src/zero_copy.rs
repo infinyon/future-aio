@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::os::unix::io::{AsRawFd, RawFd};
+use std::thread::sleep;
 use thiserror::Error;
 
 #[allow(unused)]
@@ -75,8 +76,14 @@ impl ZeroCopy {
                         Some(&mut current_offset),
                         to_be_transfer,
                     ) {
-                        Ok(len) => {
-                            total_transferred += len as usize;
+                        Ok(bytes_transferred) => {
+                            trace!("bytes transferred: {}", bytes_transferred);
+                            total_transferred += bytes_transferred as usize;
+
+                            // zero bytes transferred means it's EOF
+                            if bytes_transferred == 0 {
+                                return Ok(total_transferred as usize);
+                            }
 
                             if total_transferred < size as usize {
                                 debug!(
@@ -86,11 +93,11 @@ impl ZeroCopy {
                             } else {
                                 trace!(
                                     "actual: zero copy bytes transferred: {} out of {}, ",
-                                    len,
+                                    bytes_transferred,
                                     size
                                 );
 
-                                return Ok(len as usize);
+                                return Ok(total_transferred as usize);
                             }
                         }
                         Err(err) => match err {
@@ -99,6 +106,7 @@ impl ZeroCopy {
                                     "EAGAIN, continuing source: {},target: {}",
                                     source_fd, target_fd
                                 );
+                                sleep(std::time::Duration::from_millis(10));
                             }
                             _ => {
                                 log::error!("error sendfile: {}", err);
@@ -130,7 +138,7 @@ impl ZeroCopy {
                         target_fd
                     );
 
-                    let (res, len) = sendfile(
+                    let (res, bytes_transferred) = sendfile(
                         source_fd,
                         target_fd,
                         current_offset as i64,
@@ -139,28 +147,34 @@ impl ZeroCopy {
                         None,
                     );
 
-                    trace!("mac zero copy bytes transferred: {}", len);
-                    total_transferred += len as u64;
-                    current_offset += len as u64;
+                    trace!("mac zero copy bytes transferred: {}", bytes_transferred);
+
+                    total_transferred += bytes_transferred as u64;
+                    current_offset += bytes_transferred as u64;
                     match res {
                         Ok(_) => {
+                            // zero bytes transferred means it's EOF
+                            if bytes_transferred == 0 {
+                                trace!("no more bytes transferred");
+                                return Ok(total_transferred as usize);
+                            }
                             if total_transferred < size {
                                 debug!(
                                     "current transferred: {} less than total: {}, continuing",
                                     total_transferred, size
                                 );
                             } else {
-                                return Ok(len as usize);
+                                return Ok(total_transferred as usize);
                             }
                         }
                         Err(err) => {
                             if err == Errno::EAGAIN {
                                 debug!("EAGAIN, try again");
-                                continue;
+                                sleep(std::time::Duration::from_millis(10));
+                            } else {
+                                log::error!("error sendfile: {}", err);
+                                return Err(err.into());
                             }
-
-                            log::error!("error sendfile: {}", err);
-                            return Err(err.into());
                         }
                     }
                 }
@@ -174,13 +188,14 @@ impl ZeroCopy {
 #[cfg(test)]
 mod tests {
 
-    use std::net::SocketAddr;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time;
 
     use futures_lite::future::zip;
     use futures_util::stream::StreamExt;
     use log::debug;
 
+    use crate::file_slice::AsyncFileSlice;
     use crate::fs::AsyncFileExtension;
     use crate::net::TcpListener;
     use crate::net::TcpStream;
@@ -190,15 +205,15 @@ mod tests {
 
     use super::SendFileError;
 
-    const CONST_TEST_ADDR: &str = "127.0.0.1:9999";
-    const ZERO_COPY_PORT: u16 = 8888;
-
     #[fluvio_future::test]
-    async fn test_zero_copy_from_fs_to_socket() {
+    async fn test_zero_copy_simple() {
+        let port = portpicker::pick_unused_port().expect("No free ports left");
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
+
         // spawn tcp client and check contents
         let server = async {
             #[allow(unused_mut)]
-            let mut listener = TcpListener::bind(CONST_TEST_ADDR).await?;
+            let mut listener = TcpListener::bind(addr).await?;
 
             debug!("server: listening");
             let mut incoming = listener.incoming();
@@ -217,14 +232,15 @@ mod tests {
         let client = async {
             let file = file_util::open("test-data/apirequest.bin").await?;
             sleep(time::Duration::from_millis(100)).await;
-            let addr = CONST_TEST_ADDR.parse::<SocketAddr>().expect("parse");
+
             debug!("client: file loaded");
             let mut stream = TcpStream::connect(&addr).await?;
             debug!("client: connected to server");
             let f_slice = file.as_slice(0, None).await?;
             debug!("client: send back file using zero copy");
             let writer = ZeroCopy::from(&mut stream);
-            writer.copy_slice(&f_slice).await?;
+            let transfered = writer.copy_slice(&f_slice).await?;
+            assert_eq!(transfered, 30);
             Ok(()) as Result<(), SendFileError>
         };
 
@@ -235,12 +251,15 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_zero_copy_large_size() {
-        const MAX_BYTES: usize = 300000;
+        const MAX_BYTES: usize = 3000000;
 
         use futures_lite::AsyncWriteExt;
         use std::env::temp_dir;
 
-        const TEST_ITERATION: u16 = 20;
+        const TEST_ITERATION: u16 = 2;
+
+        let port = portpicker::pick_unused_port().expect("No free ports left");
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
 
         async fn init_file() {
             let temp_file = temp_dir().join("async_large");
@@ -250,7 +269,7 @@ mod tests {
                 .expect("file creation");
 
             let bytes: Vec<u8> = vec![0; 1000];
-            for _ in 0..300 {
+            for _ in 0..3000 {
                 file.write_all(&bytes).await.expect("writing");
             }
 
@@ -261,17 +280,13 @@ mod tests {
 
         // spawn tcp client and check contents
         let server = async {
-            init_file().await;
-
             let temp_file = temp_dir().join("async_large");
             // do zero copy
             let file = file_util::open(&temp_file).await.expect("re opening");
             let f_slice = file.as_slice(0, None).await.expect("filed opening");
             assert_eq!(f_slice.len(), MAX_BYTES as u64);
 
-            let listener = TcpListener::bind(format!("127.0.0.1:{}", ZERO_COPY_PORT))
-                .await
-                .expect("failed bind");
+            let listener = TcpListener::bind(addr).await.expect("failed bind");
 
             debug!("server: listening");
             let mut incoming = listener.incoming();
@@ -279,6 +294,7 @@ mod tests {
             for i in 0..TEST_ITERATION {
                 let stream = incoming.next().await.expect("client should connect");
                 debug!("server {} got connection. waiting", i);
+
                 let mut tcp_stream = stream.expect("stream");
 
                 debug!(
@@ -288,25 +304,32 @@ mod tests {
                 );
 
                 let writer = ZeroCopy::from(&mut tcp_stream);
-                writer.copy_slice(&f_slice).await.expect("file slice");
+
+                if i == 0 {
+                    let transferred = writer.copy_slice(&f_slice).await.expect("file slice");
+                    assert_eq!(transferred, MAX_BYTES);
+                } else {
+                    let slice2 = AsyncFileSlice::new(f_slice.fd(), 0, (MAX_BYTES * 2) as u64);
+                    let transferred = writer.copy_slice(&slice2).await.expect("file slice");
+                    assert_eq!(transferred, MAX_BYTES);
+                }
             }
         };
 
         let client = async {
             // wait 1 seconds to give server to be ready
-            sleep(time::Duration::from_millis(1000)).await;
-            let addr = format!("127.0.0.1:{}", ZERO_COPY_PORT)
-                .parse::<SocketAddr>()
-                .expect("parse");
-            debug!("client: file loaded");
+            sleep(time::Duration::from_millis(100)).await;
+            debug!("client loop starting");
 
             for i in 0..TEST_ITERATION {
                 debug!("client: Test loop: {}", i);
                 let mut stream = TcpStream::connect(&addr).await?;
                 debug!("client: {} connected trying to read", i);
+                // let server send response
+
                 let mut buffer = Vec::with_capacity(MAX_BYTES);
                 stream
-                    .read_exact(&mut buffer)
+                    .read_to_end(&mut buffer)
                     .await
                     .expect("no more buffer");
                 debug!("client: {} test success", i);
@@ -319,7 +342,56 @@ mod tests {
             Ok(()) as Result<(), SendFileError>
         };
 
+        init_file().await;
+
         // read file and zero copy to tcp stream
+        let _ = zip(client, server).await;
+    }
+
+    /// test zero copy when len is too large
+    #[fluvio_future::test]
+    async fn test_zero_copy_large_slace() {
+        let port = portpicker::pick_unused_port().expect("No free ports left");
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
+
+        // spawn tcp client and check contents
+        let server = async {
+            #[allow(unused_mut)]
+            let mut listener = TcpListener::bind(addr).await?;
+
+            debug!("server: listening");
+            let mut incoming = listener.incoming();
+            if let Some(stream) = incoming.next().await {
+                debug!("server: got connection. waiting");
+                let mut tcp_stream = stream?;
+                let mut buf = [0; 30];
+                let len = tcp_stream.read(&mut buf).await?;
+                assert_eq!(len, 30);
+            } else {
+                panic!("client should connect");
+            }
+            Ok(()) as Result<(), SendFileError>
+        };
+
+        let client = async {
+            let file = file_util::open("test-data/apirequest.bin").await?;
+            sleep(time::Duration::from_millis(100)).await;
+
+            debug!("client: file loaded");
+            let mut stream = TcpStream::connect(&addr).await?;
+            debug!("client: connected to server");
+            let f_slice = file.as_slice(0, None).await?;
+            let max_slice = AsyncFileSlice::new(f_slice.fd(), 0, 1000);
+            debug!("slice: {:#?}", max_slice);
+            debug!("client: send back file using zero copy");
+            let writer = ZeroCopy::from(&mut stream);
+            let transfer = writer.copy_slice(&max_slice).await?;
+            assert_eq!(transfer, 30);
+            Ok(()) as Result<(), SendFileError>
+        };
+
+        // read file and zero copy to tcp stream
+
         let _ = zip(client, server).await;
     }
 }
