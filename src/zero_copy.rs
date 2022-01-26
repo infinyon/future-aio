@@ -149,15 +149,15 @@ impl ZeroCopy {
 
                     trace!("mac zero copy bytes transferred: {}", bytes_transferred);
 
-                    // zero bytes transferred means it's EOF
-                    if bytes_transferred == 0 {
-                        return Ok(total_transferred as usize);
-                    }
-
                     total_transferred += bytes_transferred as u64;
                     current_offset += bytes_transferred as u64;
                     match res {
                         Ok(_) => {
+                            // zero bytes transferred means it's EOF
+                            if bytes_transferred == 0 {
+                                trace!("no more bytes transferred");
+                                return Ok(total_transferred as usize);
+                            }
                             if total_transferred < size {
                                 debug!(
                                     "current transferred: {} less than total: {}, continuing",
