@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::os::unix::io::{AsRawFd, RawFd};
+use std::thread::sleep;
 use thiserror::Error;
 
 #[allow(unused)]
@@ -75,8 +76,14 @@ impl ZeroCopy {
                         Some(&mut current_offset),
                         to_be_transfer,
                     ) {
-                        Ok(len) => {
-                            total_transferred += len as usize;
+                        Ok(bytes_transferred) => {
+                            trace!("bytes transferred: {}", bytes_transferred);
+                            total_transferred += bytes_transferred as usize;
+
+                            // zero bytes transferred means it's EOF
+                            if bytes_transferred == 0 {
+                                return Ok(total_transferred as usize);
+                            }
 
                             if total_transferred < size as usize {
                                 debug!(
@@ -86,11 +93,11 @@ impl ZeroCopy {
                             } else {
                                 trace!(
                                     "actual: zero copy bytes transferred: {} out of {}, ",
-                                    len,
+                                    bytes_transferred,
                                     size
                                 );
 
-                                return Ok(len as usize);
+                                return Ok(total_transferred as usize);
                             }
                         }
                         Err(err) => match err {
@@ -99,6 +106,7 @@ impl ZeroCopy {
                                     "EAGAIN, continuing source: {},target: {}",
                                     source_fd, target_fd
                                 );
+                                sleep(std::time::Duration::from_millis(10));
                             }
                             _ => {
                                 log::error!("error sendfile: {}", err);
@@ -156,17 +164,17 @@ impl ZeroCopy {
                                     total_transferred, size
                                 );
                             } else {
-                                return Ok(bytes_transferred as usize);
+                                return Ok(total_transferred as usize);
                             }
                         }
                         Err(err) => {
                             if err == Errno::EAGAIN {
                                 debug!("EAGAIN, try again");
-                                continue;
+                                sleep(std::time::Duration::from_millis(10));
+                            } else {
+                                log::error!("error sendfile: {}", err);
+                                return Err(err.into());
                             }
-
-                            log::error!("error sendfile: {}", err);
-                            return Err(err.into());
                         }
                     }
                 }
@@ -231,7 +239,8 @@ mod tests {
             let f_slice = file.as_slice(0, None).await?;
             debug!("client: send back file using zero copy");
             let writer = ZeroCopy::from(&mut stream);
-            writer.copy_slice(&f_slice).await?;
+            let transfered = writer.copy_slice(&f_slice).await?;
+            assert_eq!(transfered, 30);
             Ok(()) as Result<(), SendFileError>
         };
 
@@ -242,12 +251,12 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_zero_copy_large_size() {
-        const MAX_BYTES: usize = 300000;
+        const MAX_BYTES: usize = 3000000;
 
         use futures_lite::AsyncWriteExt;
         use std::env::temp_dir;
 
-        const TEST_ITERATION: u16 = 20;
+        const TEST_ITERATION: u16 = 2;
 
         let port = portpicker::pick_unused_port().expect("No free ports left");
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
@@ -260,7 +269,7 @@ mod tests {
                 .expect("file creation");
 
             let bytes: Vec<u8> = vec![0; 1000];
-            for _ in 0..300 {
+            for _ in 0..3000 {
                 file.write_all(&bytes).await.expect("writing");
             }
 
@@ -271,8 +280,6 @@ mod tests {
 
         // spawn tcp client and check contents
         let server = async {
-            init_file().await;
-
             let temp_file = temp_dir().join("async_large");
             // do zero copy
             let file = file_util::open(&temp_file).await.expect("re opening");
@@ -287,6 +294,7 @@ mod tests {
             for i in 0..TEST_ITERATION {
                 let stream = incoming.next().await.expect("client should connect");
                 debug!("server {} got connection. waiting", i);
+
                 let mut tcp_stream = stream.expect("stream");
 
                 debug!(
@@ -296,22 +304,32 @@ mod tests {
                 );
 
                 let writer = ZeroCopy::from(&mut tcp_stream);
-                writer.copy_slice(&f_slice).await.expect("file slice");
+
+                if i == 0 {
+                    let transferred = writer.copy_slice(&f_slice).await.expect("file slice");
+                    assert_eq!(transferred, MAX_BYTES);
+                } else {
+                    let slice2 = AsyncFileSlice::new(f_slice.fd(), 0, (MAX_BYTES * 2) as u64);
+                    let transferred = writer.copy_slice(&slice2).await.expect("file slice");
+                    assert_eq!(transferred, MAX_BYTES);
+                }
             }
         };
 
         let client = async {
             // wait 1 seconds to give server to be ready
-            sleep(time::Duration::from_millis(1000)).await;
-            debug!("client: file loaded");
+            sleep(time::Duration::from_millis(100)).await;
+            debug!("client loop starting");
 
             for i in 0..TEST_ITERATION {
                 debug!("client: Test loop: {}", i);
                 let mut stream = TcpStream::connect(&addr).await?;
                 debug!("client: {} connected trying to read", i);
+                // let server send response
+
                 let mut buffer = Vec::with_capacity(MAX_BYTES);
                 stream
-                    .read_exact(&mut buffer)
+                    .read_to_end(&mut buffer)
                     .await
                     .expect("no more buffer");
                 debug!("client: {} test success", i);
@@ -324,13 +342,15 @@ mod tests {
             Ok(()) as Result<(), SendFileError>
         };
 
+        init_file().await;
+
         // read file and zero copy to tcp stream
         let _ = zip(client, server).await;
     }
 
     /// test zero copy when len is too large
     #[fluvio_future::test]
-    async fn test_zero_copy_large_len() {
+    async fn test_zero_copy_large_slace() {
         let port = portpicker::pick_unused_port().expect("No free ports left");
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
 
@@ -365,7 +385,8 @@ mod tests {
             debug!("slice: {:#?}", max_slice);
             debug!("client: send back file using zero copy");
             let writer = ZeroCopy::from(&mut stream);
-            writer.copy_slice(&max_slice).await?;
+            let transfer = writer.copy_slice(&max_slice).await?;
+            assert_eq!(transfer, 30);
             Ok(()) as Result<(), SendFileError>
         };
 
