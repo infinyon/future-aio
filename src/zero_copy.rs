@@ -130,7 +130,7 @@ impl ZeroCopy {
                         target_fd
                     );
 
-                    let (res, len) = sendfile(
+                    let (res, bytes_transferred) = sendfile(
                         source_fd,
                         target_fd,
                         current_offset as i64,
@@ -139,9 +139,15 @@ impl ZeroCopy {
                         None,
                     );
 
-                    trace!("mac zero copy bytes transferred: {}", len);
-                    total_transferred += len as u64;
-                    current_offset += len as u64;
+                    trace!("mac zero copy bytes transferred: {}", bytes_transferred);
+
+                    // zero bytes transferred means it's EOF
+                    if bytes_transferred == 0 {
+                        return Ok(total_transferred as usize);
+                    }
+
+                    total_transferred += bytes_transferred as u64;
+                    current_offset += bytes_transferred as u64;
                     match res {
                         Ok(_) => {
                             if total_transferred < size {
@@ -150,7 +156,7 @@ impl ZeroCopy {
                                     total_transferred, size
                                 );
                             } else {
-                                return Ok(len as usize);
+                                return Ok(bytes_transferred as usize);
                             }
                         }
                         Err(err) => {
@@ -322,8 +328,6 @@ mod tests {
         let _ = zip(client, server).await;
     }
 
-
-
     /// test zero copy when len is too large
     #[fluvio_future::test]
     async fn test_zero_copy_large_len() {
@@ -357,7 +361,7 @@ mod tests {
             let mut stream = TcpStream::connect(&addr).await?;
             debug!("client: connected to server");
             let f_slice = file.as_slice(0, None).await?;
-            let max_slice = AsyncFileSlice::new(f_slice.fd(),0,1000);
+            let max_slice = AsyncFileSlice::new(f_slice.fd(), 0, 1000);
             debug!("slice: {:#?}", max_slice);
             debug!("client: send back file using zero copy");
             let writer = ZeroCopy::from(&mut stream);
