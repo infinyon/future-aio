@@ -174,13 +174,14 @@ impl ZeroCopy {
 #[cfg(test)]
 mod tests {
 
-    use std::net::SocketAddr;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::time;
 
     use futures_lite::future::zip;
     use futures_util::stream::StreamExt;
     use log::debug;
 
+    use crate::file_slice::AsyncFileSlice;
     use crate::fs::AsyncFileExtension;
     use crate::net::TcpListener;
     use crate::net::TcpStream;
@@ -190,15 +191,15 @@ mod tests {
 
     use super::SendFileError;
 
-    const CONST_TEST_ADDR: &str = "127.0.0.1:9999";
-    const ZERO_COPY_PORT: u16 = 8888;
-
     #[fluvio_future::test]
-    async fn test_zero_copy_from_fs_to_socket() {
+    async fn test_zero_copy_simple() {
+        let port = portpicker::pick_unused_port().expect("No free ports left");
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
+
         // spawn tcp client and check contents
         let server = async {
             #[allow(unused_mut)]
-            let mut listener = TcpListener::bind(CONST_TEST_ADDR).await?;
+            let mut listener = TcpListener::bind(addr).await?;
 
             debug!("server: listening");
             let mut incoming = listener.incoming();
@@ -217,7 +218,7 @@ mod tests {
         let client = async {
             let file = file_util::open("test-data/apirequest.bin").await?;
             sleep(time::Duration::from_millis(100)).await;
-            let addr = CONST_TEST_ADDR.parse::<SocketAddr>().expect("parse");
+
             debug!("client: file loaded");
             let mut stream = TcpStream::connect(&addr).await?;
             debug!("client: connected to server");
@@ -241,6 +242,9 @@ mod tests {
         use std::env::temp_dir;
 
         const TEST_ITERATION: u16 = 20;
+
+        let port = portpicker::pick_unused_port().expect("No free ports left");
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
 
         async fn init_file() {
             let temp_file = temp_dir().join("async_large");
@@ -269,9 +273,7 @@ mod tests {
             let f_slice = file.as_slice(0, None).await.expect("filed opening");
             assert_eq!(f_slice.len(), MAX_BYTES as u64);
 
-            let listener = TcpListener::bind(format!("127.0.0.1:{}", ZERO_COPY_PORT))
-                .await
-                .expect("failed bind");
+            let listener = TcpListener::bind(addr).await.expect("failed bind");
 
             debug!("server: listening");
             let mut incoming = listener.incoming();
@@ -295,9 +297,6 @@ mod tests {
         let client = async {
             // wait 1 seconds to give server to be ready
             sleep(time::Duration::from_millis(1000)).await;
-            let addr = format!("127.0.0.1:{}", ZERO_COPY_PORT)
-                .parse::<SocketAddr>()
-                .expect("parse");
             debug!("client: file loaded");
 
             for i in 0..TEST_ITERATION {
@@ -320,6 +319,54 @@ mod tests {
         };
 
         // read file and zero copy to tcp stream
+        let _ = zip(client, server).await;
+    }
+
+
+
+    /// test zero copy when len is too large
+    #[fluvio_future::test]
+    async fn test_zero_copy_large_len() {
+        let port = portpicker::pick_unused_port().expect("No free ports left");
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
+
+        // spawn tcp client and check contents
+        let server = async {
+            #[allow(unused_mut)]
+            let mut listener = TcpListener::bind(addr).await?;
+
+            debug!("server: listening");
+            let mut incoming = listener.incoming();
+            if let Some(stream) = incoming.next().await {
+                debug!("server: got connection. waiting");
+                let mut tcp_stream = stream?;
+                let mut buf = [0; 30];
+                let len = tcp_stream.read(&mut buf).await?;
+                assert_eq!(len, 30);
+            } else {
+                panic!("client should connect");
+            }
+            Ok(()) as Result<(), SendFileError>
+        };
+
+        let client = async {
+            let file = file_util::open("test-data/apirequest.bin").await?;
+            sleep(time::Duration::from_millis(100)).await;
+
+            debug!("client: file loaded");
+            let mut stream = TcpStream::connect(&addr).await?;
+            debug!("client: connected to server");
+            let f_slice = file.as_slice(0, None).await?;
+            let max_slice = AsyncFileSlice::new(f_slice.fd(),0,1000);
+            debug!("slice: {:#?}", max_slice);
+            debug!("client: send back file using zero copy");
+            let writer = ZeroCopy::from(&mut stream);
+            writer.copy_slice(&max_slice).await?;
+            Ok(()) as Result<(), SendFileError>
+        };
+
+        // read file and zero copy to tcp stream
+
         let _ = zip(client, server).await;
     }
 }
