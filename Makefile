@@ -55,7 +55,7 @@ install-wasm32:
 
 check-clippy:	install-clippy install-wasm32
 	cargo clippy --all-targets --all-features -- -D warnings
-	cargo clippy --target wasm32-unknown-unknown --all-targets --all-features -- -D warnings
+#	cargo clippy --target wasm32-unknown-unknown --all-targets --all-features -- -D warnings
 
 
 cargo_cache_dir:

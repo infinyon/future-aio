@@ -92,6 +92,10 @@ flv-util = { version = "0.5.0", features = ["fixture"] }
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.0" }
 fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs"] }
 
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+portpicker = "0.1.1"
+
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.24"
 wasm-bindgen-futures = "0.4.24"
