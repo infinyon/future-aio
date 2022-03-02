@@ -178,7 +178,7 @@ impl TlsConnector {
             let params = client_configuration.param_mut();
             params.set_flags(X509VerifyFlags::PARTIAL_CHAIN)?;
         }
-        
+
         HandshakeFuture::Initial(
             move |stream| client_configuration.connect(domain, stream),
             AsyncToSyncWrapper::new(stream),
