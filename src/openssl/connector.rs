@@ -220,13 +220,11 @@ impl TlsConnectorBuilder {
         mut self,
         ca_file: P,
     ) -> Result<TlsConnectorBuilder> {
-        self.allow_partial = true;
         self.inner.set_ca_file(ca_file)?;
         Ok(self)
     }
 
     pub fn add_root_certificate(mut self, cert: Certificate) -> Result<TlsConnectorBuilder> {
-        self.allow_partial = true;
         self.inner.cert_store_mut().add_cert(cert.0)?;
         Ok(self)
     }
