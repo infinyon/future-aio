@@ -5,30 +5,65 @@ setup:
 	mkdir -p test-certs
 
 
-generate-certs:	setup generate-ca-crt generate-server-crt generate-client-crt generate-pk12-certs
+generate-certs:	setup generate-ca-crt generate-intermediate-ca-crt generate-server-crt generate-intermediate-chain generate-client-crt generate-pk12-certs
 
 # run generate-certs first
 generate-pk12-certs:	generate-server-pk12 generate-client-pk12
 
+### CA Generation
+
 generate-ca-key:	
 	openssl genrsa  -out test-certs/ca.key 4096
 
-# this is CA pem file
 generate-ca-crt:	generate-ca-key
 	openssl req -x509 -new -nodes -key test-certs/ca.key -out test-certs/ca.crt \
 		-subj /C=US/ST=CA/L=Sunnyvale/O=Fluvio/OU=Eng/CN=fluvio.io
 
+### Intermediate CA Generation
 
+generate-intermediate-ca-key:	
+	openssl genrsa  -out test-certs/intermediate-ca.key 4096
 
-generate-server-key:	
+generate-intermediate-ca-csr: generate-intermediate-ca-key
+	openssl req -new \
+    -key test-certs/intermediate-ca.key \
+    -out test-certs/intermediate-ca.csr \
+    -subj /C=US/ST=CA/L=Sunnyvale/O=Fluvio/OU=Eng/CN=intermediate.fluvio.io \
+    -config intermediate-cert.conf
+
+generate-intermediate-ca-crt: generate-intermediate-ca-csr
+	openssl x509 -req \
+    -in test-certs/intermediate-ca.csr \
+    -out test-certs/intermediate-ca.crt \
+		-CA test-certs/ca.crt \
+		-CAkey test-certs/ca.key \
+		-CAcreateserial  \
+		-days 500 \
+		-extensions v3_inter \
+		-extfile openssl.cnf
+
+### Non-Intermediate Chain Server
+
+generate-server-key:
 	openssl genrsa -out test-certs/server.key 4096
 
 
 generate-server-csr:	generate-server-key
 	openssl req -new -key test-certs/server.key \
 		-out test-certs/server.csr \
-		-config  cert.conf 
+		-config  cert.conf
 
+
+### Intermediate Chain Server
+
+generate-intermediate-server-key:	
+	openssl genrsa -out test-certs/intermediate-server.key 4096
+
+
+generate-intermediate-server-csr:	generate-intermediate-server-key
+	openssl req -new -key test-certs/intermediate-server.key \
+		-out test-certs/intermediate-server.csr \
+		-config  cert.conf 
 
 # generate anonymous pk12
 .PHONY: generate-server-pk12
@@ -39,6 +74,8 @@ generate-server-pk12:
 
 verify-csr:
 	openssl req -in test-certs/server.csr -noout -text
+
+### Non-Intermediate Chain
 
 decrypt-server-crt:
 	openssl x509 -in test-certs/server.crt   -noout -text
@@ -54,6 +91,29 @@ generate-server-crt:	generate-server-csr
 		-extensions v3_end \
 		-extfile openssl.cnf
 
+### Intermediate Chain
+
+decrypt-intermediate-server-crt:
+	openssl x509 -in test-certs/intermediate-server.crt   -noout -text
+
+generate-intermediate-server-crt:	generate-intermediate-server-csr
+	openssl x509 -req \
+		-in test-certs/intermediate-server.csr \
+		-out test-certs/intermediate-server.crt \
+		-CA test-certs/intermediate-ca.crt \
+		-CAkey test-certs/intermediate-ca.key \
+		-CAcreateserial  \
+		-days 500 \
+		-extensions v3_end \
+		-extfile openssl.cnf
+
+generate-intermediate-chain: generate-intermediate-ca-crt generate-intermediate-server-crt
+	cat test-certs/ca.crt test-certs/intermediate-ca.crt test-certs/intermediate-server.crt > test-certs/intermediate-full.crt
+
+#################################
+#
+#  Client Certificates
+#
 
 generate-client-key:
 	openssl genrsa -out test-certs/client.key 4096
@@ -88,7 +148,10 @@ test-mac-curl:
 MAKE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 start-nginx:
-	nginx -c $(MAKE_DIR)/nginx.conf 
+	nginx -c $(MAKE_DIR)/nginx.conf
+
+start-intermediate-nginx:
+	nginx -c $(MAKE_DIR)/intermediate-nginx.conf 
 
 stop-nginx:
 	nginx -s quit

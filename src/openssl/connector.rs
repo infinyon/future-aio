@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use futures_lite::io::{AsyncRead, AsyncWrite};
 use log::debug;
 use openssl::ssl;
+use openssl::x509::verify::X509VerifyFlags;
 
 use crate::net::{
     AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
@@ -150,6 +151,7 @@ pub mod certs {
 pub struct TlsConnector {
     pub inner: ssl::SslConnector,
     pub verify_hostname: bool,
+    pub allow_partial: bool,
 }
 
 impl TlsConnector {
@@ -158,6 +160,7 @@ impl TlsConnector {
         Ok(TlsConnectorBuilder {
             inner,
             verify_hostname: true,
+            allow_partial: true,
         })
     }
 
@@ -166,10 +169,16 @@ impl TlsConnector {
         S: AsyncRead + AsyncWrite + fmt::Debug + Unpin + Send + Sync + 'static,
     {
         debug!("tls connecting to: {}", domain);
-        let client_configuration = self
+        let mut client_configuration = self
             .inner
             .configure()?
             .verify_hostname(self.verify_hostname);
+
+        if self.allow_partial {
+            let params = client_configuration.param_mut();
+            params.set_flags(X509VerifyFlags::PARTIAL_CHAIN)?;
+        }
+
         HandshakeFuture::Initial(
             move |stream| client_configuration.connect(domain, stream),
             AsyncToSyncWrapper::new(stream),
@@ -181,6 +190,7 @@ impl TlsConnector {
 pub struct TlsConnectorBuilder {
     inner: ssl::SslConnectorBuilder,
     verify_hostname: bool,
+    allow_partial: bool,
 }
 
 impl TlsConnectorBuilder {
@@ -234,6 +244,7 @@ impl TlsConnectorBuilder {
         TlsConnector {
             inner: self.inner.build(),
             verify_hostname: self.verify_hostname,
+            allow_partial: self.allow_partial,
         }
     }
 }

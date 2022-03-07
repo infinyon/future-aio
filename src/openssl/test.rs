@@ -21,6 +21,7 @@ use super::TlsError;
 use super::{AllTcpStream, TlsAcceptor, TlsConnector};
 
 const CA_PATH: &str = "certs/test-certs/ca.crt";
+const INTERMEDIATE_CA_PATH: &str = "certs/test-certs/intermediate-ca.crt";
 const ITER: u16 = 10;
 
 fn to_bytes(bytes: Vec<u8>) -> Bytes {
@@ -31,6 +32,24 @@ fn to_bytes(bytes: Vec<u8>) -> Bytes {
 
 #[test_async]
 async fn test_tls() -> Result<(), TlsError> {
+    // Test the client against a server with CA intermediary cert chain
+    // Requires X509VerifyFlags::PARTIAL_CHAIN or allow_partial: true (default)
+    run_test(
+        TlsAcceptor::builder()?
+            .with_certifiate_and_key_from_pem_files(
+                "certs/test-certs/intermediate-server.crt",
+                "certs/test-certs/intermediate-server.key",
+            )?
+            .build(),
+        TlsConnector::builder()?
+            .with_hostname_vertification_disabled()?
+            .with_ca_from_pem_file(INTERMEDIATE_CA_PATH)?
+            .build(),
+    )
+    .await
+    .expect("no client cert test with root CA with intermediaries failed");
+
+    // Test the client against a server with CA only without intermediary certs
     run_test(
         TlsAcceptor::builder()?
             .with_certifiate_and_key_from_pem_files(
@@ -44,7 +63,7 @@ async fn test_tls() -> Result<(), TlsError> {
             .build(),
     )
     .await
-    .expect("no client cert test failed");
+    .expect("no client cert test with root CA only failed");
 
     // test client authentication
     run_test(
