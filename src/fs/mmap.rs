@@ -106,7 +106,13 @@ impl MemoryMappedFile {
             let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
             let meta = mfile.metadata().unwrap();
             if meta.len() == 0 {
-                mfile.set_len(min_len)?;
+                let fd = OpenOptions::new()
+                    .read(true)
+                    .write(true)
+                    .open(&m_path)
+                    .unwrap();
+
+                fd.set_len(min_len)?;
             }
 
             unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))
@@ -133,11 +139,12 @@ mod tests {
     use std::io::Error as IoError;
     use std::io::Read;
 
+    use async_fs::OpenOptions;
     use flv_util::fixture::ensure_clean_file;
 
     use crate::test_async;
 
-    use super::MemoryMappedMutFile;
+    use super::{MemoryMappedFile, MemoryMappedMutFile};
 
     #[test_async]
     async fn test_mmap_write_slice() -> Result<(), IoError> {
@@ -213,6 +220,30 @@ mod tests {
         assert_eq!(buffer[5], 0x05);
         assert_eq!(buffer[6], 0x10);
         assert_eq!(buffer[7], 0x44);
+
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_empty_index_read_only() -> Result<(), IoError> {
+        let index_path = temp_dir().join("zerosized.index");
+        ensure_clean_file(&index_path.clone());
+        {
+            let file = OpenOptions::new()
+                .create(true)
+                .write(true)
+                .read(true)
+                .open(&index_path)
+                .await?;
+            let meta = file.metadata().await?;
+            assert_eq!(meta.len(), 0);
+        }
+
+        let min_size = 10;
+
+        let (mm_file, _) = MemoryMappedFile::open(&index_path, min_size).await?;
+        let memory_size = mm_file.inner().len();
+        assert_eq!(memory_size, min_size as usize);
 
         Ok(())
     }
