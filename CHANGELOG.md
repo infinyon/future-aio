@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.3.14 - 2022-03-08
+* Add Intermediate CA Trust Anchor ([#135](https://github.com/infinyon/future-aio/issues/135))
+
 ## 0.3.13
 * Fixed another zero copy bug ([#127](https://github.com/infinyon/future-aio/issues/127))
 
