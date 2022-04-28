@@ -137,8 +137,9 @@ pub mod certs {
 mod wasm_connector {
     use super::*;
     use async_trait::async_trait;
-    use fluvio_ws_stream_wasm::WsMeta;
+    use futures_util::io::AsyncReadExt;
     use std::io::Error as IoError;
+    use ws_stream_wasm::WsMeta;
     #[derive(Clone, Default)]
     pub struct DefaultDomainWebsocketConnector {}
     impl DefaultDomainWebsocketConnector {
@@ -155,12 +156,9 @@ mod wasm_connector {
             let (mut _ws, wsstream) = WsMeta::connect(addr, None)
                 .await
                 .map_err(|e| IoError::new(std::io::ErrorKind::Other, e))?;
-            let wsstream_clone = wsstream.clone();
-            Ok((
-                Box::new(wsstream.into_io()),
-                Box::new(wsstream_clone.into_io()),
-                String::from(addr),
-            ))
+            let wsstream_io = wsstream.into_io();
+            let (stream, sink) = wsstream_io.split();
+            Ok((Box::new(sink), Box::new(stream), String::from(addr)))
         }
 
         fn new_domain(&self, _domain: String) -> DomainConnector {

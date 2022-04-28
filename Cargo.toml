@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.3.15"
+version = "0.3.16"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
@@ -14,7 +14,7 @@ subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscribe
 fixture = ["subscriber", "task", "fluvio-test-derive"]
 task_unstable = ["task", "async-std/unstable"]
 io = ["async-std/default"]
-net = ["futures-lite", "async-net", "async-trait", "cfg-if"]
+net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io"]
 tls = ["rust_tls"]
 rust_tls = [
     "net",
@@ -78,7 +78,7 @@ openssl-sys = { version = "0.9.65", optional = true, features = ["vendored"]}
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 fluvio-wasm-timer = "0.2.5"
 async-std = { version = "1.6.2", default-features = false, features = ["unstable"], optional = true }
-fluvio_ws_stream_wasm = "0.7.0"
+ws_stream_wasm = "0.7.3"
 
 [dev-dependencies]
 bytes = "1.0.0"
