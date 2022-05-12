@@ -349,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.16"
+version = "0.3.18"
 dependencies = [
  "async-fs",
  "async-io",

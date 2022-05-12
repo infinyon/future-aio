@@ -14,6 +14,9 @@ pub mod task;
 #[cfg(feature = "timer")]
 pub mod timer;
 
+#[cfg(feature = "retry")]
+pub mod retry;
+
 #[cfg(any(test, feature = "fixture"))]
 mod test_util;
 
