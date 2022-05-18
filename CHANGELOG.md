@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.3.17
+* Added wasm32 `Send + Sync` contraints for `Connection` ([#149](https://github.com/infinyon/future-aio/pull/149/))
+
 ## 0.3.14 - 2022-03-08
 * Add Intermediate CA Trust Anchor ([#135](https://github.com/infinyon/future-aio/issues/135))
 

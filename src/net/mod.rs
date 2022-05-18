@@ -23,28 +23,15 @@ mod conn {
 
     use async_trait::async_trait;
     use futures_lite::io::{AsyncRead, AsyncWrite};
+    pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
+    impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
 
-    cfg_if::cfg_if! {
-        if #[cfg(not(target_arch = "wasm32"))] {
-            pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
-            impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
+    pub trait ReadConnection: AsyncRead + Send + Sync + Unpin {}
+    impl<T: AsyncRead + Send + Sync + Unpin> ReadConnection for T {}
 
-            pub trait ReadConnection: AsyncRead + Send + Sync + Unpin {}
-            impl<T: AsyncRead + Send + Sync + Unpin> ReadConnection for T {}
+    pub trait WriteConnection: AsyncWrite + Send + Sync + Unpin {}
+    impl<T: AsyncWrite + Send + Sync + Unpin> WriteConnection for T {}
 
-            pub trait WriteConnection: AsyncWrite + Send + Sync + Unpin {}
-            impl<T: AsyncWrite + Send + Sync + Unpin> WriteConnection for T {}
-        } else if #[cfg(target_arch = "wasm32")] {
-            pub trait Connection: AsyncRead + AsyncWrite + Unpin + SplitConnection {}
-            impl<T: AsyncRead + AsyncWrite  + Unpin + SplitConnection> Connection for T {}
-
-            pub trait ReadConnection: AsyncRead + Unpin {}
-            impl<T: AsyncRead + Unpin> ReadConnection for T {}
-
-            pub trait WriteConnection: AsyncWrite + Unpin {}
-            impl<T: AsyncWrite + Unpin> WriteConnection for T {}
-        }
-    }
     pub type BoxConnection = Box<dyn Connection>;
     pub type BoxReadConnection = Box<dyn ReadConnection>;
     pub type BoxWriteConnection = Box<dyn WriteConnection>;
