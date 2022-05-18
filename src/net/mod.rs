@@ -35,14 +35,14 @@ mod conn {
             pub trait WriteConnection: AsyncWrite + Send + Sync + Unpin {}
             impl<T: AsyncWrite + Send + Sync + Unpin> WriteConnection for T {}
         } else if #[cfg(target_arch = "wasm32")] {
-            pub trait Connection: AsyncRead + AsyncWrite + Unpin + SplitConnection {}
-            impl<T: AsyncRead + AsyncWrite  + Unpin + SplitConnection> Connection for T {}
+            pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
+            impl<T: AsyncRead + AsyncWrite  + Unpin + SplitConnection + Send + Sync> Connection for T {}
 
-            pub trait ReadConnection: AsyncRead + Unpin {}
-            impl<T: AsyncRead + Unpin> ReadConnection for T {}
+            pub trait ReadConnection: AsyncRead + Unpin + Send + Sync {}
+            impl<T: AsyncRead + Unpin + Send + Sync> ReadConnection for T {}
 
-            pub trait WriteConnection: AsyncWrite + Unpin {}
-            impl<T: AsyncWrite + Unpin> WriteConnection for T {}
+            pub trait WriteConnection: AsyncWrite + Unpin + Send + Sync {}
+            impl<T: AsyncWrite + Unpin + Send + Sync> WriteConnection for T {}
         }
     }
     pub type BoxConnection = Box<dyn Connection>;
