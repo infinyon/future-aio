@@ -1,21 +1,20 @@
+use crate::timer::{after, sleep};
+use async_trait::async_trait;
+use futures_lite::FutureExt as lite_ext;
+use futures_util::FutureExt;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
 use std::time::Duration;
-use futures_lite::FutureExt as lite_ext;
-use futures_util::FutureExt;
 use tracing::warn;
-use crate::timer::{after, sleep};
-use async_trait::async_trait;
 
-pub use delay::FixedDelay;
-pub use delay::FibonacciBackoff;
 pub use delay::ExponentialBackoff;
+pub use delay::FibonacciBackoff;
+pub use delay::FixedDelay;
 
 /// An extension trait for `Future` that provides a convenient methods for retries.
 #[async_trait]
 pub trait RetryExt: Future {
-
     /// Transforms the current `Future` to a new one that is time-limited by the given timeout.
     /// Returns [TimeoutError] if timeout exceeds. Otherwise, it returns the original Future’s result.
     /// Example:
@@ -36,10 +35,12 @@ pub trait RetryExt: Future {
 #[async_trait]
 impl<F: Future + Send> RetryExt for F {
     async fn timeout(self, timeout: Duration) -> Result<Self::Output, TimeoutError> {
-        self.map(Ok).or(async move {
-            after(timeout).await;
-            Err(TimeoutError)
-        }).await
+        self.map(Ok)
+            .or(async move {
+                after(timeout).await;
+                Err(TimeoutError)
+            })
+            .await
     }
 }
 
@@ -52,32 +53,29 @@ impl Display for TimeoutError {
     }
 }
 
-impl Error for TimeoutError {
-
-}
+impl Error for TimeoutError {}
 
 /// Awaits on `Future`. Of Ok(_) or retry condition passes, returns from the function, otherwise returns
 /// error to the outer scope.
-macro_rules! poll_err{
-    ($function:ident, $condition:ident)=> {
-        {
-            match $function().await {
-                Ok(output) => return Ok(output),
-                Err(err) if !$condition(&err) => return Err(err),
-                Err(err) => err,
-            }
+macro_rules! poll_err {
+    ($function:ident, $condition:ident) => {{
+        match $function().await {
+            Ok(output) => return Ok(output),
+            Err(err) if !$condition(&err) => return Err(err),
+            Err(err) => err,
         }
-    }
+    }};
 }
 
 /// Provides `Future` with specified retries strategy. See [retry_if] for details.
-pub fn retry<I, O, F, E, A>(retries: I, factory: A) -> impl Future<Output=Result<O, E>> where
-    I: IntoIterator<Item=Duration>,
+pub fn retry<I, O, F, E, A>(retries: I, factory: A) -> impl Future<Output = Result<O, E>>
+where
+    I: IntoIterator<Item = Duration>,
     A: FnMut() -> F,
-    F: Future<Output=Result<O, E>>,
-    E: Debug
+    F: Future<Output = Result<O, E>>,
+    E: Debug,
 {
-    retry_if(retries, factory, |_|true)
+    retry_if(retries, factory, |_| true)
 }
 
 /// Provides retry functionality in async context. The `Future` that you want to retry needs to be
@@ -108,12 +106,14 @@ pub fn retry<I, O, F, E, A>(retries: I, factory: A) -> impl Future<Output=Result
 ///     Err(Error::from(ErrorKind::NotFound))
 /// }
 /// ```
-pub async fn retry_if<I, O, F, E, A, P>(retries: I, mut factory: A, condition: P) -> Result<O, E> where
-    I: IntoIterator<Item=Duration>,
+pub async fn retry_if<I, O, F, E, A, P>(retries: I, mut factory: A, condition: P) -> Result<O, E>
+where
+    I: IntoIterator<Item = Duration>,
     A: FnMut() -> F,
-    F: Future<Output=Result<O, E>>,
+    F: Future<Output = Result<O, E>>,
     P: Fn(&E) -> bool,
-    E: Debug {
+    E: Debug,
+{
     let mut err = poll_err!(factory, condition);
     for delay_duration in retries.into_iter() {
         sleep(delay_duration).await;
@@ -143,9 +143,7 @@ mod delay {
 
     impl FixedDelay {
         pub fn new(delay: Duration) -> Self {
-            Self {
-                delay
-            }
+            Self { delay }
         }
 
         pub fn from_millis(millis: u64) -> Self {
@@ -179,7 +177,7 @@ mod delay {
     pub struct FibonacciBackoff {
         current: Duration,
         next: Duration,
-        max_delay: Option<Duration>
+        max_delay: Option<Duration>,
     }
 
     impl FibonacciBackoff {
@@ -187,7 +185,7 @@ mod delay {
             Self {
                 current: initial_delay,
                 next: initial_delay,
-                max_delay: None
+                max_delay: None,
             }
         }
 
@@ -240,7 +238,7 @@ mod delay {
     pub struct ExponentialBackoff {
         base_millis: u64,
         current_millis: u64,
-        max_delay: Option<Duration>
+        max_delay: Option<Duration>,
     }
 
     impl ExponentialBackoff {
@@ -248,7 +246,7 @@ mod delay {
             Self {
                 base_millis: millis,
                 current_millis: millis,
-                max_delay: None
+                max_delay: None,
             }
         }
 
@@ -366,11 +364,11 @@ mod delay {
 
 #[cfg(test)]
 mod test {
+    use super::*;
     use std::io::ErrorKind;
     use std::ops::AddAssign;
     use std::time::Duration;
     use tracing::debug;
-    use super::*;
 
     #[fluvio_future::test]
     async fn test_fixed_retries_no_delay() {
@@ -400,7 +398,9 @@ mod test {
                 Result::<usize, std::io::Error>::Err(std::io::Error::from(ErrorKind::NotFound))
             }
         };
-        let retry_result = retry(FixedDelay::from_millis(100).take(10), operation).timeout(Duration::from_millis(300)).await;
+        let retry_result = retry(FixedDelay::from_millis(100).take(10), operation)
+            .timeout(Duration::from_millis(300))
+            .await;
 
         assert!(matches!(retry_result, Err(_)));
         assert!(executed_retries < 10);
@@ -417,7 +417,8 @@ mod test {
                 Result::<usize, std::io::Error>::Err(std::io::Error::from(ErrorKind::NotFound))
             }
         };
-        let retry_result = retry_if(FixedDelay::from_millis(100).take(10), operation, |_|false).await;
+        let retry_result =
+            retry_if(FixedDelay::from_millis(100).take(10), operation, |_| false).await;
 
         assert!(matches!(retry_result, Err(err) if err.kind() == ErrorKind::NotFound));
         assert_eq!(executed_retries, 1);
@@ -434,7 +435,9 @@ mod test {
                 if i < 2 {
                     Result::<usize, std::io::Error>::Err(std::io::Error::from(ErrorKind::NotFound))
                 } else {
-                    Result::<usize, std::io::Error>::Err(std::io::Error::from(ErrorKind::AddrNotAvailable))
+                    Result::<usize, std::io::Error>::Err(std::io::Error::from(
+                        ErrorKind::AddrNotAvailable,
+                    ))
                 }
             }
         };
@@ -444,5 +447,4 @@ mod test {
         assert!(matches!(retry_result, Err(err) if err.kind() == ErrorKind::AddrNotAvailable));
         assert_eq!(executed_retries, 2);
     }
-
 }
