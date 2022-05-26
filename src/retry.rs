@@ -1,4 +1,3 @@
-use crate::timer::{after, sleep};
 use async_trait::async_trait;
 use futures_lite::FutureExt as lite_ext;
 use futures_util::FutureExt;
@@ -8,6 +7,7 @@ use std::future::Future;
 use std::time::Duration;
 use tracing::warn;
 
+use crate::timer::sleep;
 pub use delay::ExponentialBackoff;
 pub use delay::FibonacciBackoff;
 pub use delay::FixedDelay;
@@ -37,7 +37,7 @@ impl<F: Future + Send> RetryExt for F {
     async fn timeout(self, timeout: Duration) -> Result<Self::Output, TimeoutError> {
         self.map(Ok)
             .or(async move {
-                after(timeout).await;
+                let _ = sleep(timeout).await;
                 Err(TimeoutError)
             })
             .await
@@ -116,7 +116,7 @@ where
 {
     let mut err = poll_err!(factory, condition);
     for delay_duration in retries.into_iter() {
-        sleep(delay_duration).await;
+        let _ = sleep(delay_duration).await;
         warn!(?err, "retrying");
         err = poll_err!(factory, condition);
     }
