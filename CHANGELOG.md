@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.3.18
+* Add async retries ([#151](https://github.com/infinyon/future-aio/pull/151))
+
 ## 0.3.17
 * Added wasm32 `Send + Sync` contraints for `Connection` ([#149](https://github.com/infinyon/future-aio/pull/149/))
 
