@@ -8,6 +8,9 @@ repository = "https://github.com/infinyon/future-aio"
 license = "Apache-2.0"
 resolver = "2"
 
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 task = ["async-std/default", "timer", "cfg-if"]
 subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
