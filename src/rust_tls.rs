@@ -228,7 +228,7 @@ mod builder {
     pub struct ConnectorBuilder;
 
     impl ConnectorBuilder {
-        pub fn new() -> ConnectorBuilderStage<WantsVerifier> {
+        pub fn with_safe_defaults() -> ConnectorBuilderStage<WantsVerifier> {
             ConnectorBuilderStage(ClientConfig::builder().with_safe_defaults())
         }
     }
@@ -329,7 +329,7 @@ mod builder {
     pub struct AcceptorBuilder;
 
     impl AcceptorBuilder {
-        pub fn new() -> AcceptorBuilderStage<WantsVerifier> {
+        pub fn with_safe_defaults() -> AcceptorBuilderStage<WantsVerifier> {
             AcceptorBuilderStage(ServerConfig::builder().with_safe_defaults())
         }
     }
@@ -438,11 +438,13 @@ mod test {
     #[test_async]
     async fn test_async_tls() -> Result<(), IoError> {
         test_tls(
-            AcceptorBuilder::new()
+            AcceptorBuilder::with_safe_defaults()
                 .no_client_authentication()
                 .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
                 .build(),
-            ConnectorBuilder::new().no_cert_verification().build(),
+            ConnectorBuilder::with_safe_defaults()
+                .no_cert_verification()
+                .build(),
         )
         .await
         .expect("no client cert test failed");
@@ -450,11 +452,11 @@ mod test {
         // test client authentication
 
         test_tls(
-            AcceptorBuilder::new()
+            AcceptorBuilder::with_safe_defaults()
                 .client_authenticate(CA_PATH)?
                 .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
                 .build(),
-            ConnectorBuilder::new()
+            ConnectorBuilder::with_safe_defaults()
                 .load_ca_cert(CA_PATH)?
                 .load_client_certs("certs/test-certs/client.crt", "certs/test-certs/client.key")?
                 .build(),
