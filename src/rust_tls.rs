@@ -48,8 +48,8 @@ mod cert {
     use std::io::ErrorKind;
     use std::path::Path;
 
-    use rustls::internal::pemfile::certs;
-    use rustls::internal::pemfile::rsa_private_keys;
+    use rustls_pemfile::certs;
+    use rustls_pemfile::rsa_private_keys;
 
     use super::Certificate;
     use super::PrivateKey;
@@ -60,7 +60,9 @@ mod cert {
     }
 
     pub fn load_certs_from_reader(rd: &mut dyn BufRead) -> Result<Vec<Certificate>, IoError> {
-        certs(rd).map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))
+        certs(rd)
+            .map(|v| v.into_iter().map(Certificate).collect())
+            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))
     }
 
     /// Load the passed keys file
@@ -69,15 +71,36 @@ mod cert {
     }
 
     pub fn load_keys_from_reader(rd: &mut dyn BufRead) -> Result<Vec<PrivateKey>, IoError> {
-        rsa_private_keys(rd).map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid key"))
+        rsa_private_keys(rd)
+            .map(|v| v.into_iter().map(PrivateKey).collect())
+            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid key"))
+    }
+
+    pub fn load_first_key<P: AsRef<Path>>(path: P) -> Result<PrivateKey, IoError> {
+        load_first_key_from_reader(&mut BufReader::new(File::open(path)?))
+    }
+
+    pub fn load_first_key_from_reader(rd: &mut dyn BufRead) -> Result<PrivateKey, IoError> {
+        let mut keys = load_keys_from_reader(rd)?;
+
+        if keys.is_empty() {
+            Err(IoError::new(ErrorKind::InvalidInput, "no keys found"))
+        } else {
+            Ok(keys.remove(0))
+        }
     }
 
     pub fn load_root_ca<P: AsRef<Path>>(path: P) -> Result<RootCertStore, IoError> {
+        let certs = load_certs(path)
+            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+
         let mut root_store = RootCertStore::empty();
 
-        root_store
-            .add_pem_file(&mut BufReader::new(File::open(path)?))
-            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+        for cert in &certs {
+            root_store
+                .add(cert)
+                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+        }
 
         Ok(root_store)
     }
@@ -177,154 +200,199 @@ mod connector {
 
 mod builder {
 
-    use std::fs::File;
-    use std::io::BufReader;
     use std::io::Cursor;
     use std::io::Error as IoError;
     use std::io::ErrorKind;
     use std::path::Path;
     use std::sync::Arc;
+    use std::time::SystemTime;
 
-    use rustls::AllowAnyAuthenticatedClient;
-    use rustls::ServerCertVerified;
-    use rustls::ServerCertVerifier;
-    use rustls::TLSError;
-    use webpki::DNSNameRef;
+    use rustls::{
+        client::ServerCertVerified, server::WantsServerCert, PrivateKey, RootCertStore, ServerName,
+    };
+    use rustls::{client::ServerCertVerifier, ConfigBuilder};
+    use rustls::{client::WantsTransparencyPolicyOrClientCert, Error as TlsError};
+    use rustls::{server::AllowAnyAuthenticatedClient, WantsVerifier};
 
-    use super::load_certs;
-    use super::load_certs_from_reader;
-    use super::load_keys;
-    use super::load_keys_from_reader;
     use super::load_root_ca;
     use super::Certificate;
     use super::ClientConfig;
-    use super::RootCertStore;
     use super::ServerConfig;
     use super::TlsAcceptor;
     use super::TlsConnector;
+    use super::{load_certs, load_first_key_from_reader};
+    use super::{load_certs_from_reader, load_first_key};
 
-    pub struct ConnectorBuilder(ClientConfig);
+    pub type ClientConfigBuilder<Stage> = ConfigBuilder<ClientConfig, Stage>;
+
+    pub struct ConnectorBuilder;
 
     impl ConnectorBuilder {
-        pub fn new() -> Self {
-            Self(ClientConfig::new())
+        pub fn new() -> ConnectorBuilderStage<WantsVerifier> {
+            ConnectorBuilderStage(ClientConfig::builder().with_safe_defaults())
+        }
+    }
+
+    pub struct ConnectorBuilderStage<S>(ConfigBuilder<ClientConfig, S>);
+
+    impl ConnectorBuilderStage<WantsVerifier> {
+        pub fn load_ca_cert<P: AsRef<Path>>(
+            self,
+            path: P,
+        ) -> Result<ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert>, IoError> {
+            let certs = load_certs(path)?;
+            self.with_root_certificates(&certs)
         }
 
-        pub fn load_ca_cert<P: AsRef<Path>>(mut self, path: P) -> Result<Self, IoError> {
-            self.0
-                .root_store
-                .add_pem_file(&mut BufReader::new(File::open(path)?))
-                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
-
-            Ok(self)
+        pub fn load_ca_cert_from_bytes(
+            self,
+            buffer: &[u8],
+        ) -> Result<ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert>, IoError> {
+            let certs = load_certs_from_reader(&mut Cursor::new(buffer))?;
+            self.with_root_certificates(&certs)
         }
 
-        pub fn load_ca_cert_from_bytes(mut self, buffer: &[u8]) -> Result<Self, IoError> {
-            let mut bytes = Cursor::new(buffer);
-            self.0
-                .root_store
-                .add_pem_file(&mut bytes)
-                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+        pub fn no_cert_verification(self) -> ConnectorBuilderWithConfig {
+            let config = self
+                .0
+                .with_custom_certificate_verifier(Arc::new(NoCertificateVerification))
+                .with_no_client_auth();
 
-            Ok(self)
+            ConnectorBuilderWithConfig(config)
         }
 
+        fn with_root_certificates(
+            self,
+            certs: &[Certificate],
+        ) -> Result<ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert>, IoError> {
+            let mut root_store = RootCertStore::empty();
+
+            for cert in certs {
+                root_store
+                    .add(cert)
+                    .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+            }
+
+            Ok(ConnectorBuilderStage(
+                self.0.with_root_certificates(root_store),
+            ))
+        }
+    }
+
+    impl ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert> {
         pub fn load_client_certs<P: AsRef<Path>>(
-            mut self,
+            self,
             cert_path: P,
             key_path: P,
-        ) -> Result<Self, IoError> {
-            let client_certs = load_certs(cert_path)?;
-            let mut client_keys = load_keys(key_path)?;
-            self.0
-                .set_single_client_cert(client_certs, client_keys.remove(0))
-                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
-
-            Ok(self)
+        ) -> Result<ConnectorBuilderWithConfig, IoError> {
+            let certs = load_certs(cert_path)?;
+            let key = load_first_key(key_path)?;
+            self.with_single_cert(certs, key)
         }
 
         pub fn load_client_certs_from_bytes(
-            mut self,
+            self,
             cert_buf: &[u8],
             key_buf: &[u8],
-        ) -> Result<Self, IoError> {
-            let client_certs = load_certs_from_reader(&mut Cursor::new(cert_buf))?;
-            let mut client_keys = load_keys_from_reader(&mut Cursor::new(key_buf))?;
-            self.0
-                .set_single_client_cert(client_certs, client_keys.remove(0))
+        ) -> Result<ConnectorBuilderWithConfig, IoError> {
+            let certs = load_certs_from_reader(&mut Cursor::new(cert_buf))?;
+            let key = load_first_key_from_reader(&mut Cursor::new(key_buf))?;
+            self.with_single_cert(certs, key)
+        }
+
+        pub fn no_client_auth(self) -> ConnectorBuilderWithConfig {
+            ConnectorBuilderWithConfig(self.0.with_no_client_auth())
+        }
+
+        fn with_single_cert(
+            self,
+            certs: Vec<Certificate>,
+            key: PrivateKey,
+        ) -> Result<ConnectorBuilderWithConfig, IoError> {
+            let config = self
+                .0
+                .with_single_cert(certs, key)
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
 
-            Ok(self)
+            Ok(ConnectorBuilderWithConfig(config))
         }
+    }
 
-        pub fn no_cert_verification(mut self) -> Self {
-            self.0
-                .dangerous()
-                .set_certificate_verifier(Arc::new(NoCertificateVerification {}));
+    pub struct ConnectorBuilderWithConfig(ClientConfig);
 
-            self
-        }
-
+    impl ConnectorBuilderWithConfig {
         pub fn build(self) -> TlsConnector {
             self.0.into()
         }
     }
 
-    impl Default for ConnectorBuilder {
-        fn default() -> Self {
-            Self::new()
+    pub struct AcceptorBuilder;
+
+    impl AcceptorBuilder {
+        pub fn new() -> AcceptorBuilderStage<WantsVerifier> {
+            AcceptorBuilderStage(ServerConfig::builder().with_safe_defaults())
         }
     }
 
-    pub struct AcceptorBuilder(ServerConfig);
+    pub struct AcceptorBuilderStage<S>(ConfigBuilder<ServerConfig, S>);
 
-    impl AcceptorBuilder {
-        /// create builder with no client authentication
-        pub fn new_no_client_authentication() -> Self {
-            use rustls::NoClientAuth;
-
-            Self(ServerConfig::new(NoClientAuth::new()))
+    impl AcceptorBuilderStage<WantsVerifier> {
+        /// Require no client authentication.
+        pub fn no_client_authentication(self) -> AcceptorBuilderStage<WantsServerCert> {
+            AcceptorBuilderStage(self.0.with_no_client_auth())
         }
 
-        /// create builder with client authentication
-        /// must pass CA root
-        pub fn new_client_authenticate<P: AsRef<Path>>(path: P) -> Result<Self, IoError> {
+        /// Require client authentication. Must pass CA root path.
+        pub fn client_authenticate<P: AsRef<Path>>(
+            self,
+            path: P,
+        ) -> Result<AcceptorBuilderStage<WantsServerCert>, IoError> {
             let root_store = load_root_ca(path)?;
 
-            Ok(Self(ServerConfig::new(AllowAnyAuthenticatedClient::new(
-                root_store,
-            ))))
+            Ok(AcceptorBuilderStage(self.0.with_client_cert_verifier(
+                AllowAnyAuthenticatedClient::new(root_store),
+            )))
         }
+    }
 
-        pub fn load_server_certs<P: AsRef<Path>>(
-            mut self,
-            cert_path: P,
-            key_path: P,
-        ) -> Result<Self, IoError> {
-            let server_crt = load_certs(cert_path)?;
-            let mut server_keys = load_keys(key_path)?;
-            self.0
-                .set_single_cert(server_crt, server_keys.remove(0))
+    impl AcceptorBuilderStage<WantsServerCert> {
+        pub fn load_server_certs(
+            self,
+            cert_path: impl AsRef<Path>,
+            key_path: impl AsRef<Path>,
+        ) -> Result<AcceptorBuilderWithConfig, IoError> {
+            let certs = load_certs(cert_path)?;
+            let key = load_first_key(key_path)?;
+
+            let config = self
+                .0
+                .with_single_cert(certs, key)
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
 
-            Ok(self)
+            Ok(AcceptorBuilderWithConfig(config))
         }
+    }
 
+    pub struct AcceptorBuilderWithConfig(ServerConfig);
+
+    impl AcceptorBuilderWithConfig {
         pub fn build(self) -> TlsAcceptor {
             TlsAcceptor::from(Arc::new(self.0))
         }
     }
 
-    struct NoCertificateVerification {}
+    struct NoCertificateVerification;
 
     impl ServerCertVerifier for NoCertificateVerification {
         fn verify_server_cert(
             &self,
-            _roots: &RootCertStore,
-            _presented_certs: &[Certificate],
-            _dns_name: DNSNameRef<'_>,
-            _ocsp: &[u8],
-        ) -> Result<ServerCertVerified, TLSError> {
+            _end_entity: &Certificate,
+            _intermediates: &[Certificate],
+            _server_name: &ServerName,
+            _scts: &mut dyn Iterator<Item = &[u8]>,
+            _ocsp_response: &[u8],
+            _now: SystemTime,
+        ) -> Result<ServerCertVerified, TlsError> {
             log::debug!("ignoring server cert");
             Ok(ServerCertVerified::assertion())
         }
@@ -370,7 +438,8 @@ mod test {
     #[test_async]
     async fn test_async_tls() -> Result<(), IoError> {
         test_tls(
-            AcceptorBuilder::new_no_client_authentication()
+            AcceptorBuilder::new()
+                .no_client_authentication()
                 .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
                 .build(),
             ConnectorBuilder::new().no_cert_verification().build(),
@@ -381,12 +450,13 @@ mod test {
         // test client authentication
 
         test_tls(
-            AcceptorBuilder::new_client_authenticate(CA_PATH)?
+            AcceptorBuilder::new()
+                .client_authenticate(CA_PATH)?
                 .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
                 .build(),
             ConnectorBuilder::new()
-                .load_client_certs("certs/test-certs/client.crt", "certs/test-certs/client.key")?
                 .load_ca_cert(CA_PATH)?
+                .load_client_certs("certs/test-certs/client.crt", "certs/test-certs/client.key")?
                 .build(),
         )
         .await
@@ -409,7 +479,7 @@ mod test {
             let acceptor = acceptor.clone();
             debug!("server: got connection from client");
             debug!("server: try to accept tls connection");
-            let handshake = acceptor.accept(tcp_stream);
+            let handshake = acceptor.accept(tcp_stream).expect("accept failed");
 
             debug!("server: handshaking");
             let tls_stream = handshake.await.expect("hand shake failed");
