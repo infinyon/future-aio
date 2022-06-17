@@ -76,11 +76,11 @@ mod cert {
             .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid key"))
     }
 
-    pub fn load_first_key<P: AsRef<Path>>(path: P) -> Result<PrivateKey, IoError> {
+    pub(crate) fn load_first_key<P: AsRef<Path>>(path: P) -> Result<PrivateKey, IoError> {
         load_first_key_from_reader(&mut BufReader::new(File::open(path)?))
     }
 
-    pub fn load_first_key_from_reader(rd: &mut dyn BufRead) -> Result<PrivateKey, IoError> {
+    pub(crate) fn load_first_key_from_reader(rd: &mut dyn BufRead) -> Result<PrivateKey, IoError> {
         let mut keys = load_keys_from_reader(rd)?;
 
         if keys.is_empty() {
