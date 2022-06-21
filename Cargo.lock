@@ -336,8 +336,8 @@ dependencies = [
 
 [[package]]
 name = "fluvio-async-tls"
-version = "0.2.0"
-source = "git+https://github.com/heilhead/fluvio-async-tls.git?rev=94a8cf7#94a8cf7f4ea9ae1b6d8e54ed973db88ca9b1d532"
+version = "0.3.0"
+source = "git+https://github.com/infinyon/fluvio-async-tls?rev=6c920c8#6c920c8949f85df87d82a917f4978810e18c2214"
 dependencies = [
  "futures-core",
  "futures-io",
