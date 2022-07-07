@@ -28,7 +28,7 @@ where
         spawn_closure.await;
         // do infinite loop for now
         loop {
-            let _ = sleep(Duration::from_secs(3600)).await;
+            sleep(Duration::from_secs(3600)).await;
         }
     });
 }

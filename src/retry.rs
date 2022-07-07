@@ -116,7 +116,7 @@ where
 {
     let mut err = poll_err!(factory, condition);
     for delay_duration in retries.into_iter() {
-        let _ = sleep(delay_duration).await;
+        sleep(delay_duration).await;
         warn!(?err, "retrying");
         err = poll_err!(factory, condition);
     }
