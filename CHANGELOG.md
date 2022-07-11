@@ -1,7 +1,7 @@
 # Release Notes
 
 ## 0.4.0
-* Upgrade Rustls and change AcceptorBuilder and ConnectorBuilder API  ([#151](https://github.com/infinyon/future-aio/pull/154))
+* Upgrade Rustls results in AcceptorBuilder and ConnectorBuilder API changes ([#151](https://github.com/infinyon/future-aio/pull/154))
 
 ## 0.3.18
 * Add async retries ([#151](https://github.com/infinyon/future-aio/pull/151))
