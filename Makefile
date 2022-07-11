@@ -54,7 +54,8 @@ install-wasm32:
 	rustup target add wasm32-unknown-unknown
 
 check-clippy:	install-clippy install-wasm32
-	cargo clippy --all-targets --all-features -- -D warnings
+	cargo clippy --all-features
+	cargo check --target wasm32-unknown-unknown --all-features
 #	cargo clippy --target wasm32-unknown-unknown --all-targets --all-features -- -D warnings
 
 

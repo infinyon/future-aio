@@ -28,7 +28,13 @@ where
         spawn_closure.await;
         // do infinite loop for now
         loop {
-            sleep(Duration::from_secs(3600)).await;
+            cfg_if::cfg_if! {
+                if #[cfg(target_arch = "wasm32")] {
+                    sleep(Duration::from_secs(3600)).await.unwrap();
+                } else {
+                    sleep(Duration::from_secs(3600)).await;
+                }
+            }
         }
     });
 }

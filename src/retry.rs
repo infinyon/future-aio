@@ -116,7 +116,13 @@ where
 {
     let mut err = poll_err!(factory, condition);
     for delay_duration in retries.into_iter() {
-        sleep(delay_duration).await;
+        cfg_if::cfg_if! {
+            if #[cfg(target_arch = "wasm32")] {
+                sleep(delay_duration).await.unwrap();
+            } else {
+                sleep(delay_duration).await;
+            }
+        }
         warn!(?err, "retrying");
         err = poll_err!(factory, condition);
     }
