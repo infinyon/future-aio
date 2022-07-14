@@ -169,7 +169,7 @@ mod delay {
         }
     }
 
-    /// A retry strategy driven by the fibonacci series of intervals between retires.
+    /// A retry strategy driven by the fibonacci series of intervals between retries.
     /// ```
     /// use std::io::Error;
     /// use fluvio_future::retry::{FibonacciBackoff, retry};

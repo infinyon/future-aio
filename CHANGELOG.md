@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.4.1
+* Make tcp connector `Send` for `wasm32` ([#165](https://github.com/infinyon/future-aio/pull/165))
+
 ## 0.4.0
 * Upgrade Rustls results in AcceptorBuilder and ConnectorBuilder API changes ([#151](https://github.com/infinyon/future-aio/pull/154))
 
