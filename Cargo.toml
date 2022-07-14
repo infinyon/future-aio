@@ -44,7 +44,7 @@ openssl_tls = [
     "futures-util/io",
 ]
 timer = ["async-io", "pin-project", "futures-lite"]
-fs = ["async-fs", "futures-lite", "pin-utils"]
+fs = ["async-fs", "futures-lite", "pin-utils", "async-trait"]
 zero_copy = ["nix", "task_unstable"]
 mmap = ["fs", "memmap", "task_unstable"]
 retry = []
