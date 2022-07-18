@@ -59,7 +59,7 @@ pin-utils = { version = "0.1.0", optional = true }
 pin-project = { version = "1.0.8", optional = true }
 tracing = { version = "0.1.32" }
 tracing-subscriber = { version = "0.3.9", optional = true }
-nix = { version = "0.24.0", optional = true }
+nix = { version = "0.24.2", optional = true }
 bytes = { version = "1.0.0", optional = true }
 async-trait = { version = "0.1.40", optional = true }
 webpki = { version = "0.22", optional = true }
