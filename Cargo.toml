@@ -103,6 +103,6 @@ fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retr
 portpicker = "0.1.1"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
-wasm-bindgen-test = "0.3.24"
+wasm-bindgen-test = "0.3.32"
 wasm-bindgen-futures = "0.4.24"
 tracing-wasm = "0.2.0"
