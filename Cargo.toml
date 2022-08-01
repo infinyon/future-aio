@@ -60,7 +60,7 @@ pin-project = { version = "1.0.8", optional = true }
 tracing = { version = "0.1.32" }
 tracing-subscriber = { version = "0.3.9", optional = true }
 nix = { version = "0.24.0", optional = true }
-bytes = { version = "1.0.0", optional = true }
+bytes = { version = "1.2.1", optional = true }
 async-trait = { version = "0.1.40", optional = true }
 webpki = { version = "0.22", optional = true }
 cfg-if = { version = "1.0.0", optional = true }
@@ -87,7 +87,7 @@ async-std = { version = "1.6.2", default-features = false, features = ["unstable
 ws_stream_wasm = "0.7.3"
 
 [dev-dependencies]
-bytes = "1.0.0"
+bytes = "1.2.1"
 lazy_static = "1.2.0"
 num_cpus = "1.10.1"
 futures-util = { version = "0.3.5", features = ["sink", "io"] }
