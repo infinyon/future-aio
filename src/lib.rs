@@ -48,6 +48,9 @@ pub use crate::native_tls as tls;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod openssl;
 
+#[cfg(feature = "collections")]
+pub mod collections;
+
 #[cfg(feature = "subscriber")]
 pub mod subscriber {
     use tracing_subscriber::EnvFilter;
