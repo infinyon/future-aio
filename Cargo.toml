@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
@@ -17,6 +17,7 @@ subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscribe
 fixture = ["subscriber", "task", "fluvio-test-derive"]
 task_unstable = ["task", "async-std/unstable"]
 io = ["async-std/default"]
+sync = ["async-std/default"]
 net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io"]
 tls = ["rust_tls"]
 rust_tls = [
