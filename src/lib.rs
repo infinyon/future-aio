@@ -44,6 +44,9 @@ pub mod native_tls;
 #[cfg(all(any(unix, windows), feature = "native2_tls", not(feature = "rust_tls")))]
 pub use crate::native_tls as tls;
 
+#[cfg(feature = "otel-metrics")]
+pub mod metric;
+
 #[cfg(feature = "openssl_tls")]
 #[cfg(not(target_arch = "wasm32"))]
 pub mod openssl;
