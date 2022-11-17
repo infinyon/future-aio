@@ -39,7 +39,7 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           override: true
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.check }}
       - name: Clippy
