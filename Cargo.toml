@@ -18,6 +18,7 @@ fixture = ["subscriber", "task", "fluvio-test-derive"]
 task_unstable = ["task", "async-std/unstable"]
 io = ["async-std/default"]
 sync = ["async-std/default"]
+future = ["async-std/default"]
 net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io"]
 tls = ["rust_tls"]
 rust_tls = [

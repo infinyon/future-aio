@@ -51,6 +51,9 @@ pub mod openssl;
 #[cfg(feature = "sync")]
 pub mod sync;
 
+#[cfg(feature = "future")]
+pub mod future;
+
 #[cfg(feature = "subscriber")]
 pub mod subscriber {
     use tracing_subscriber::EnvFilter;
