@@ -9,11 +9,11 @@ pub use async_std::task::spawn_local;
 
 /// run future and wait forever
 /// this is typically used in the server
-pub fn run<F, T>(spawn_closure: F) -> T
+pub fn run<F>(spawn_closure: F)
 where
-    F: Future<Output = T>,
+    F: Future<Output = ()> + Send + 'static,
 {
-    task::block_on(spawn_closure)
+    task::block_on(spawn_closure);
 }
 
 /// run future and wait forever
