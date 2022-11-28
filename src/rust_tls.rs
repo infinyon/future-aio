@@ -435,7 +435,7 @@ mod test {
         buf.freeze()
     }
 
-    #[test_async]
+    #[test_async(ignore)]
     async fn test_async_tls() -> Result<(), IoError> {
         test_tls(
             AcceptorBuilder::with_safe_defaults()
