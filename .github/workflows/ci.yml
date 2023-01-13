@@ -79,7 +79,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
-          override: true
+          profile: minimal
           target: wasm32-unknown-unknown
       - name: Run Wasm Test on Linux
         if: matrix.test == 'linux-wasm'
