@@ -423,11 +423,11 @@ mod test {
     use std::net::SocketAddr;
     use std::time;
 
+    use async_rustls::TlsAcceptor;
+    use async_rustls::TlsConnector;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
-    use fluvio_async_tls::TlsAcceptor;
-    use fluvio_async_tls::TlsConnector;
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
     use futures_util::sink::SinkExt;
@@ -453,8 +453,8 @@ mod test {
     }
 
     #[test_async(ignore)]
-    async fn test_async_tls() -> Result<(), IoError> {
-        test_tls(
+    async fn test_rust_tls_all() -> Result<(), IoError> {
+        test_rustls(
             AcceptorBuilder::with_safe_defaults()
                 .no_client_authentication()
                 .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
@@ -468,7 +468,7 @@ mod test {
 
         // test client authentication
 
-        test_tls(
+        test_rustls(
             AcceptorBuilder::with_safe_defaults()
                 .client_authenticate(CA_PATH)?
                 .load_server_certs("certs/test-certs/server.crt", "certs/test-certs/server.key")?
@@ -484,7 +484,7 @@ mod test {
         Ok(())
     }
 
-    async fn test_tls(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), IoError> {
+    async fn test_rustls(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), IoError> {
         let addr = "127.0.0.1:19998".parse::<SocketAddr>().expect("parse");
 
         let server_ft = async {
@@ -498,10 +498,7 @@ mod test {
             let acceptor = acceptor.clone();
             debug!("server: got connection from client");
             debug!("server: try to accept tls connection");
-            let handshake = acceptor.accept(tcp_stream).expect("accept failed");
-
-            debug!("server: handshaking");
-            let tls_stream = handshake.await.expect("hand shake failed");
+            let tls_stream = acceptor.accept(tcp_stream).await.expect("accept");
 
             let mut framed = Framed::new(tls_stream.compat(), BytesCodec::new());
 
@@ -540,7 +537,7 @@ mod test {
             debug!("client: trying to connect");
             let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
             let tls_stream = connector
-                .connect("localhost", tcp_stream)
+                .connect("localhost".try_into().expect("domain"), tcp_stream)
                 .await
                 .expect("tls failed");
             let all_stream = Box::new(tls_stream);
