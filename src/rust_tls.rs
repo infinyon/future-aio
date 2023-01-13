@@ -1,18 +1,12 @@
 use crate::net::TcpStream;
 
-pub use fluvio_async_tls::client::TlsStream as ClientTlsStream;
-pub use fluvio_async_tls::server::TlsStream as ServerTlsStream;
-pub use fluvio_async_tls::TlsAcceptor;
-pub use fluvio_async_tls::TlsConnector;
+pub use async_rustls::client::TlsStream as ClientTlsStream;
+pub use async_rustls::server::TlsStream as ServerTlsStream;
+pub use async_rustls::TlsAcceptor;
+pub use async_rustls::TlsConnector;
 
 pub type DefaultServerTlsStream = ServerTlsStream<TcpStream>;
 pub type DefaultClientTlsStream = ClientTlsStream<TcpStream>;
-
-use rustls::Certificate;
-use rustls::ClientConfig;
-use rustls::PrivateKey;
-use rustls::RootCertStore;
-use rustls::ServerConfig;
 
 pub use builder::*;
 pub use cert::*;
@@ -48,12 +42,11 @@ mod cert {
     use std::io::ErrorKind;
     use std::path::Path;
 
+    use async_rustls::rustls::Certificate;
+    use async_rustls::rustls::PrivateKey;
+    use async_rustls::rustls::RootCertStore;
     use rustls_pemfile::certs;
     use rustls_pemfile::rsa_private_keys;
-
-    use super::Certificate;
-    use super::PrivateKey;
-    use super::RootCertStore;
 
     pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<Certificate>, IoError> {
         load_certs_from_reader(&mut BufReader::new(File::open(path)?))
@@ -110,9 +103,11 @@ mod connector {
 
     use std::io::Error as IoError;
 
+    use std::io::ErrorKind;
     use std::os::unix::io::AsRawFd;
     use std::os::unix::io::RawFd;
 
+    use async_rustls::rustls::ServerName;
     use async_trait::async_trait;
     use log::debug;
 
@@ -143,7 +138,19 @@ mod connector {
         ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
             let fd = tcp_stream.as_raw_fd();
-            let (write, read) = self.0.connect(domain, tcp_stream).await?.split_connection();
+            let (write, read) = self
+                .0
+                .connect(
+                    ServerName::try_from(domain).map_err(|err| {
+                        IoError::new(
+                            ErrorKind::InvalidInput,
+                            format!("Invalid Dns Name: {}", err),
+                        )
+                    })?,
+                    tcp_stream,
+                )
+                .await?
+                .split_connection();
             Ok((write, read, fd))
         }
 
@@ -180,7 +187,15 @@ mod connector {
             debug!("connect to tls domain: {}", self.domain);
             let (write, read) = self
                 .connector
-                .connect(&self.domain, tcp_stream)
+                .connect(
+                    ServerName::try_from(self.domain.as_str()).map_err(|err| {
+                        IoError::new(
+                            ErrorKind::InvalidInput,
+                            format!("Invalid Dns Name: {}", err),
+                        )
+                    })?,
+                    tcp_stream,
+                )
                 .await?
                 .split_connection();
             Ok((write, read, fd))
@@ -207,19 +222,21 @@ mod builder {
     use std::sync::Arc;
     use std::time::SystemTime;
 
-    use rustls::{
-        client::ServerCertVerified, server::WantsServerCert, PrivateKey, RootCertStore, ServerName,
-    };
-    use rustls::{client::ServerCertVerifier, ConfigBuilder};
-    use rustls::{client::WantsTransparencyPolicyOrClientCert, Error as TlsError};
-    use rustls::{server::AllowAnyAuthenticatedClient, WantsVerifier};
+    use async_rustls::rustls::client::ServerCertVerified;
+    use async_rustls::rustls::server::WantsServerCert;
+    use async_rustls::rustls::Certificate;
+    use async_rustls::rustls::ClientConfig;
+    use async_rustls::rustls::PrivateKey;
+    use async_rustls::rustls::RootCertStore;
+    use async_rustls::rustls::ServerConfig;
+    use async_rustls::rustls::ServerName;
+    use async_rustls::rustls::{client::ServerCertVerifier, ConfigBuilder};
+    use async_rustls::rustls::{client::WantsTransparencyPolicyOrClientCert, Error as TlsError};
+    use async_rustls::rustls::{server::AllowAnyAuthenticatedClient, WantsVerifier};
+    use async_rustls::TlsAcceptor;
+    use async_rustls::TlsConnector;
 
     use super::load_root_ca;
-    use super::Certificate;
-    use super::ClientConfig;
-    use super::ServerConfig;
-    use super::TlsAcceptor;
-    use super::TlsConnector;
     use super::{load_certs, load_first_key_from_reader};
     use super::{load_certs_from_reader, load_first_key};
 
@@ -322,7 +339,7 @@ mod builder {
 
     impl ConnectorBuilderWithConfig {
         pub fn build(self) -> TlsConnector {
-            self.0.into()
+            Arc::new(self.0).into()
         }
     }
 
