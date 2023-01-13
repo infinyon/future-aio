@@ -63,7 +63,7 @@ jobs:
     name: ${{ matrix.test.name }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
+   #   fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
