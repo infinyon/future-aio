@@ -98,7 +98,7 @@ jobs:
     name: Done
     needs:
       - test
-    #  - wasm_test
+      - wasm_test
     runs-on: ubuntu-latest
     steps:
       - name: Done
