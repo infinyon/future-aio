@@ -12,7 +12,6 @@ resolver = "2"
 all-features = true
 
 [features]
-default = ["rust_tls"]
 task = ["async-std/default", "timer", "cfg-if"]
 subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
 fixture = ["subscriber", "task", "fluvio-test-derive"]
