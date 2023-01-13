@@ -60,7 +60,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   wasm_test:
-    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    name: ${{ matrix.test.name }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
