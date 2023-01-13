@@ -63,25 +63,15 @@ jobs:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             rust: stable
-            task:
-              name: Run WASM tests
-              run: |
-                cargo install websocat
-                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
-                make test-wasm
-
+            test: linux-wasm
           - os: macos-latest
             rust: stable
-            task:
-              name: Run MacOS WASM tests
-              run: |
-                brew install websocat
-                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
-                make test-wasm-safari
+            test: mac-wasm
 
     steps:
       - uses: actions/checkout@v3
@@ -91,9 +81,18 @@ jobs:
           toolchain: ${{ matrix.rust }}
           override: true
           target: wasm32-unknown-unknown
-
-      - name: ${{ matrix.task.name }}
-        run: ${{ matrix.task.run }}
+      - name: Run Wasm Test on Linux
+        if: matrix.test == 'linux-wasm'
+        run: |
+          cargo install websocat
+          websocat -t ws-l:127.0.0.1:1234 mirror: & disown
+          make test-wasm
+      - name: Run Wasm Test on Mac
+        if: matrix.test == 'mac-wasm'
+        run: |
+          brew install websocat
+          websocat -t ws-l:127.0.0.1:1234 mirror: & disown
+          make test-wasm-safari
 
   done:
     name: Done
