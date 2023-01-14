@@ -125,7 +125,7 @@ impl ZeroCopy {
                 use nix::errno::Errno;
 
                 let mut total_transferred = 0;
-                let mut current_offset = offset as u64;
+                let mut current_offset = offset;
 
                 loop {
                     let to_be_transfer = (size - total_transferred) as i64;

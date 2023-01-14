@@ -9,7 +9,7 @@ on:
     branches: [master]
 
 concurrency:
-  group: ${{ github.head_ref || 'ci_staging' }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,8 +38,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
-          override: true
-      - uses: Swatinem/rust-cache@v1
+          profile: minimal
+      - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.check }}
       - name: Clippy
@@ -60,28 +60,18 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   wasm_test:
-    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    name: ${{ matrix.test.name }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+   #   fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             rust: stable
-            task:
-              name: Run WASM tests
-              run: |
-                cargo install websocat
-                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
-                make test-wasm
-
-          - os: macos-latest
-            rust: stable
-            task:
-              name: Run MacOS WASM tests
-              run: |
-                brew install websocat
-                websocat -t ws-l:127.0.0.1:1234 mirror: & disown
-                make test-wasm-safari
+            test: linux-wasm
+  #        - os: macos-latest
+  #          rust: stable
+  #          test: mac-wasm
 
     steps:
       - uses: actions/checkout@v3
@@ -89,17 +79,26 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
-          override: true
+          profile: minimal
           target: wasm32-unknown-unknown
-
-      - name: ${{ matrix.task.name }}
-        run: ${{ matrix.task.run }}
+      - name: Run Wasm Test on Linux
+        if: matrix.test == 'linux-wasm'
+        run: |
+          cargo install websocat
+          websocat -t ws-l:127.0.0.1:1234 mirror: & disown
+          make test-wasm
+      - name: Run Wasm Test on Mac
+        if: matrix.test == 'mac-wasm'
+        run: |
+          brew install websocat
+          websocat -t ws-l:127.0.0.1:1234 mirror: & disown
+          make test-wasm-safari
 
   done:
     name: Done
     needs:
       - test
-    #  - wasm_test
+      - wasm_test
     runs-on: ubuntu-latest
     steps:
       - name: Done
