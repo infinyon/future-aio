@@ -60,7 +60,7 @@ impl DoomsdayTimer {
         }
     }
 
-    fn explode(&self) {
+    pub fn explode(&self) {
         error!("Boom. DoomsdayTimer has exploded");
         if self.aggressive_mode {
             std::process::exit(1);
