@@ -1,15 +1,19 @@
-use async_std::sync::Mutex;
-use async_std::task::JoinHandle;
+use std::sync::atomic::{AtomicBool, Ordering};
+
 use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
+
+use async_std::sync::Mutex;
+use async_std::task::JoinHandle;
 use tracing::error;
 
 #[derive(Clone)]
 pub struct DoomsdayTimer {
     time_to_explode: Arc<Mutex<Instant>>,
     duration: Duration,
+    defused: Arc<AtomicBool>,
     aggressive_mode: bool,
 }
 
@@ -18,6 +22,7 @@ impl DoomsdayTimer {
         let s = Self {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
             duration,
+            defused: Default::default(),
             aggressive_mode: false,
         };
 
@@ -32,6 +37,7 @@ impl DoomsdayTimer {
         let s = Self {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
             duration,
+            defused: Default::default(),
             aggressive_mode: false,
         };
 
@@ -49,6 +55,9 @@ impl DoomsdayTimer {
 
     async fn main_loop(&self) {
         loop {
+            if self.defused.load(Ordering::Relaxed) {
+                return;
+            }
             let now = Instant::now();
             let time_to_explode = *self.time_to_explode.lock().await;
             if now > time_to_explode {
@@ -68,6 +77,10 @@ impl DoomsdayTimer {
             panic!("DoomsdayTimer with Duration {:?} exploded", self.duration);
         }
     }
+
+    pub fn defuse(&self) {
+        self.defused.store(true, Ordering::Relaxed)
+    }
 }
 
 #[cfg(test)]
@@ -75,12 +88,27 @@ mod tests {
     use std::time::Duration;
 
     use super::DoomsdayTimer;
+    use crate::test_async;
+    use std::io::Error;
 
-    #[test]
-    #[should_panic]
-    fn test_explode() {
+    #[test_async(should_panic)]
+    async fn test_explode() -> Result<(), Error> {
         let (_, jh) = DoomsdayTimer::spawn_with_panic(Duration::from_millis(1));
-        std::thread::sleep(Duration::from_millis(2));
-        async_std::task::block_on(jh)
+        async_std::task::sleep(Duration::from_millis(2)).await;
+        jh.await;
+        Ok(())
+    }
+
+    #[test_async]
+    async fn test_do_not_explode() -> Result<(), Error> {
+        let (bomb, jh) = DoomsdayTimer::spawn_with_panic(Duration::from_millis(10));
+        async_std::task::sleep(Duration::from_millis(5)).await;
+        bomb.reset().await;
+        async_std::task::sleep(Duration::from_millis(5)).await;
+        bomb.reset().await;
+        async_std::task::sleep(Duration::from_millis(5)).await;
+        bomb.defuse();
+        async_std::task::block_on(jh);
+        Ok(())
     }
 }
