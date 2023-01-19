@@ -10,6 +10,8 @@ pub use async_std::task::JoinHandle;
 use tracing::error;
 
 #[derive(Clone)]
+/// DoomsdayTimer will panic (`spawn_with_panic()`) or exit (`spawn_with_exit()`) if it is not
+/// `reset()` at least every `duration`
 pub struct DoomsdayTimer {
     time_to_explode: Arc<Mutex<Instant>>,
     duration: Duration,
@@ -18,6 +20,8 @@ pub struct DoomsdayTimer {
 }
 
 impl DoomsdayTimer {
+    /// Spawn a new doomsday timer that will `panic()` if it explodes.
+    /// `awaiting` on the jh will panic if the `DoomsdayTimer` panicked
     pub fn spawn_with_panic(duration: Duration) -> (Self, JoinHandle<()>) {
         let s = Self {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
@@ -33,6 +37,8 @@ impl DoomsdayTimer {
         (s, jh)
     }
 
+    /// Spawn a new doomsday timer that will `exit(1)` if it explodes.
+    /// This will aggressively ensure the process does not survive
     pub fn spawn_with_exit(duration: Duration) -> Self {
         let s = Self {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
@@ -48,6 +54,7 @@ impl DoomsdayTimer {
         s
     }
 
+    /// Reset the timer to it's full duration
     pub async fn reset(&self) {
         let new_time_to_explode = Instant::now() + self.duration;
         *self.time_to_explode.lock().await = new_time_to_explode;
@@ -69,6 +76,7 @@ impl DoomsdayTimer {
         }
     }
 
+    /// Force the timer to explode
     pub fn explode(&self) {
         error!("Boom. DoomsdayTimer has exploded");
         if self.aggressive_mode {
@@ -78,6 +86,7 @@ impl DoomsdayTimer {
         }
     }
 
+    /// Defuse the timer. Cannot be undone and will no longer `explode`
     pub fn defuse(&self) {
         self.defused.store(true, Ordering::Relaxed)
     }
