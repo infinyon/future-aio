@@ -48,6 +48,7 @@ fs = ["async-fs", "futures-lite", "pin-utils", "async-trait"]
 zero_copy = ["nix", "task_unstable"]
 mmap = ["fs", "memmap", "task_unstable"]
 retry = []
+doomsday = ["async-std/default"]
 
 [dependencies]
 log = "0.4.0"
