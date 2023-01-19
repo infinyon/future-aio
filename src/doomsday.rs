@@ -6,7 +6,7 @@ use std::{
 };
 
 use async_std::sync::Mutex;
-use async_std::task::JoinHandle;
+pub use async_std::task::JoinHandle;
 use tracing::error;
 
 #[derive(Clone)]
