@@ -12,7 +12,7 @@ use log::info;
 use tracing::{debug, error};
 
 #[derive(Clone)]
-/// DoomsdayTimer will panic (`spawn_with_panic()`) or exit (`spawn_with_exit()`) if it is not
+/// DoomsdayTimer will configurably panic or exit if it is not
 /// `reset()` at least every `duration`
 pub struct DoomsdayTimer {
     time_to_explode: Arc<Mutex<Instant>>,
@@ -37,14 +37,15 @@ impl Display for DoomsdayTimer {
 }
 
 impl DoomsdayTimer {
-    /// Spawn a new doomsday timer that will `panic()` if it explodes.
-    /// `awaiting` on the jh will panic if the `DoomsdayTimer` panicked
-    pub fn spawn_with_panic(duration: Duration) -> (Self, JoinHandle<()>) {
+    /// Spawn a new doomsday timer.
+    /// If `exit_on_explode` is true, it will terminate process with `exit(1)` if it explodes.
+    /// Otherwise it will call `panic()`. Note that `awaiting` on the jh will panic if the `DoomsdayTimer` panicked
+    pub fn spawn(duration: Duration, exit_on_explode: bool) -> (Self, JoinHandle<()>) {
         let s = Self {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
             duration,
             defused: Default::default(),
-            aggressive_mode: false,
+            aggressive_mode: exit_on_explode,
         };
 
         let cloned = s.clone();
@@ -52,23 +53,6 @@ impl DoomsdayTimer {
             cloned.main_loop().await;
         });
         (s, jh)
-    }
-
-    /// Spawn a new doomsday timer that will `exit(1)` if it explodes.
-    /// This will aggressively ensure the process does not survive
-    pub fn spawn_with_exit(duration: Duration) -> Self {
-        let s = Self {
-            time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
-            duration,
-            defused: Default::default(),
-            aggressive_mode: true,
-        };
-
-        let cloned = s.clone();
-        crate::task::spawn(async move {
-            cloned.main_loop().await;
-        });
-        s
     }
 
     /// Reset the timer to it's full duration
@@ -128,7 +112,7 @@ mod tests {
 
     #[test_async(should_panic)]
     async fn test_explode() -> Result<(), Error> {
-        let (_, jh) = DoomsdayTimer::spawn_with_panic(Duration::from_millis(1));
+        let (_, jh) = DoomsdayTimer::spawn(Duration::from_millis(1), false);
         async_std::task::sleep(Duration::from_millis(2)).await;
         jh.await;
         Ok(())
@@ -136,7 +120,7 @@ mod tests {
 
     #[test_async]
     async fn test_do_not_explode() -> Result<(), Error> {
-        let (bomb, jh) = DoomsdayTimer::spawn_with_panic(Duration::from_millis(10));
+        let (bomb, jh) = DoomsdayTimer::spawn(Duration::from_millis(10), false);
         async_std::task::sleep(Duration::from_millis(5)).await;
         bomb.reset().await;
         async_std::task::sleep(Duration::from_millis(5)).await;
