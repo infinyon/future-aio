@@ -70,7 +70,7 @@ pub mod subscriber {
     }
 }
 
-// #[cfg(feature = "doomsday")]
+#[cfg(feature = "doomsday")]
 pub mod doomsday;
 
 /// re-export tracing

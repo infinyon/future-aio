@@ -65,7 +65,7 @@ impl DoomsdayTimer {
         };
 
         let cloned = s.clone();
-        async_std::task::spawn(async move {
+        crate::task::spawn(async move {
             cloned.main_loop().await;
         });
         s
@@ -91,7 +91,7 @@ impl DoomsdayTimer {
                 self.explode_inner();
             } else {
                 let time_to_sleep = time_to_explode - now;
-                async_std::task::sleep(time_to_sleep).await;
+                crate::timer::sleep(time_to_sleep).await;
             }
         }
     }
