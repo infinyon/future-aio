@@ -49,7 +49,7 @@ impl DoomsdayTimer {
         };
 
         let cloned = s.clone();
-        let jh = async_std::task::spawn(async move {
+        let jh = crate::task::spawn(async move {
             cloned.main_loop().await;
         });
         (s, jh)
