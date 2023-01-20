@@ -107,13 +107,14 @@ mod tests {
     use std::time::Duration;
 
     use super::DoomsdayTimer;
+    use crate::task::run_block_on;
     use crate::test_async;
     use std::io::Error;
 
     #[test_async(should_panic)]
     async fn test_explode() -> Result<(), Error> {
         let (_, jh) = DoomsdayTimer::spawn(Duration::from_millis(1), false);
-        async_std::task::sleep(Duration::from_millis(2)).await;
+        crate::timer::sleep(Duration::from_millis(2)).await;
         jh.await;
         Ok(())
     }
@@ -121,13 +122,13 @@ mod tests {
     #[test_async]
     async fn test_do_not_explode() -> Result<(), Error> {
         let (bomb, jh) = DoomsdayTimer::spawn(Duration::from_millis(10), false);
-        async_std::task::sleep(Duration::from_millis(5)).await;
+        crate::timer::sleep(Duration::from_millis(5)).await;
         bomb.reset().await;
-        async_std::task::sleep(Duration::from_millis(5)).await;
+        crate::timer::sleep(Duration::from_millis(5)).await;
         bomb.reset().await;
-        async_std::task::sleep(Duration::from_millis(5)).await;
+        crate::timer::sleep(Duration::from_millis(5)).await;
         bomb.defuse();
-        async_std::task::block_on(jh);
+        run_block_on(jh);
         Ok(())
     }
 }
