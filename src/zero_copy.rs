@@ -78,11 +78,11 @@ impl ZeroCopy {
                     ) {
                         Ok(bytes_transferred) => {
                             trace!("bytes transferred: {}", bytes_transferred);
-                            total_transferred += bytes_transferred as usize;
+                            total_transferred += bytes_transferred;
 
                             // zero bytes transferred means it's EOF
                             if bytes_transferred == 0 {
-                                return Ok(total_transferred as usize);
+                                return Ok(total_transferred);
                             }
 
                             if total_transferred < size as usize {
@@ -97,7 +97,7 @@ impl ZeroCopy {
                                     size
                                 );
 
-                                return Ok(total_transferred as usize);
+                                return Ok(total_transferred);
                             }
                         }
                         Err(err) => match err {
