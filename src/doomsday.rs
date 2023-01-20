@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use std::{
@@ -7,7 +8,8 @@ use std::{
 
 use async_std::sync::Mutex;
 pub use async_std::task::JoinHandle;
-use tracing::error;
+use log::info;
+use tracing::{debug, error};
 
 #[derive(Clone)]
 /// DoomsdayTimer will panic (`spawn_with_panic()`) or exit (`spawn_with_exit()`) if it is not
@@ -17,6 +19,21 @@ pub struct DoomsdayTimer {
     duration: Duration,
     defused: Arc<AtomicBool>,
     aggressive_mode: bool,
+}
+
+impl Display for DoomsdayTimer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let fail_mode = if self.aggressive_mode {
+            "Exits"
+        } else {
+            "Panics"
+        };
+        write!(
+            f,
+            "DoomsdayTimer(Duration: {:?}, {})",
+            self.duration, fail_mode,
+        )
+    }
 }
 
 impl DoomsdayTimer {
@@ -58,17 +75,20 @@ impl DoomsdayTimer {
     pub async fn reset(&self) {
         let new_time_to_explode = Instant::now() + self.duration;
         *self.time_to_explode.lock().await = new_time_to_explode;
+        debug!("{} has been reset", self);
     }
 
     async fn main_loop(&self) {
         loop {
             if self.defused.load(Ordering::Relaxed) {
+                debug!("{} has been defused, terminating main loop", self);
                 return;
             }
             let now = Instant::now();
             let time_to_explode = *self.time_to_explode.lock().await;
             if now > time_to_explode {
-                self.explode();
+                error!("{} exploded due to timeout", self);
+                self.explode_inner();
             } else {
                 let time_to_sleep = time_to_explode - now;
                 async_std::task::sleep(time_to_sleep).await;
@@ -78,17 +98,23 @@ impl DoomsdayTimer {
 
     /// Force the timer to explode
     pub fn explode(&self) {
-        error!("Boom. DoomsdayTimer has exploded");
+        error!("{} was exploded manually", self);
+        self.explode_inner();
+    }
+
+    fn explode_inner(&self) {
         if self.aggressive_mode {
+            error!("{} exiting", self);
             std::process::exit(1);
         } else {
+            error!("{} panicking", self);
             panic!("DoomsdayTimer with Duration {:?} exploded", self.duration);
         }
     }
-
     /// Defuse the timer. Cannot be undone and will no longer `explode`
     pub fn defuse(&self) {
-        self.defused.store(true, Ordering::Relaxed)
+        self.defused.store(true, Ordering::Relaxed);
+        info!("{} has been defused", self);
     }
 }
 
