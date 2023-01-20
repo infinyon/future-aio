@@ -61,7 +61,7 @@ impl DoomsdayTimer {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
             duration,
             defused: Default::default(),
-            aggressive_mode: false,
+            aggressive_mode: true,
         };
 
         let cloned = s.clone();
