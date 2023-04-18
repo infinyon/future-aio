@@ -100,7 +100,6 @@ mod cert {
 }
 
 mod connector {
-
     use std::io::Error as IoError;
 
     use std::io::ErrorKind;
