@@ -3,6 +3,7 @@
 ## 0.5.0
 * Move to `memmap2` because `memmap` is unmaintained.
 * Enable `rustls` on `windows`
+* fixed typos in `openssl` api. ([#175](https://github.com/infinyon/future-aio/issues/175))
 
 ([#206](https://github.com/infinyon/future-aio/pull/206))
 
