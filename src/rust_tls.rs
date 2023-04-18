@@ -104,15 +104,14 @@ mod connector {
     use std::io::Error as IoError;
 
     use std::io::ErrorKind;
-    use std::os::unix::io::AsRawFd;
-    use std::os::unix::io::RawFd;
 
     use async_rustls::rustls::ServerName;
     use async_trait::async_trait;
     use log::debug;
 
     use crate::net::{
-        BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection, TcpDomainConnector,
+        AsConnectionFd, BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection,
+        TcpDomainConnector,
     };
 
     use super::TcpStream;
@@ -135,9 +134,9 @@ mod connector {
         async fn connect(
             &self,
             domain: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             let tcp_stream = TcpStream::connect(domain).await?;
-            let fd = tcp_stream.as_raw_fd();
+            let fd = tcp_stream.as_connection_fd();
             let (write, read) = self
                 .0
                 .connect(
