@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-windows:
+  test-windows-rustls:
     name: Run tests on Windows with rustls
     runs-on: windows-latest
     steps:
@@ -112,6 +112,7 @@ jobs:
   done:
     name: Done
     needs:
+      - test-windows-rustls
       - test
       - wasm_test
     runs-on: ubuntu-latest
