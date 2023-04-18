@@ -9,8 +9,8 @@ use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
 
 use async_fs::File;
-use memmap::Mmap;
-use memmap::MmapMut;
+use memmap2::Mmap;
+use memmap2::MmapMut;
 
 use crate::task::spawn_blocking;
 

@@ -32,10 +32,10 @@ pub mod zero_copy;
 #[cfg(feature = "net")]
 pub mod net;
 
-#[cfg(all(unix, feature = "rust_tls"))]
+#[cfg(all(any(unix, windows), feature = "rust_tls"))]
 pub mod rust_tls;
 
-#[cfg(all(unix, feature = "rust_tls", not(feature = "native2_tls")))]
+#[cfg(all(any(unix, windows), feature = "rust_tls", not(feature = "native2_tls")))]
 pub use rust_tls as tls;
 
 #[cfg(all(any(unix, windows), feature = "native2_tls"))]

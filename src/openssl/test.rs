@@ -42,7 +42,7 @@ async fn test_tls() -> Result<(), TlsError> {
             )?
             .build(),
         TlsConnector::builder()?
-            .with_hostname_vertification_disabled()?
+            .with_hostname_verification_disabled()?
             .with_ca_from_pem_file(INTERMEDIATE_CA_PATH)?
             .build(),
     )
@@ -58,7 +58,7 @@ async fn test_tls() -> Result<(), TlsError> {
             )?
             .build(),
         TlsConnector::builder()?
-            .with_hostname_vertification_disabled()?
+            .with_hostname_verification_disabled()?
             .with_ca_from_pem_file(CA_PATH)?
             .build(),
     )

@@ -194,12 +194,12 @@ pub struct TlsConnectorBuilder {
 }
 
 impl TlsConnectorBuilder {
-    pub fn with_hostname_vertification_disabled(mut self) -> Result<TlsConnectorBuilder> {
+    pub fn with_hostname_verification_disabled(mut self) -> Result<TlsConnectorBuilder> {
         self.verify_hostname = false;
         Ok(self)
     }
 
-    pub fn with_certificate_vertification_disabled(mut self) -> Result<TlsConnectorBuilder> {
+    pub fn with_certificate_verification_disabled(mut self) -> Result<TlsConnectorBuilder> {
         self.inner.set_verify(ssl::SslVerifyMode::NONE);
         Ok(self)
     }
