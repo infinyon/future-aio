@@ -25,7 +25,7 @@ jobs:
           profile: minimal
       - uses: Swatinem/rust-cache@v2
         with:
-          key: ${{ matrix.os }}-${{ matrix.check }}
+          key: windows-latest-rustls-test
       - name: Test
         run: cargo test --features rust_tls
   test:
