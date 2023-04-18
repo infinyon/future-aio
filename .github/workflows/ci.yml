@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test-windows-rustls:
-    name: Run tests on Windows with rustls
+  test-windows:
+    name: Run tests on Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
@@ -25,9 +25,9 @@ jobs:
           profile: minimal
       - uses: Swatinem/rust-cache@v2
         with:
-          key: windows-latest-rustls-test
+          key: windows-latest-test
       - name: Test
-        run: cargo test --features rust_tls
+        run: cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry,doomsday
   test:
     name: Check ${{ matrix.check }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -112,7 +112,7 @@ jobs:
   done:
     name: Done
     needs:
-      - test-windows-rustls
+      - test-windows
       - test
       - wasm_test
     runs-on: ubuntu-latest
