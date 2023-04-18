@@ -111,7 +111,7 @@ mod connector {
 
     use crate::net::{
         AsConnectionFd, BoxReadConnection, BoxWriteConnection, DomainConnector, SplitConnection,
-        TcpDomainConnector,
+        TcpDomainConnector, ConnectionFd,
     };
 
     use super::TcpStream;
@@ -179,10 +179,10 @@ mod connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, RawFd), IoError> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = TcpStream::connect(addr).await?;
-            let fd = tcp_stream.as_raw_fd();
+            let fd = tcp_stream.as_connection_fd();
             debug!("connect to tls domain: {}", self.domain);
             let (write, read) = self
                 .connector
