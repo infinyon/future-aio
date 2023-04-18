@@ -15,6 +15,7 @@ concurrency:
 jobs:
   test-windows:
     name: Run tests on Windows
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
       - name: Install ${{ matrix.rust }}
