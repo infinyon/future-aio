@@ -1,5 +1,23 @@
 # Release Notes
 
+## 0.5.0
+* Move to `memmap2` because `memmap` is unmaintained.
+* Enable `rustls` on `windows`
+
+([#206](https://github.com/infinyon/future-aio/pull/206))
+
+## 0.4.5
+* Doomsday timer to ensure crash ([#196](https://github.com/infinyon/future-aio/pull/196))
+
+## 0.4.4
+* update rustls
+
+## 0.4.3
+* expose futures
+
+## 0.4.2
+* re-export async_std::sync structs
+
 ## 0.4.1
 * Make tcp connector `Send` for `wasm32` ([#165](https://github.com/infinyon/future-aio/pull/165))
 
