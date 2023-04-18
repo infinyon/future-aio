@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test-windows:
-    name: Run tests on Windows
+    name: Run tests on Windows with rustls
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
