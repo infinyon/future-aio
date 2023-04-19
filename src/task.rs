@@ -65,6 +65,8 @@ cfg_if::cfg_if! {
     }
 }
 
+pub use async_std::task::JoinHandle;
+
 #[cfg(test)]
 mod basic_test {
 
