@@ -326,7 +326,7 @@ mod builder {
         ) -> Result<ConnectorBuilderWithConfig, IoError> {
             let config = self
                 .0
-                .with_single_cert(certs, key)
+                .with_client_auth_cert(certs, key)
                 .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
 
             Ok(ConnectorBuilderWithConfig(config))
@@ -365,7 +365,7 @@ mod builder {
             let root_store = load_root_ca(path)?;
 
             Ok(AcceptorBuilderStage(self.0.with_client_cert_verifier(
-                AllowAnyAuthenticatedClient::new(root_store),
+                Arc::new(AllowAnyAuthenticatedClient::new(root_store)),
             )))
         }
     }

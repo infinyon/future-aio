@@ -239,7 +239,10 @@ mod cert {
             let server_key = key.build()?;
             let server_crt = x509.build()?;
             let p12 = Pkcs12::builder()
-                .build(PASSWORD, "", &server_key, &server_crt)
+                .name("")
+                .pkey(&server_key)
+                .cert(&server_crt)
+                .build2(PASSWORD)
                 .map_err(|e| {
                     IoError::new(
                         ErrorKind::InvalidData,
