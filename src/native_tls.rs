@@ -39,6 +39,7 @@ mod connector {
     use log::debug;
 
     use crate::net::{
+        tcp_stream::{stream, stream_with_opts, SocketOpts},
         AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
         SplitConnection, TcpDomainConnector,
     };
@@ -78,7 +79,7 @@ mod connector {
             &self,
             domain: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
-            let tcp_stream = TcpStream::connect(domain).await?;
+            let tcp_stream = stream(domain).await?;
             let fd = tcp_stream.as_connection_fd();
             let (write, read) = self
                 .0
@@ -134,8 +135,12 @@ mod connector {
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tls addr: {}", addr);
-            let tcp_stream = TcpStream::connect(addr).await?;
-            tcp_stream.set_nodelay(true)?;
+            let socket_opts = SocketOpts {
+                keepalive: Some(Default::default()),
+                nodelay: Some(true),
+                ..Default::default()
+            };
+            let tcp_stream = stream_with_opts(addr, Some(socket_opts)).await?;
             let fd = tcp_stream.as_connection_fd();
 
             debug!("connect to tls domain: {}", self.domain);
@@ -436,8 +441,8 @@ mod test {
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
     use crate::net::certs::CertBuilder;
+    use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;
-    use crate::net::TcpStream;
     use crate::test_async;
     use crate::timer::sleep;
 
@@ -609,7 +614,7 @@ mod test {
             debug!("client: sleep to give server chance to come up");
             sleep(time::Duration::from_millis(100)).await;
             debug!("client: trying to connect");
-            let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
+            let tcp_stream = stream(&addr).await.expect("connection fail");
             let tls_stream = connector
                 .connect("localhost", tcp_stream)
                 .await

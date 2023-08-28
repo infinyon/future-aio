@@ -1,9 +1,8 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub use async_net::*;
 
-#[cfg(test)]
 #[cfg(not(target_arch = "wasm32"))]
-mod tcp_stream;
+pub mod tcp_stream;
 
 pub use conn::*;
 
@@ -158,6 +157,8 @@ mod unix_connector {
     use async_trait::async_trait;
     use log::debug;
 
+    use super::tcp_stream::stream;
+
     use super::*;
 
     impl SplitConnection for TcpStream {
@@ -183,7 +184,7 @@ mod unix_connector {
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tcp addr: {}", addr);
-            let tcp_stream = TcpStream::connect(addr).await?;
+            let tcp_stream = stream(addr).await?;
 
             let fd = tcp_stream.as_connection_fd();
             Ok((Box::new(tcp_stream.clone()), Box::new(tcp_stream), fd))
@@ -209,8 +210,8 @@ mod test {
     use futures_util::AsyncReadExt;
     use log::debug;
 
+    use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;
-    use crate::net::TcpStream;
     use crate::test_async;
     use crate::timer::sleep;
 
@@ -241,7 +242,7 @@ mod test {
 
         let client_ft = async {
             sleep(time::Duration::from_millis(100)).await;
-            let tcp_stream = TcpStream::connect(&addr).await.expect("test");
+            let tcp_stream = stream(&addr).await.expect("test");
             let (_read, _write) = tcp_stream.split();
         };
 

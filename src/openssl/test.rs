@@ -13,7 +13,7 @@ use tokio_util::codec::BytesCodec;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 
-use crate::net::{TcpListener, TcpStream};
+use crate::net::{tcp_stream::stream, TcpListener};
 use crate::test_async;
 use crate::timer::sleep;
 
@@ -142,7 +142,7 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), 
         debug!("client: sleep to give server chance to come up");
         sleep(time::Duration::from_millis(100)).await;
         debug!("client: trying to connect");
-        let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
+        let tcp_stream = stream(&addr).await.expect("connection fail");
         let tls_stream = connector
             .connect("localhost", tcp_stream)
             .await

@@ -9,8 +9,9 @@ use openssl::ssl;
 use openssl::x509::verify::X509VerifyFlags;
 
 use crate::net::{
+    tcp_stream::{stream, stream_with_opts, SocketOpts},
     AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
-    SplitConnection, TcpDomainConnector, TcpStream,
+    SplitConnection, TcpDomainConnector,
 };
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
@@ -269,8 +270,12 @@ impl TcpDomainConnector for TlsAnonymousConnector {
         domain: &str,
     ) -> io::Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
         debug!("tcp connect: {}", domain);
-        let tcp_stream = TcpStream::connect(domain).await?;
-        tcp_stream.set_nodelay(true)?;
+        let socket_opts = SocketOpts {
+            keepalive: Some(Default::default()),
+            nodelay: Some(true),
+            ..Default::default()
+        };
+        let tcp_stream = stream_with_opts(domain, Some(socket_opts)).await?;
         let fd = tcp_stream.as_connection_fd();
 
         let (write, read) = self
@@ -311,7 +316,7 @@ impl TcpDomainConnector for TlsDomainConnector {
         addr: &str,
     ) -> io::Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
         debug!("connect to tls addr: {}", addr);
-        let tcp_stream = TcpStream::connect(addr).await?;
+        let tcp_stream = stream(addr).await?;
         let fd = tcp_stream.as_connection_fd();
 
         let (write, read) = self
