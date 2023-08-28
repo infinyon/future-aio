@@ -197,8 +197,8 @@ mod tests {
 
     use crate::file_slice::AsyncFileSlice;
     use crate::fs::AsyncFileExtension;
+    use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;
-    use crate::net::TcpStream;
     use crate::timer::sleep;
     use crate::{fs::util as file_util, zero_copy::ZeroCopy};
     use futures_lite::AsyncReadExt;
@@ -234,7 +234,7 @@ mod tests {
             sleep(time::Duration::from_millis(100)).await;
 
             debug!("client: file loaded");
-            let mut stream = TcpStream::connect(&addr).await?;
+            let mut stream = stream(&addr).await?;
             debug!("client: connected to server");
             let f_slice = file.as_slice(0, None).await?;
             debug!("client: send back file using zero copy");
@@ -323,7 +323,7 @@ mod tests {
 
             for i in 0..TEST_ITERATION {
                 debug!("client: Test loop: {}", i);
-                let mut stream = TcpStream::connect(&addr).await?;
+                let mut stream = stream(&addr).await?;
                 debug!("client: {} connected trying to read", i);
                 // let server send response
 
@@ -378,7 +378,7 @@ mod tests {
             sleep(time::Duration::from_millis(100)).await;
 
             debug!("client: file loaded");
-            let mut stream = TcpStream::connect(&addr).await?;
+            let mut stream = stream(&addr).await?;
             debug!("client: connected to server");
             let f_slice = file.as_slice(0, None).await?;
             let max_slice = AsyncFileSlice::new(f_slice.fd(), 0, 1000);

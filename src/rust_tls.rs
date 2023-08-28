@@ -109,11 +109,10 @@ mod connector {
     use log::debug;
 
     use crate::net::{
-        AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
-        SplitConnection, TcpDomainConnector,
+        tcp_stream::stream, AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd,
+        DomainConnector, SplitConnection, TcpDomainConnector,
     };
 
-    use super::TcpStream;
     use super::TlsConnector;
 
     pub type TlsError = IoError;
@@ -134,7 +133,7 @@ mod connector {
             &self,
             domain: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
-            let tcp_stream = TcpStream::connect(domain).await?;
+            let tcp_stream = stream(domain).await?;
             let fd = tcp_stream.as_connection_fd();
             let (write, read) = self
                 .0
@@ -180,7 +179,7 @@ mod connector {
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tls addr: {}", addr);
-            let tcp_stream = TcpStream::connect(addr).await?;
+            let tcp_stream = stream(addr).await?;
             let fd = tcp_stream.as_connection_fd();
             debug!("connect to tls domain: {}", self.domain);
             let (write, read) = self
@@ -434,8 +433,8 @@ mod test {
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
 
+    use fluvio_future::net::tcp_stream::stream;
     use fluvio_future::net::TcpListener;
-    use fluvio_future::net::TcpStream;
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 
@@ -533,7 +532,7 @@ mod test {
             debug!("client: sleep to give server chance to come up");
             sleep(time::Duration::from_millis(100)).await;
             debug!("client: trying to connect");
-            let tcp_stream = TcpStream::connect(&addr).await.expect("connection fail");
+            let tcp_stream = stream(&addr).await.expect("connection fail");
             let tls_stream = connector
                 .connect("localhost".try_into().expect("domain"), tcp_stream)
                 .await
