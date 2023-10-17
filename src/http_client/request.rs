@@ -1,20 +1,11 @@
-use std::{future::Future, pin::Pin};
+use std::{fmt, future::Future, pin::Pin};
 
+use anyhow::{anyhow, Error};
+use futures_util::TryFutureExt;
 use http::{request::Builder, HeaderName, HeaderValue};
 use hyper::{body::Bytes, Body, Response};
 
-use super::client::Client; // ::client::Client;
-
-#[derive(Debug, thiserror::Error)]
-pub enum RequestError {
-    #[error("Hyper error: {0}")]
-    HyperError(#[from] hyper::Error),
-    #[error("Http error: {0}")]
-    HttpError(#[from] http::Error),
-    #[cfg(feature = "http-client-json")]
-    #[error("Serialization error: {0}")]
-    SerdeError(#[from] serde_json::Error),
-}
+use super::client::Client;
 
 pub struct RequestBuilder {
     client: Client,
@@ -40,12 +31,17 @@ impl RequestBuilder {
         self
     }
 
-    pub async fn send(self) -> Result<Response<Body>, RequestError> {
+    pub async fn send(self) -> Result<Response<Body>, Error> {
         let req = self
             .req_builder
             .header(http::header::USER_AGENT, "fluvio-mini-http/0.1")
-            .body(hyper::Body::empty())?;
-        Ok(self.client.hyper.request(req).await?)
+            .body(hyper::Body::empty())
+            .map_err(|err| anyhow!("hyper error: {err:?}"))?;
+        self.client
+            .hyper
+            .request(req)
+            .map_err(|err| anyhow!("request error: {err:?}"))
+            .await
     }
 }
 
@@ -53,16 +49,16 @@ impl RequestBuilder {
 type ResponseExtFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
 
 pub trait ResponseExt {
-    fn bytes(self) -> ResponseExtFuture<Result<Bytes, RequestError>>;
+    fn bytes(self) -> ResponseExtFuture<Result<Bytes, Error>>;
 
     #[cfg(feature = "http-client-json")]
-    fn json<T: serde::de::DeserializeOwned>(self) -> ResponseExtFuture<Result<T, RequestError>>
+    fn json<T: serde::de::DeserializeOwned>(self) -> ResponseExtFuture<Result<T, Error>>
     where
         Self: Sized + Send + 'static,
     {
         let fut = async move {
             let bytes = self.bytes().await?;
-            Ok(serde_json::from_slice(&bytes)?)
+            serde_json::from_slice(&bytes).map_err(|err| anyhow!("serialization error: {err:?}"))
         };
 
         Box::pin(fut)
@@ -73,10 +69,14 @@ impl<T> ResponseExt for Response<T>
 where
     T: hyper::body::HttpBody + Send + 'static,
     T::Data: Send,
-    RequestError: From<<T as hyper::body::HttpBody>::Error>,
+    T::Error: fmt::Debug,
 {
-    fn bytes(self) -> ResponseExtFuture<Result<Bytes, RequestError>> {
-        let fut = async move { Ok(hyper::body::to_bytes(self.into_body()).await?) };
+    fn bytes(self) -> ResponseExtFuture<Result<Bytes, Error>> {
+        let fut = async move {
+            hyper::body::to_bytes(self.into_body())
+                .map_err(|err| anyhow!("{err:?}"))
+                .await
+        };
 
         Box::pin(fut)
     }
