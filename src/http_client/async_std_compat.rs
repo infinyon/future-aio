@@ -2,13 +2,13 @@
 
 use std::{
     future::Future,
-    io,
     pin::Pin,
     sync::Arc,
     task::{Context, Poll},
 };
 
-use async_rustls::rustls::{client::InvalidDnsNameError, ClientConfig};
+use anyhow::{anyhow, Error};
+use async_rustls::rustls::ClientConfig;
 use async_std::io::{Read, Write};
 use hyper::{
     client::connect::{Connected, Connection},
@@ -24,18 +24,6 @@ use crate::{
 
 const DEFAULT_PORT: u16 = 443;
 
-#[derive(Debug, thiserror::Error)]
-pub enum ConnectorError {
-    #[error("unsupported protocol: {0}")]
-    UnsupportedProtocol(String),
-    #[error("no host defined: {0:?}")]
-    NoHost(Uri),
-    #[error(transparent)]
-    IoError(#[from] io::Error),
-    #[error(transparent)]
-    InvalidDns(#[from] InvalidDnsNameError),
-}
-
 #[derive(Clone)]
 pub struct CompatConnector(Arc<TlsConnector>);
 
@@ -47,7 +35,7 @@ impl CompatConnector {
 
 impl Service<Uri> for CompatConnector {
     type Response = TlsStream;
-    type Error = ConnectorError;
+    type Error = Error;
     type Future =
         Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send + 'static>>;
 
@@ -61,7 +49,7 @@ impl Service<Uri> for CompatConnector {
         let fut = async move {
             let host = uri.host().ok_or_else(|| {
                 let uri = uri.clone();
-                ConnectorError::NoHost(uri)
+                anyhow!("no host defined: {uri}")
             })?;
 
             match uri.scheme_str() {
@@ -69,15 +57,16 @@ impl Service<Uri> for CompatConnector {
                     let port = uri.port_u16().unwrap_or(DEFAULT_PORT);
                     let tcp_stream = TcpStream::connect((host, port))
                         .await
-                        .map_err(ConnectorError::IoError)?;
+                        .map_err(|err| anyhow!("{err}"))?;
 
-                    let stream = connector.connect(host.try_into()?, tcp_stream).await?;
+                    let host = host
+                        .try_into()
+                        .map_err(|err| anyhow!("invalid DNS: {err}"))?;
+                    let stream = connector.connect(host, tcp_stream).await?;
                     Ok(TlsStream(stream))
                 }
-                Some(scheme) => Err(ConnectorError::UnsupportedProtocol(scheme.to_string())),
-                _ => Err(ConnectorError::UnsupportedProtocol(
-                    "no scheme provided".to_owned(),
-                )),
+                Some(scheme) => Err(anyhow!("unsupported protocol: {scheme}")),
+                _ => Err(anyhow!("no scheme provided")),
             }
         };
 
