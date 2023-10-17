@@ -1,3 +1,5 @@
+#![cfg(all(any(unix, windows), feature = "http-client-json"))]
+
 use fluvio_future::http_client::{self, ResponseExt, StatusCode};
 
 #[async_std::test]
