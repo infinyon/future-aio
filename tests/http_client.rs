@@ -1,52 +1,48 @@
-#![cfg(all(any(unix, windows), feature = "http-client-json"))]
+#![cfg(all(
+    any(unix, windows),
+    feature = "http-client-json",
+    feature = "__skip-http-client-cert-verification"
+))]
 
 use fluvio_future::http_client::{self, ResponseExt, StatusCode};
 
+static SERVER: &str = "https://127.0.0.1:7879";
+
 #[async_std::test]
 async fn simple_test() {
-    let res = http_client::get("https://infinyon.com").await;
+    let res = http_client::get(SERVER).await;
 
-    assert!(res.is_ok());
-    let status = res.unwrap().status();
+    let status = res
+        .expect("failed to get http-server, did you install and run it?")
+        .status();
     assert_eq!(status, StatusCode::OK);
 }
 
 #[async_std::test]
 async fn get_and_deserialize_to_struct() {
+    use std::net::{IpAddr, Ipv4Addr};
+
     use serde::Deserialize;
 
     #[allow(dead_code)]
-    #[derive(Deserialize)]
+    #[derive(Deserialize, Debug, PartialEq)]
     struct Ip {
-        origin: String,
+        origin: IpAddr,
     }
 
-    let json = http_client::get("https://httpbin.org/ip")
+    let json = http_client::get(format!("{SERVER}/test-data/http-client/ip.json"))
         .await
-        .expect("could not get httpbin API")
+        .expect("failed to get http-server, did you install and run it?")
         .json::<Ip>()
-        .await;
-
-    assert!(json.is_ok());
-}
-
-#[async_std::test]
-async fn get_dynamic_json() {
-    use std::collections::HashMap;
-
-    // mock API that returns `{"success": true}`
-    let json_api = "https://www.mockbin.com/bin/1700ca28-0817-4998-a8af-e3b90e2aacc6";
-
-    let json = http_client::get(json_api)
         .await
-        .expect("could not get mockbin API")
-        .json::<HashMap<String, bool>>()
-        .await;
+        .expect("failed to parse IP address");
 
-    assert!(json.is_ok());
-    let body = json.unwrap();
-
-    assert_eq!(body["success"], true);
+    assert_eq!(
+        json,
+        Ip {
+            origin: IpAddr::V4(Ipv4Addr::new(192, 0, 0, 1))
+        }
+    );
 }
 
 #[async_std::test]
