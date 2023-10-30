@@ -62,6 +62,8 @@ http-client = [
     "dep:once_cell",
 ]
 http-client-json = ["http-client"]
+# useful for tests
+__skip-http-client-cert-verification = []
 
 [dependencies]
 log = "0.4.0"
@@ -118,7 +120,7 @@ tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
 tokio = { version = "1.17.0", features = ["macros"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.0" }
-fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry", "http-client-json"] }
+fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry", "http-client-json", "__skip-http-client-cert-verification"] }
 serde = { version = "1.0.189", features = ["derive"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
