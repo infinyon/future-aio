@@ -29,7 +29,7 @@ jobs:
       - name: Test
         run: |
           cargo install http-server
-          http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8 & disown
+          start /b http-server --tls --tls-key certs\test-certs\server.key --tls-cert certs\test-certs\server.crt --tls-key-algorithm pkcs8
           cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry,http-client-json,__skip-http-client-cert-verification
   test:
     name: Check ${{ matrix.check }} on (${{ matrix.os }})
@@ -69,10 +69,7 @@ jobs:
       - name: Test
         if: ${{ matrix.check == 'test' }}
         timeout-minutes: 15
-        run: |
-          cargo install http-server
-          http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8 & disown
-          make test-all
+        run: make test-all
       - name: cargo audit
         if: ${{ matrix.check == 'audit' }}
         timeout-minutes: 15

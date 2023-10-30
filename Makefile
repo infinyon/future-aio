@@ -7,8 +7,9 @@ build-all:
 certs:
 	make -C certs generate-certs
 
-test-all:	certs test-derive
+test-all:	certs test-derive setup-http-server
 	cargo test --all-features
+	$(MAKE) teardown-http-server
 
 install-wasm-pack:
 	which wasm-pack || curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -52,6 +53,16 @@ install-clippy:
 
 install-wasm32:
 	rustup target add wasm32-unknown-unknown
+
+setup-http-server:
+	cargo install http-server
+	http-server --tls \
+		--tls-key certs/test-certs/server.key \
+		--tls-cert certs/test-certs/server.crt \
+		--tls-key-algorithm pkcs8 -v &
+
+teardown-http-server:
+	killall http-server
 
 check-clippy:	install-clippy install-wasm32
 	cargo clippy --all-features
