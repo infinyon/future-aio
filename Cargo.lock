@@ -396,7 +396,7 @@ checksum = "6999dc1837253364c2ebb0704ba97994bd874e8f195d665c50b7548f6ea92764"
 
 [[package]]
 name = "fluvio-future"
-version = "0.6.2"
+version = "0.6.1"
 dependencies = [
  "anyhow",
  "async-fs",
