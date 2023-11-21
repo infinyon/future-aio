@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.6.1"
+version = "0.6.2"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
@@ -56,6 +56,7 @@ http-client = [
     "dep:hyper",
     "dep:anyhow",
 ]
+tokio1 = ["async-std/tokio1"]
 
 [dependencies]
 log = "0.4.0"

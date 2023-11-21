@@ -82,6 +82,7 @@ dependencies = [
  "blocking",
  "futures-lite",
  "once_cell",
+ "tokio",
 ]
 
 [[package]]
@@ -395,7 +396,7 @@ checksum = "6999dc1837253364c2ebb0704ba97994bd874e8f195d665c50b7548f6ea92764"
 
 [[package]]
 name = "fluvio-future"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -1546,6 +1547,7 @@ checksum = "4f38200e3ef7995e5ef13baec2f432a6da0aa9ac495b2c0e8f3b7eec2c92d653"
 dependencies = [
  "backtrace",
  "bytes",
+ "num_cpus",
  "pin-project-lite",
  "tokio-macros",
 ]
