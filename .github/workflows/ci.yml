@@ -74,11 +74,10 @@ jobs:
         if: ${{ matrix.check == 'test' && matrix.os == 'macos-latest'}}
         timeout-minutes: 15
         # macos-latest is by default on openssl 1.x
-        run: make PFX_OPTS="" test-all
         run: |
           cargo install http-server
           http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8 & disown
-          make test-all
+          make PFX_OPTS="" test-all
       - name: cargo audit
         if: ${{ matrix.check == 'audit' }}
         timeout-minutes: 15

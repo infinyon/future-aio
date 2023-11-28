@@ -12,6 +12,10 @@ test-all:	certs test-derive setup-http-server
 	cargo test --all-features
 	$(MAKE) teardown-http-server
 
+test-http: certs setup-http-server
+	cargo test --all-features test_http_client
+	$(MAKE) teardown-http-server
+
 install-wasm-pack:
 	which wasm-pack || curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
@@ -60,7 +64,7 @@ setup-http-server:
 	http-server --tls \
 		--tls-key certs/test-certs/server.key \
 		--tls-cert certs/test-certs/server.crt \
-		--tls-key-algorithm pkcs8 -v &
+		--tls-key-algorithm pkcs8 &
 
 teardown-http-server:
 	killall http-server
