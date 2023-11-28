@@ -41,7 +41,7 @@ pub mod certs {
     // copied from https://github.com/sfackler/rust-native-tls/blob/master/src/imp/openssl.rs
     mod identity_impl {
 
-        use openssl::error::ErrorStack;
+        use crate::openssl::TlsError::CertReadError;
         use openssl::pkcs12::Pkcs12;
         use openssl::pkey::{PKey, Private};
         use openssl::x509::X509;
@@ -54,13 +54,16 @@ pub mod certs {
         }
 
         impl Identity {
-            pub fn from_pkcs12(buf: &[u8], pass: &str) -> Result<Identity, ErrorStack> {
+            pub fn from_pkcs12(buf: &[u8], pass: &str) -> anyhow::Result<Identity> {
                 let pkcs12 = Pkcs12::from_der(buf)?;
-                let parsed = pkcs12.parse(pass)?;
+                let parsed = pkcs12.parse2(pass)
+                    .map_err(|_| {CertReadError(String::from("Couldn't read pkcs12"))})?;
+                let pkey = parsed.pkey.ok_or(CertReadError(String::from("Missing private key")))?;
+                let cert = parsed.cert.ok_or(CertReadError(String::from("Missing cert")))?;
                 Ok(Identity {
-                    pkey: parsed.pkey,
-                    cert: parsed.cert,
-                    chain: parsed.chain.into_iter().flatten().collect(),
+                    pkey,
+                    cert,
+                    chain: parsed.ca.into_iter().flatten().collect(),
                 })
             }
 
