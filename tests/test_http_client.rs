@@ -1,3 +1,4 @@
+#[cfg(feature = "http-client")]
 #[cfg(test)]
 mod test_http_client {
 
@@ -7,7 +8,6 @@ mod test_http_client {
 
     #[async_std::test]
     async fn simple_test() {
-
         let res = http_client::get(SERVER).await;
 
         let status = res

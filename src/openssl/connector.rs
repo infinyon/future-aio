@@ -56,10 +56,15 @@ pub mod certs {
         impl Identity {
             pub fn from_pkcs12(buf: &[u8], pass: &str) -> anyhow::Result<Identity> {
                 let pkcs12 = Pkcs12::from_der(buf)?;
-                let parsed = pkcs12.parse2(pass)
-                    .map_err(|_| {CertReadError(String::from("Couldn't read pkcs12"))})?;
-                let pkey = parsed.pkey.ok_or(CertReadError(String::from("Missing private key")))?;
-                let cert = parsed.cert.ok_or(CertReadError(String::from("Missing cert")))?;
+                let parsed = pkcs12
+                    .parse2(pass)
+                    .map_err(|_| CertReadError(String::from("Couldn't read pkcs12")))?;
+                let pkey = parsed
+                    .pkey
+                    .ok_or(CertReadError(String::from("Missing private key")))?;
+                let cert = parsed
+                    .cert
+                    .ok_or(CertReadError(String::from("Missing cert")))?;
                 Ok(Identity {
                     pkey,
                     cert,
@@ -276,7 +281,6 @@ impl TcpDomainConnector for TlsAnonymousConnector {
         let socket_opts = SocketOpts {
             keepalive: Some(Default::default()),
             nodelay: Some(true),
-            ..Default::default()
         };
         let tcp_stream = stream_with_opts(domain, Some(socket_opts)).await?;
         let fd = tcp_stream.as_connection_fd();

@@ -138,7 +138,6 @@ mod connector {
             let socket_opts = SocketOpts {
                 keepalive: Some(Default::default()),
                 nodelay: Some(true),
-                ..Default::default()
             };
             let tcp_stream = stream_with_opts(addr, Some(socket_opts)).await?;
             let fd = tcp_stream.as_connection_fd();
