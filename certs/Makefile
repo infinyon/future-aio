@@ -1,13 +1,13 @@
 # -legacy is an openssl3 option for pkcs12 formats whose default
 # has shifted
-PFX_OPTS = "-legacy"
+PFX_OPTS ?= "-legacy"
 
 clean:
 	rm -rf test-certs
 
 setup:
 	mkdir -p test-certs
-
+	openssl version
 
 generate-certs:	setup generate-ca-crt generate-intermediate-ca-crt generate-server-crt generate-intermediate-chain generate-client-crt generate-pk12-certs
 

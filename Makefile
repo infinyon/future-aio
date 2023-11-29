@@ -1,11 +1,12 @@
 RUST_DOCKER_IMAGE=rust:latest
+PFX_OPTS ?= "-legacy"
 
 build-all:
 	cargo build --all-features
 
 .PHONY: certs
 certs:
-	make -C certs generate-certs
+	make -C certs generate-certs PFX_OPTS=${PFX_OPTS}
 
 test-all:	certs test-derive
 	cargo test --all-features
