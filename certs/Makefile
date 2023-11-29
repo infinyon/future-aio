@@ -1,9 +1,13 @@
+# -legacy is an openssl3 option for pkcs12 formats whose default
+# has shifted
+PFX_OPTS ?= "-legacy"
+
 clean:
 	rm -rf test-certs
 
 setup:
 	mkdir -p test-certs
-
+	openssl version
 
 generate-certs:	setup generate-ca-crt generate-intermediate-ca-crt generate-server-crt generate-intermediate-chain generate-client-crt generate-pk12-certs
 
@@ -12,7 +16,7 @@ generate-pk12-certs:	generate-server-pk12 generate-client-pk12
 
 ### CA Generation
 
-generate-ca-key:	
+generate-ca-key:
 	openssl genrsa  -out test-certs/ca.key 4096
 
 generate-ca-crt:	generate-ca-key
@@ -21,7 +25,7 @@ generate-ca-crt:	generate-ca-key
 
 ### Intermediate CA Generation
 
-generate-intermediate-ca-key:	
+generate-intermediate-ca-key:
 	openssl genrsa  -out test-certs/intermediate-ca.key 4096
 
 generate-intermediate-ca-csr: generate-intermediate-ca-key
@@ -56,19 +60,19 @@ generate-server-csr:	generate-server-key
 
 ### Intermediate Chain Server
 
-generate-intermediate-server-key:	
+generate-intermediate-server-key:
 	openssl genrsa -out test-certs/intermediate-server.key 4096
 
 
 generate-intermediate-server-csr:	generate-intermediate-server-key
 	openssl req -new -key test-certs/intermediate-server.key \
 		-out test-certs/intermediate-server.csr \
-		-config  cert.conf 
+		-config  cert.conf
 
 # generate anonymous pk12
 .PHONY: generate-server-pk12
-generate-server-pk12:	
-	openssl pkcs12 -export -out test-certs/server.pfx -inkey test-certs/server.key -in test-certs/server.crt -certfile  test-certs/ca.crt -passout pass:test
+generate-server-pk12:
+	openssl pkcs12 -export -out test-certs/server.pfx ${PFX_OPTS} -inkey test-certs/server.key -in test-certs/server.crt -certfile  test-certs/ca.crt -passout pass:test
 
 
 
@@ -131,7 +135,7 @@ generate-client-crt:	generate-client-csr
 		-extfile openssl.cnf
 
 generate-client-pk12:
-	openssl pkcs12 -export -out test-certs/client.pfx -inkey test-certs/client.key -in test-certs/client.crt -certfile  test-certs/ca.crt -passout pass:test
+	openssl pkcs12 -export -out test-certs/client.pfx ${PFX_OPTS} -inkey test-certs/client.key -in test-certs/client.crt -certfile  test-certs/ca.crt -passout pass:test
 
 
 # for non mac
@@ -151,7 +155,7 @@ start-nginx:
 	nginx -c $(MAKE_DIR)/nginx.conf
 
 start-intermediate-nginx:
-	nginx -c $(MAKE_DIR)/intermediate-nginx.conf 
+	nginx -c $(MAKE_DIR)/intermediate-nginx.conf
 
 stop-nginx:
 	nginx -s quit
