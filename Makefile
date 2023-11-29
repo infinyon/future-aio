@@ -1,5 +1,5 @@
 RUST_DOCKER_IMAGE=rust:latest
-PFX_OPTS ?= "-legacy"
+PFX_OPTS ?= ""
 
 build-all:
 	cargo build --all-features
@@ -8,7 +8,7 @@ build-all:
 certs:
 	make -C certs generate-certs PFX_OPTS=${PFX_OPTS}
 
-test-all:	certs test-derive setup-http-server
+test-all: certs test-derive setup-http-server
 	cargo test --all-features
 	$(MAKE) teardown-http-server
 
@@ -59,7 +59,7 @@ install-clippy:
 install-wasm32:
 	rustup target add wasm32-unknown-unknown
 
-setup-http-server:
+setup-http-server: certs
 	cargo install http-server
 	http-server --tls \
 		--tls-key certs/test-certs/server.key \

@@ -25,6 +25,7 @@ jobs:
           key: windows-latest-test
       - name: Test
         run: |
+          make certs
           cargo install http-server
           start /b http-server --tls --tls-key certs\test-certs\server.key --tls-cert certs\test-certs\server.crt --tls-key-algorithm pkcs8
           cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry,http-client-json,__skip-http-client-cert-verification
@@ -66,18 +67,12 @@ jobs:
       - name: Test
         if: ${{ matrix.check == 'test' && matrix.os != 'macos-latest' }}
         timeout-minutes: 15
-        run: |
-          cargo install http-server
-          http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8 & disown
-          make test-all
+        run: make test-all
       - name: Test (macos)
         if: ${{ matrix.check == 'test' && matrix.os == 'macos-latest'}}
         timeout-minutes: 15
         # macos-latest is by default on openssl 1.x
-        run: |
-          cargo install http-server
-          http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8 & disown
-          make PFX_OPTS="" test-all
+        run: make PFX_OPTS="" test-all
       - name: cargo audit
         if: ${{ matrix.check == 'audit' }}
         timeout-minutes: 15
