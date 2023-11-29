@@ -1,4 +1,4 @@
-#[cfg(feature = "http-client")]
+#[cfg(all(any(unix, windows), feature = "http-client"))]
 #[cfg(test)]
 mod test_http_client {
     use anyhow::Error;
