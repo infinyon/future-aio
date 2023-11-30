@@ -23,10 +23,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: windows-latest-test
+      - uses: cargo-bins/cargo-binstall@main
       - name: Test
         run: |
           make certs
-          cargo install http-server
+          cargo binstall http-server
           Start-Process cmd -Args /c,"http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8"
           cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry,http-client-json,__skip-http-client-cert-verification
   test:
@@ -58,6 +59,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.check }}
+      - uses: cargo-bins/cargo-binstall@main
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
         run: make check-clippy
@@ -102,6 +104,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           target: wasm32-unknown-unknown
+      - uses: cargo-bins/cargo-binstall@main
       - name: Run Wasm Test on Linux
         if: matrix.test == 'linux-wasm'
         run: |

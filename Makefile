@@ -64,7 +64,7 @@ install-wasm32:
 	rustup target add wasm32-unknown-unknown
 
 setup-http-server: certs $(CERT_OPTS)
-	cargo install http-server
+	cargo binstall http-server
 	http-server --tls \
 		--tls-key certs/test-certs/server-hs.key \
 		--tls-cert certs/test-certs/server.crt \
