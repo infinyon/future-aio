@@ -81,7 +81,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   wasm_test:
-    name: ${{ matrix.test.name }} on (${{ matrix.os }})
+    name: Wasm test on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
    #   fail-fast: false
