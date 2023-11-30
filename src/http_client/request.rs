@@ -1,6 +1,6 @@
 use std::{fmt, future::Future, pin::Pin};
 
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Error, Result};
 use futures_util::TryFutureExt;
 use http::{request::Builder, HeaderName, HeaderValue};
 use hyper::{body::Bytes, Body, Response};
@@ -31,7 +31,7 @@ impl RequestBuilder {
         self
     }
 
-    pub async fn send(self) -> Result<Response<Body>, Error> {
+    pub async fn send(self) -> Result<Response<Body>> {
         let req = self
             .req_builder
             .header(http::header::USER_AGENT, "fluvio-mini-http/0.1")
@@ -49,7 +49,7 @@ impl RequestBuilder {
 type ResponseExtFuture<T> = Pin<Box<dyn Future<Output = T> + Send + 'static>>;
 
 pub trait ResponseExt {
-    fn bytes(self) -> ResponseExtFuture<Result<Bytes, Error>>;
+    fn bytes(self) -> ResponseExtFuture<Result<Bytes>>;
 
     #[cfg(feature = "http-client-json")]
     fn json<T: serde::de::DeserializeOwned>(self) -> ResponseExtFuture<Result<T, Error>>
@@ -71,7 +71,7 @@ where
     T::Data: Send,
     T::Error: fmt::Debug,
 {
-    fn bytes(self) -> ResponseExtFuture<Result<Bytes, Error>> {
+    fn bytes(self) -> ResponseExtFuture<Result<Bytes>> {
         let fut = async move {
             hyper::body::to_bytes(self.into_body())
                 .map_err(|err| anyhow!("{err:?}"))
