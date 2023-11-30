@@ -50,7 +50,7 @@ generate-intermediate-ca-crt: generate-intermediate-ca-csr
 
 generate-server-key:
 	openssl genrsa -out test-certs/server.key 4096
-
+	cp test-certs/server.key test-certs/server-hs.key
 
 generate-server-csr:	generate-server-key
 	openssl req -new -key test-certs/server.key \

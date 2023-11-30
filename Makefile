@@ -10,7 +10,7 @@ certs:
 	make -C certs generate-certs PFX_OPTS=${PFX_OPTS}
 
 cert-patch-macos:
-	sed -i '' 's/RSA PRIVATE KEY/PRIVATE KEY/' certs/test-certs/server.key
+	sed -i '' 's/RSA PRIVATE KEY/PRIVATE KEY/' certs/test-certs/server-hs.key
 
 test-all: certs test-derive setup-http-server
 	cargo test --all-features
@@ -66,7 +66,7 @@ install-wasm32:
 setup-http-server: certs $(CERT_OPTS)
 	cargo install http-server
 	http-server --tls \
-		--tls-key certs/test-certs/server.key \
+		--tls-key certs/test-certs/server-hs.key \
 		--tls-cert certs/test-certs/server.crt \
 		--tls-key-algorithm pkcs8 &
 
