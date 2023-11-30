@@ -1,4 +1,5 @@
 RUST_DOCKER_IMAGE=rust:latest
+CERT_OPTS ?=
 PFX_OPTS ?= ""
 
 build-all:
@@ -7,6 +8,9 @@ build-all:
 .PHONY: certs
 certs:
 	make -C certs generate-certs PFX_OPTS=${PFX_OPTS}
+
+cert-patch-macos:
+	sed -i '' 's/RSA PRIVATE KEY/PRIVATE KEY/' certs/test-certs/server.key
 
 test-all: certs test-derive setup-http-server
 	cargo test --all-features
@@ -59,7 +63,7 @@ install-clippy:
 install-wasm32:
 	rustup target add wasm32-unknown-unknown
 
-setup-http-server: certs
+setup-http-server: certs $(CERT_OPTS)
 	cargo install http-server
 	http-server --tls \
 		--tls-key certs/test-certs/server.key \
