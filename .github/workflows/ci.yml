@@ -24,10 +24,12 @@ jobs:
         with:
           key: windows-latest-test
       - uses: cargo-bins/cargo-binstall@main
-      - name: Test
+      - name: Test Setup
         run: |
           make certs
           cargo binstall http-server
+      - name: Test
+        run: |
           Start-Process cmd -Args /c,"http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8"
           cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry,http-client-json,__skip-http-client-cert-verification
   test:
