@@ -23,8 +23,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: windows-latest-test
+      - uses: cargo-bins/cargo-binstall@main
+      - name: Test Setup
+        run: |
+          make certs
+          cargo binstall http-server
       - name: Test
-        run: cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry
+        run: |
+          Start-Process cmd -Args /c,"http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8"
+          cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry,http-client-json,__skip-http-client-cert-verification
   test:
     name: Check ${{ matrix.check }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -54,6 +61,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.check }}
+      - uses: cargo-bins/cargo-binstall@main
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
         run: make check-clippy
@@ -68,7 +76,7 @@ jobs:
         if: ${{ matrix.check == 'test' && matrix.os == 'macos-latest'}}
         timeout-minutes: 15
         # macos-latest is by default on openssl 1.x
-        run: make PFX_OPTS="" test-all
+        run: make PFX_OPTS="" CERT_OPTS=cert-patch-macos test-all
       - name: cargo audit
         if: ${{ matrix.check == 'audit' }}
         timeout-minutes: 15
@@ -77,7 +85,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   wasm_test:
-    name: ${{ matrix.test.name }} on (${{ matrix.os }})
+    name: Wasm test on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
    #   fail-fast: false
@@ -98,6 +106,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           target: wasm32-unknown-unknown
+      - uses: cargo-bins/cargo-binstall@main
       - name: Run Wasm Test on Linux
         if: matrix.test == 'linux-wasm'
         run: |

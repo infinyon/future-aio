@@ -1,5 +1,6 @@
 RUST_DOCKER_IMAGE=rust:latest
-PFX_OPTS ?= "-legacy"
+CERT_OPTS ?=
+PFX_OPTS ?= ""
 
 build-all:
 	cargo build --all-features
@@ -8,8 +9,20 @@ build-all:
 certs:
 	make -C certs generate-certs PFX_OPTS=${PFX_OPTS}
 
-test-all:	certs test-derive
-	cargo test --all-features
+cert-patch-macos:
+	sed -i '' 's/RSA PRIVATE KEY/PRIVATE KEY/' certs/test-certs/server-hs.key
+
+.PHONY: test-all run-test-all
+test-all: certs test-derive setup-http-server run-test-all
+run-test-all:
+	TEST_PORT=$$(cat tmp-PORT) cargo test --all-features
+	$(MAKE) teardown-http-server
+
+.PHONY: test-http run-test-http
+test-http: certs setup-http-server run-test-http
+run-test-http:
+	TEST_PORT=$$(cat tmp-PORT) cargo test --all-features test_http_client
+	$(MAKE) teardown-http-server
 
 install-wasm-pack:
 	which wasm-pack || curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -53,6 +66,20 @@ install-clippy:
 
 install-wasm32:
 	rustup target add wasm32-unknown-unknown
+
+setup-http-server: certs $(CERT_OPTS)
+	cargo binstall http-server
+	cargo binstall -y portpicker-cli
+	portpicker > tmp-PORT
+	echo Picked port $$(cat tmp-PORT)
+	http-server --tls \
+		--tls-key certs/test-certs/server-hs.key \
+		--tls-cert certs/test-certs/server.crt \
+		--tls-key-algorithm pkcs8 -p $$(cat tmp-PORT) &
+
+teardown-http-server:
+	killall http-server
+	rm -f tmp-PORT
 
 check-clippy:	install-clippy install-wasm32
 	cargo clippy --all-features

@@ -6,6 +6,9 @@ use super::async_to_sync_wrapper::AsyncToSyncWrapper;
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[error("CertReadError: {0}")]
+    CertReadError(String),
+
     #[error("OpenSslError: {0}")]
     OpenSslError(#[from] openssl::error::Error),
 

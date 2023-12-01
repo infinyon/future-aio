@@ -408,7 +408,7 @@ mod test {
             .timeout(Duration::from_millis(300))
             .await;
 
-        assert!(matches!(retry_result, Err(_)));
+        assert!(retry_result.is_err());
         assert!(executed_retries < 10);
     }
 

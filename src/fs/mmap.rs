@@ -149,7 +149,7 @@ mod tests {
     #[test_async]
     async fn test_mmap_write_slice() -> Result<(), IoError> {
         let index_path = temp_dir().join("test.index");
-        ensure_clean_file(&index_path.clone());
+        ensure_clean_file(index_path.clone());
 
         let result = MemoryMappedMutFile::create(&index_path, 3).await;
         assert!(result.is_ok());
@@ -176,7 +176,7 @@ mod tests {
     #[test_async]
     async fn test_mmap_write_pair_slice() -> Result<(), IoError> {
         let index_path = temp_dir().join("pairslice.index");
-        ensure_clean_file(&index_path.clone());
+        ensure_clean_file(index_path.clone());
 
         let result = MemoryMappedMutFile::create(&index_path, 24).await;
         assert!(result.is_ok());
@@ -205,7 +205,7 @@ mod tests {
     #[test_async]
     async fn test_mmap_write_with_pos() -> Result<(), IoError> {
         let index_path = temp_dir().join("testpos.index");
-        ensure_clean_file(&index_path.clone());
+        ensure_clean_file(index_path.clone());
 
         let (mut mm_file, _) = MemoryMappedMutFile::create(&index_path, 10).await?;
 
@@ -227,7 +227,7 @@ mod tests {
     #[test_async]
     async fn test_empty_index_read_only() -> Result<(), IoError> {
         let index_path = temp_dir().join("zerosized.index");
-        ensure_clean_file(&index_path.clone());
+        ensure_clean_file(index_path.clone());
         {
             let file = OpenOptions::new()
                 .create(true)
