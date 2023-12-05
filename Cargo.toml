@@ -95,7 +95,7 @@ async-std = { version = "1.12.0", default-features = false, optional = true }
 async-io = { version = "1.1.2", optional = true }
 async-net = { version = "1.6.0", optional = true }
 memmap2 = { version = "0.5", optional = true }
-openssl = { version = "0.10.35", optional = true }
+openssl = { version = "0.10.61", optional = true }
 async-native-tls = { version = "0.4.0", optional = true }
 native-tls = { version = "0.2.4", optional = true }
 async-rustls = { version = "0.4.1", features = ["dangerous_configuration"], optional = true }
