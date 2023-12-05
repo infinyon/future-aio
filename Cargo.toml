@@ -52,13 +52,14 @@ doomsday = ["task", "sync"]
 http-client = [
     "rust_tls",
     "async-std/default",
-    "dep:tokio",
-    "dep:hyper",
-    "dep:webpki-roots",
+    "dep:bytes",
     "dep:http",
+    "dep:hyper",
     "dep:serde",
     "dep:serde_json",
+    "dep:tokio",
     "dep:once_cell",
+    "dep:webpki-roots",
 ]
 tokio1 = ["async-std/tokio1"]
 http-client-json = ["http-client"]
@@ -66,26 +67,29 @@ http-client-json = ["http-client"]
 __skip-http-client-cert-verification = []
 
 [dependencies]
+anyhow = { version = "1.0" }
 log = "0.4.0"
+thiserror = "1.0"
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", optional = true }
+
+async-trait = { version = "0.1.40", optional = true }
 futures-lite = { version = "1.11.2", optional = true }
 futures-util = { version = "0.3.5", optional = true }
 futures-timer = { version = "3.0.0", optional = true }
-pin-utils = { version = "0.1.0", optional = true }
-pin-project = { version = "1.0.8", optional = true }
-tracing = { version = "0.1" }
-tracing-subscriber = { version = "0.3", optional = true }
+
 bytes = { version = "1.0.0", optional = true }
-async-trait = { version = "0.1.40", optional = true }
 cfg-if = { version = "1.0.0", optional = true }
 tokio = { version = "1.33.0", default-features = false, optional = true }
 hyper = { version = "0.14", default-features = false, features = ["client", "http1", "http2"], optional = true }
-anyhow = { version = "1.0" }
 http = { version = "0.2.11", optional = true } # same as hyper
-webpki-roots = { version = "0.25", optional = true }
+once_cell = { version = "1.18.0", optional = true }
+pin-utils = { version = "0.1.0", optional = true }
+pin-project = { version = "1.0.8", optional = true }
 serde = { version = "1.0", optional = true }
 serde_json = { version = "1.0", optional = true }
-once_cell = { version = "1.18.0", optional = true }
-thiserror = "1.0.20"
+webpki-roots = { version = "0.25", optional = true }
+
 
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.1", optional = true }
 

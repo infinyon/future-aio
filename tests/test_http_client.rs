@@ -61,6 +61,26 @@ mod test_http_client {
         Ok(())
     }
 
+    #[test_async]
+    async fn get_with_header() -> Result<(), Error> {
+        let server_url = https_server_url()?;
+        let failmsg =
+            format!("failed to get http-server, did you install and run it? {server_url}");
+
+        let uri = format!("{server_url}/test-data/plain.txt");
+        let htreq = http::Request::builder()
+            .uri(&uri)
+            .header("foo", "bar")
+            .body(())?;
+
+        let resp = http_client::send(&htreq).await.expect(&failmsg);
+
+        let body = resp.bytes().await?;
+        let body_str = std::str::from_utf8(&body)?;
+        assert_eq!("plain", body_str);
+        Ok(())
+    }
+
     // ignored tests used for live local dev sanity check
     // cargo test live -- --ignored
     #[test_async(ignore)]
