@@ -1,6 +1,6 @@
 use std::{fmt, future::Future, pin::Pin};
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Result};
 use futures_util::TryFutureExt;
 use http::{request::Builder, HeaderName, HeaderValue};
 use hyper::{body::Bytes, Body, Response};
@@ -52,7 +52,7 @@ pub trait ResponseExt {
     fn bytes(self) -> ResponseExtFuture<Result<Bytes>>;
 
     #[cfg(feature = "http-client-json")]
-    fn json<T: serde::de::DeserializeOwned>(self) -> ResponseExtFuture<Result<T, Error>>
+    fn json<T: serde::de::DeserializeOwned>(self) -> ResponseExtFuture<Result<T>>
     where
         Self: Sized + Send + 'static,
     {
