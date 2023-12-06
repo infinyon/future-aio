@@ -2,28 +2,27 @@ mod async_std_compat;
 pub mod client;
 mod request;
 
+use anyhow::Result;
 pub use client::Client;
 pub use hyper::StatusCode;
 pub use request::ResponseExt;
 
 use hyper::{Body, Response};
 
-use self::request::RequestBuilder;
+pub const USER_AGENT: &str = "fluvio-futures-http/0.1";
 
-pub async fn get(uri: impl AsRef<str>) -> Result<Response<Body>, anyhow::Error> {
+/// for simple get requests
+pub async fn get(uri: impl AsRef<str>) -> Result<Response<Body>> {
     Client::new().get(uri)?.send().await
 }
 
-/// B: Response body type
-pub async fn send<B>(req: &http::Request<B>) -> Result<Response<Body>, anyhow::Error> {
+/// for more complex http requests
+/// send via a request struct
+/// let req = http::Request::get(&uri)
+///    .header("foo", "bar")
+///    .body("")?;
+/// let resp = http_client::send(&htreq).await.expect(&failmsg);
+pub async fn send<B: Into<hyper::Body>>(req: http::Request<B>) -> Result<Response<Body>> {
     let client = Client::new();
-    let mut builder = http::request::Builder::new().uri(req.uri());
-    let hdrs = req.headers();
-    if !hdrs.is_empty() {
-        for (key, value) in hdrs.iter() {
-            builder = builder.header(key, value);
-        }
-    }
-    let rb = RequestBuilder::new(client, builder);
-    rb.send().await
+    client.send(req).await
 }
