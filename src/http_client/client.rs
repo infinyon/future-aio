@@ -6,9 +6,9 @@ use hyper::{Body, Uri};
 use once_cell::sync::Lazy;
 
 use super::{
-    USER_AGENT,
     async_std_compat::{self, CompatConnector},
     request::RequestBuilder,
+    USER_AGENT,
 };
 
 type HyperClient = Arc<hyper::Client<CompatConnector, hyper::Body>>;
@@ -67,8 +67,10 @@ impl Client {
         Ok(RequestBuilder::new(self.clone(), req))
     }
 
-    pub async fn send<B: Into<hyper::Body>>(&self, req: http::Request<B>) -> Result<http::Response<Body>, anyhow::Error> {
-
+    pub async fn send<B: Into<hyper::Body>>(
+        &self,
+        req: http::Request<B>,
+    ) -> Result<http::Response<Body>, anyhow::Error> {
         // convert http::Request into hyper::Request
         let (mut parts, body) = req.into_parts();
         let body: hyper::Body = body.into();
@@ -77,8 +79,7 @@ impl Client {
             parts.headers.append(http::header::USER_AGENT, agent);
         }
         let req = hyper::Request::<hyper::Body>::from_parts(parts, body);
-        self
-            .hyper
+        self.hyper
             .request(req)
             .await
             .map_err(|err| anyhow!("request error: {err:?}"))
