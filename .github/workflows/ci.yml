@@ -27,7 +27,7 @@ jobs:
       - name: Test Setup
         run: |
           make certs
-          cargo binstall http-server
+          cargo binstall -y http-server
       - name: Test
         run: |
           Start-Process cmd -Args /c,"http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8"

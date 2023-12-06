@@ -68,7 +68,7 @@ install-wasm32:
 	rustup target add wasm32-unknown-unknown
 
 setup-http-server: certs $(CERT_OPTS)
-	cargo binstall http-server
+	cargo binstall -y http-server
 	cargo binstall -y portpicker-cli
 	portpicker > tmp-PORT
 	echo Picked port $$(cat tmp-PORT)
