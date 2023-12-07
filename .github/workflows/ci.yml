@@ -96,11 +96,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust ${{ matrix.rust }} Toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
           target: wasm32-unknown-unknown
       - uses: cargo-bins/cargo-binstall@main
       - name: Run Wasm Test on Linux
