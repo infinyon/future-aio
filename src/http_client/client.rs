@@ -1,13 +1,14 @@
 use std::{str::FromStr, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_rustls::rustls::{OwnedTrustAnchor, RootCertStore};
-use hyper::Uri;
+use hyper::{Body, Uri};
 use once_cell::sync::Lazy;
 
 use super::{
     async_std_compat::{self, CompatConnector},
     request::RequestBuilder,
+    USER_AGENT,
 };
 
 type HyperClient = Arc<hyper::Client<CompatConnector, hyper::Body>>;
@@ -64,6 +65,24 @@ impl Client {
         let uri = Uri::from_str(uri.as_ref())?;
         let req = http::request::Builder::new().uri(uri);
         Ok(RequestBuilder::new(self.clone(), req))
+    }
+
+    pub async fn send<B: Into<hyper::Body>>(
+        &self,
+        req: http::Request<B>,
+    ) -> Result<http::Response<Body>, anyhow::Error> {
+        // convert http::Request into hyper::Request
+        let (mut parts, body) = req.into_parts();
+        let body: hyper::Body = body.into();
+        if !parts.headers.contains_key(http::header::USER_AGENT) {
+            let agent = http::header::HeaderValue::from_static(USER_AGENT);
+            parts.headers.append(http::header::USER_AGENT, agent);
+        }
+        let req = hyper::Request::<hyper::Body>::from_parts(parts, body);
+        self.hyper
+            .request(req)
+            .await
+            .map_err(|err| anyhow!("request error: {err:?}"))
     }
 }
 
