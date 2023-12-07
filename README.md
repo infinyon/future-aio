@@ -33,6 +33,10 @@
 - __Mmap:__ Memory mapp files.
 - __Tls:__ Friendly TLS wrapper
 
+## Notes
+
+Recommend using rustls_tls on macos, or installing openssl3 for building on macos w/ native_tls.
+ 
 ## Contributing
 
 If you'd like to contribute to the project, please read our [Contributing guide](CONTRIBUTING.md).

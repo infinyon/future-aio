@@ -75,8 +75,7 @@ jobs:
       - name: Test (macos)
         if: ${{ matrix.check == 'test' && matrix.os == 'macos-latest'}}
         timeout-minutes: 15
-        # macos-latest is by default on openssl 1.x
-        run: make PFX_OPTS="" CERT_OPTS=cert-patch-macos test-all
+        run: make test-macos
       - name: cargo audit
         if: ${{ matrix.check == 'audit' }}
         timeout-minutes: 15
