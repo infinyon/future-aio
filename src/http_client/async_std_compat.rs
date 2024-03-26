@@ -8,8 +8,8 @@ use std::{
 };
 
 use anyhow::{anyhow, Error};
-use async_rustls::rustls::ClientConfig;
 use async_std::io::{Read, Write};
+use futures_rustls::rustls::ClientConfig;
 use hyper::{
     client::connect::{Connected, Connection},
     rt,
