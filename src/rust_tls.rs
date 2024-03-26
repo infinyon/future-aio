@@ -1,9 +1,11 @@
+pub(crate) mod fake_verifier;
+
 use crate::net::TcpStream;
 
-pub use async_rustls::client::TlsStream as ClientTlsStream;
-pub use async_rustls::server::TlsStream as ServerTlsStream;
-pub use async_rustls::TlsAcceptor;
-pub use async_rustls::TlsConnector;
+pub use futures_rustls::client::TlsStream as ClientTlsStream;
+pub use futures_rustls::server::TlsStream as ServerTlsStream;
+pub use futures_rustls::TlsAcceptor;
+pub use futures_rustls::TlsConnector;
 
 pub type DefaultServerTlsStream = ServerTlsStream<TcpStream>;
 pub type DefaultClientTlsStream = ClientTlsStream<TcpStream>;
@@ -42,38 +44,50 @@ mod cert {
     use std::io::ErrorKind;
     use std::path::Path;
 
-    use async_rustls::rustls::Certificate;
-    use async_rustls::rustls::PrivateKey;
-    use async_rustls::rustls::RootCertStore;
+    use futures_rustls::rustls::pki_types::CertificateDer;
+    use futures_rustls::rustls::pki_types::PrivateKeyDer;
+    use futures_rustls::rustls::RootCertStore;
     use rustls_pemfile::certs;
     use rustls_pemfile::rsa_private_keys;
 
-    pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<Certificate>, IoError> {
+    pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<CertificateDer<'static>>, IoError> {
         load_certs_from_reader(&mut BufReader::new(File::open(path)?))
     }
 
-    pub fn load_certs_from_reader(rd: &mut dyn BufRead) -> Result<Vec<Certificate>, IoError> {
+    pub fn load_certs_from_reader(
+        rd: &mut dyn BufRead,
+    ) -> Result<Vec<CertificateDer<'static>>, IoError> {
         certs(rd)
-            .map(|v| v.into_iter().map(Certificate).collect())
+            .into_iter()
+            .collect::<Vec<CertificateDer<'static>>>()
+            //            .map(|v| v.into_iter().map(|a| CertificateDer)
+            //                 .collect()
+            //            )
             .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))
     }
 
     /// Load the passed keys file
-    pub fn load_keys<P: AsRef<Path>>(path: P) -> Result<Vec<PrivateKey>, IoError> {
+    pub fn load_keys<P: AsRef<Path>>(path: P) -> Result<Vec<PrivateKeyDer<'static>>, IoError> {
         load_keys_from_reader(&mut BufReader::new(File::open(path)?))
     }
 
-    pub fn load_keys_from_reader(rd: &mut dyn BufRead) -> Result<Vec<PrivateKey>, IoError> {
+    pub fn load_keys_from_reader(
+        rd: &mut dyn BufRead,
+    ) -> Result<Vec<PrivateKeyDer<'static>>, IoError> {
         rsa_private_keys(rd)
-            .map(|v| v.into_iter().map(PrivateKey).collect())
+            .map(|v| v.into_iter().map(PrivateKeyDer).collect())
             .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid key"))
     }
 
-    pub(crate) fn load_first_key<P: AsRef<Path>>(path: P) -> Result<PrivateKey, IoError> {
+    pub(crate) fn load_first_key<P: AsRef<Path>>(
+        path: P,
+    ) -> Result<PrivateKeyDer<'static>, IoError> {
         load_first_key_from_reader(&mut BufReader::new(File::open(path)?))
     }
 
-    pub(crate) fn load_first_key_from_reader(rd: &mut dyn BufRead) -> Result<PrivateKey, IoError> {
+    pub(crate) fn load_first_key_from_reader(
+        rd: &mut dyn BufRead,
+    ) -> Result<PrivateKeyDer<'static>, IoError> {
         let mut keys = load_keys_from_reader(rd)?;
 
         if keys.is_empty() {
@@ -104,8 +118,8 @@ mod connector {
 
     use std::io::ErrorKind;
 
-    use async_rustls::rustls::ServerName;
     use async_trait::async_trait;
+    use futures_rustls::rustls::pki_types::ServerName;
     use log::debug;
 
     use crate::net::{
@@ -217,27 +231,25 @@ mod builder {
     use std::io::ErrorKind;
     use std::path::Path;
     use std::sync::Arc;
-    use std::time::SystemTime;
 
-    use async_rustls::rustls::client::ServerCertVerified;
-    use async_rustls::rustls::server::WantsServerCert;
-    use async_rustls::rustls::Certificate;
-    use async_rustls::rustls::ClientConfig;
-    use async_rustls::rustls::PrivateKey;
-    use async_rustls::rustls::RootCertStore;
-    use async_rustls::rustls::ServerConfig;
-    use async_rustls::rustls::ServerName;
-    use async_rustls::rustls::{client::ServerCertVerifier, ConfigBuilder};
-    use async_rustls::rustls::{client::WantsTransparencyPolicyOrClientCert, Error as TlsError};
-    use async_rustls::rustls::{server::AllowAnyAuthenticatedClient, WantsVerifier};
-    use async_rustls::TlsAcceptor;
-    use async_rustls::TlsConnector;
+    use futures_rustls::rustls::client::WantsClientCert;
+    use futures_rustls::rustls::pki_types::CertificateDer;
+    use futures_rustls::rustls::pki_types::PrivateKeyDer;
+    use futures_rustls::rustls::server::WantsServerCert;
+    use futures_rustls::rustls::ClientConfig;
+    use futures_rustls::rustls::ConfigBuilder;
+    use futures_rustls::rustls::RootCertStore;
+    use futures_rustls::rustls::ServerConfig;
+    use futures_rustls::rustls::WantsVerifier;
+    use futures_rustls::TlsAcceptor;
+    use futures_rustls::TlsConnector;
 
     use super::load_root_ca;
     use super::{load_certs, load_first_key_from_reader};
     use super::{load_certs_from_reader, load_first_key};
 
     pub type ClientConfigBuilder<Stage> = ConfigBuilder<ClientConfig, Stage>;
+    pub use crate::rust_tls::fake_verifier::NoCertificateVerification;
 
     pub struct ConnectorBuilder;
 
@@ -253,7 +265,7 @@ mod builder {
         pub fn load_ca_cert<P: AsRef<Path>>(
             self,
             path: P,
-        ) -> Result<ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert>, IoError> {
+        ) -> Result<ConnectorBuilderStage<WantsClientCert>, IoError> {
             let certs = load_certs(path)?;
             self.with_root_certificates(&certs)
         }
@@ -261,7 +273,7 @@ mod builder {
         pub fn load_ca_cert_from_bytes(
             self,
             buffer: &[u8],
-        ) -> Result<ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert>, IoError> {
+        ) -> Result<ConnectorBuilderStage<WantsClientCert>, IoError> {
             let certs = load_certs_from_reader(&mut Cursor::new(buffer))?;
             self.with_root_certificates(&certs)
         }
@@ -277,8 +289,8 @@ mod builder {
 
         fn with_root_certificates(
             self,
-            certs: &[Certificate],
-        ) -> Result<ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert>, IoError> {
+            certs: &[CertificateDer],
+        ) -> Result<ConnectorBuilderStage<WantsClientCert>, IoError> {
             let mut root_store = RootCertStore::empty();
 
             for cert in certs {
@@ -293,7 +305,7 @@ mod builder {
         }
     }
 
-    impl ConnectorBuilderStage<WantsTransparencyPolicyOrClientCert> {
+    impl ConnectorBuilderStage<WantsClientCert> {
         pub fn load_client_certs<P: AsRef<Path>>(
             self,
             cert_path: P,
@@ -320,8 +332,8 @@ mod builder {
 
         fn with_single_cert(
             self,
-            certs: Vec<Certificate>,
-            key: PrivateKey,
+            certs: Vec<CertificateDer>,
+            key: PrivateKeyDer,
         ) -> Result<ConnectorBuilderWithConfig, IoError> {
             let config = self
                 .0
@@ -356,6 +368,9 @@ mod builder {
             AcceptorBuilderStage(self.0.with_no_client_auth())
         }
 
+        /* TODO: re-plumb this
+        https://docs.rs/rustls/0.21.6/rustls/server/struct.AllowAnyAuthenticatedClient.html
+        https://docs.rs/rustls/0.23.3/rustls/struct.ConfigBuilder.html#method.with_client_cert_verifier
         /// Require client authentication. Must pass CA root path.
         pub fn client_authenticate<P: AsRef<Path>>(
             self,
@@ -367,6 +382,7 @@ mod builder {
                 Arc::new(AllowAnyAuthenticatedClient::new(root_store)),
             )))
         }
+        */
     }
 
     impl AcceptorBuilderStage<WantsServerCert> {
@@ -394,23 +410,6 @@ mod builder {
             TlsAcceptor::from(Arc::new(self.0))
         }
     }
-
-    struct NoCertificateVerification;
-
-    impl ServerCertVerifier for NoCertificateVerification {
-        fn verify_server_cert(
-            &self,
-            _end_entity: &Certificate,
-            _intermediates: &[Certificate],
-            _server_name: &ServerName,
-            _scts: &mut dyn Iterator<Item = &[u8]>,
-            _ocsp_response: &[u8],
-            _now: SystemTime,
-        ) -> Result<ServerCertVerified, TlsError> {
-            log::debug!("ignoring server cert");
-            Ok(ServerCertVerified::assertion())
-        }
-    }
 }
 
 #[cfg(test)]
@@ -420,13 +419,13 @@ mod test {
     use std::net::SocketAddr;
     use std::time;
 
-    use async_rustls::TlsAcceptor;
-    use async_rustls::TlsConnector;
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
+    use futures_rustls::TlsAcceptor;
+    use futures_rustls::TlsConnector;
     use futures_util::sink::SinkExt;
     use log::debug;
     use tokio_util::codec::BytesCodec;

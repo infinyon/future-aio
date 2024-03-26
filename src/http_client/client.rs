@@ -1,7 +1,7 @@
 use std::{str::FromStr, sync::Arc};
 
 use anyhow::{anyhow, Result};
-use async_rustls::rustls::{OwnedTrustAnchor, RootCertStore};
+use futures_rustls::rustls::{pki_types::TrustAnchor, RootCertStore};
 use hyper::{Body, Uri};
 use once_cell::sync::Lazy;
 
@@ -22,18 +22,14 @@ pub struct Client {
 static ROOT_CERT_STORE: Lazy<RootCertStore> = Lazy::new(|| {
     let mut store = RootCertStore::empty();
     store.add_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.iter().map(|ta| {
-        OwnedTrustAnchor::from_subject_spki_name_constraints(
-            ta.subject,
-            ta.spki,
-            ta.name_constraints,
-        )
+        TrustAnchor::from_subject_spki_name_constraints(ta.subject, ta.spki, ta.name_constraints)
     }));
     store
 });
 
 impl Default for Client {
     fn default() -> Self {
-        let tls = async_rustls::rustls::ClientConfig::builder().with_safe_defaults();
+        let tls = futures_rustls::rustls::ClientConfig::builder().with_safe_defaults();
 
         #[cfg(not(feature = "__skip-http-client-cert-verification"))]
         let tls = tls.with_root_certificates(ROOT_CERT_STORE.to_owned());
@@ -88,26 +84,6 @@ impl Client {
 
 #[cfg(feature = "__skip-http-client-cert-verification")]
 mod no_verifier {
-    use std::time::SystemTime;
 
-    use async_rustls::rustls::{
-        client::{ServerCertVerified, ServerCertVerifier},
-        Certificate, Error, ServerName,
-    };
-
-    pub struct NoCertificateVerification;
-
-    impl ServerCertVerifier for NoCertificateVerification {
-        fn verify_server_cert(
-            &self,
-            _end_entity: &Certificate,
-            _intermediates: &[Certificate],
-            _server_name: &ServerName,
-            _scts: &mut dyn Iterator<Item = &[u8]>,
-            _ocsp_response: &[u8],
-            _now: SystemTime,
-        ) -> Result<ServerCertVerified, Error> {
-            Ok(ServerCertVerified::assertion())
-        }
-    }
+    pub use crate::rust_tls::fake_verifier::NoCertificateVerification;
 }
