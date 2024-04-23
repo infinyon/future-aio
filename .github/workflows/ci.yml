@@ -14,12 +14,9 @@ jobs:
     name: Run tests on Windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Install rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
+      - uses: actions/checkout@v4
+      - name: Install Rust Stable
+        uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           key: windows-latest-test
@@ -27,7 +24,8 @@ jobs:
       - name: Test Setup
         run: |
           make certs
-          cargo binstall http-server
+          # cargo binstall -y http-server
+          cargo install http-server
       - name: Test
         run: |
           Start-Process cmd -Args /c,"http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8"
@@ -52,12 +50,11 @@ jobs:
             check: audit
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ matrix.rust }} Toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}-${{ matrix.check }}
@@ -75,8 +72,7 @@ jobs:
       - name: Test (macos)
         if: ${{ matrix.check == 'test' && matrix.os == 'macos-latest'}}
         timeout-minutes: 15
-        # macos-latest is by default on openssl 1.x
-        run: make PFX_OPTS="" CERT_OPTS=cert-patch-macos test-all
+        run: make test-macos
       - name: cargo audit
         if: ${{ matrix.check == 'audit' }}
         timeout-minutes: 15
@@ -99,12 +95,11 @@ jobs:
   #          test: mac-wasm
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - name: Install Rust ${{ matrix.rust }} Toolchain
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
           target: wasm32-unknown-unknown
       - uses: cargo-bins/cargo-binstall@main
       - name: Run Wasm Test on Linux

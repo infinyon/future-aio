@@ -61,6 +61,63 @@ mod test_http_client {
         Ok(())
     }
 
+    #[test_async]
+    async fn get_with_header() -> Result<(), Error> {
+        let server_url = https_server_url()?;
+        let uri = format!("{server_url}/test-data/plain.txt");
+        let htreq = http_client::Client::new().get(uri)?.header("foo", "bar");
+        let resp = htreq.send().await?;
+        let body = resp.bytes().await?;
+        let body_str = std::str::from_utf8(&body)?;
+        assert_eq!("plain", body_str);
+        Ok(())
+    }
+
+    #[test_async]
+    async fn get_body_string() -> Result<(), Error> {
+        let server_url = https_server_url()?;
+        let uri = format!("{server_url}/test-data/plain.txt");
+        let htreq = http_client::Client::new().get(uri)?;
+        let resp = htreq.send().await?;
+        let body = resp.body_string().await?;
+        assert_eq!("plain", &body);
+        Ok(())
+    }
+
+    #[test_async]
+    async fn send_get() -> Result<(), Error> {
+        let server_url = https_server_url()?;
+        let failmsg =
+            format!("failed to get http-server, did you install and run it? {server_url}");
+
+        let uri = format!("{server_url}/test-data/plain.txt");
+        let htreq = http::Request::get(&uri).header("foo", "bar").body("")?;
+
+        let resp = http_client::send(htreq).await.expect(&failmsg);
+
+        let body = resp.bytes().await?;
+        let body_str = std::str::from_utf8(&body)?;
+        assert_eq!("plain", body_str);
+        Ok(())
+    }
+
+    #[test_async]
+    async fn send_put() -> Result<(), Error> {
+        let server_url = https_server_url()?;
+        let failmsg =
+            format!("failed to get http-server, did you install and run it? {server_url}");
+
+        let put_txt_content = "dataput";
+        let uri = format!("{server_url}/test-put/put.txt");
+        let htreq = http::Request::put(&uri).body(put_txt_content)?;
+
+        let resp = http_client::send(htreq).await.expect(&failmsg);
+        // expected output from test server PUT, if it request was formtted
+        // and sent this ok for now
+        assert_eq!(resp.status(), http::StatusCode::METHOD_NOT_ALLOWED);
+        Ok(())
+    }
+
     // ignored tests used for live local dev sanity check
     // cargo test live -- --ignored
     #[test_async(ignore)]

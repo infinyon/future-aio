@@ -1,6 +1,7 @@
 RUST_DOCKER_IMAGE=rust:latest
 CERT_OPTS ?=
 PFX_OPTS ?= ""
+CARGO_TEST_OPTS ?= ""
 
 build-all:
 	cargo build --all-features
@@ -22,6 +23,14 @@ run-test-all:
 test-http: certs setup-http-server run-test-http
 run-test-http:
 	TEST_PORT=$$(cat tmp-PORT) cargo test --all-features test_http_client
+	$(MAKE) teardown-http-server
+
+# test all features but just rust_tls option on macos
+test-macos: PFX_OPTS=""
+test-macos: certs cert-patch-macos test-derive setup-http-server run-test-macos
+run-test-macos:
+	TEST_PORT=$$(cat tmp-PORT) cargo test \
+		--features "task,subscriber,fixture,task_unstable,io,sync,future,net,tls,timer,fs, zero_copy, retry, doomsday, http-client, tokio1, http-client-json, __skip-http-client-cert-verification"
 	$(MAKE) teardown-http-server
 
 install-wasm-pack:
@@ -68,8 +77,10 @@ install-wasm32:
 	rustup target add wasm32-unknown-unknown
 
 setup-http-server: certs $(CERT_OPTS)
-	cargo binstall http-server
-	cargo binstall -y portpicker-cli
+# 	cargo binstall -y http-server
+# 	cargo binstall -y portpicker-cli
+	cargo install http-server
+	cargo install portpicker-cli
 	portpicker > tmp-PORT
 	echo Picked port $$(cat tmp-PORT)
 	http-server --tls \

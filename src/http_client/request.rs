@@ -1,11 +1,13 @@
 use std::{fmt, future::Future, pin::Pin};
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{anyhow, Result};
 use futures_util::TryFutureExt;
 use http::{request::Builder, HeaderName, HeaderValue};
 use hyper::{body::Bytes, Body, Response};
+use tracing::debug;
 
 use super::client::Client;
+use super::USER_AGENT;
 
 pub struct RequestBuilder {
     client: Client,
@@ -34,9 +36,10 @@ impl RequestBuilder {
     pub async fn send(self) -> Result<Response<Body>> {
         let req = self
             .req_builder
-            .header(http::header::USER_AGENT, "fluvio-mini-http/0.1")
+            .header(http::header::USER_AGENT, USER_AGENT)
             .body(hyper::Body::empty())
             .map_err(|err| anyhow!("hyper error: {err:?}"))?;
+        debug!(req=?req, "Request");
         self.client
             .hyper
             .request(req)
@@ -52,13 +55,26 @@ pub trait ResponseExt {
     fn bytes(self) -> ResponseExtFuture<Result<Bytes>>;
 
     #[cfg(feature = "http-client-json")]
-    fn json<T: serde::de::DeserializeOwned>(self) -> ResponseExtFuture<Result<T, Error>>
+    fn json<T: serde::de::DeserializeOwned>(self) -> ResponseExtFuture<Result<T>>
     where
         Self: Sized + Send + 'static,
     {
         let fut = async move {
             let bytes = self.bytes().await?;
             serde_json::from_slice(&bytes).map_err(|err| anyhow!("serialization error: {err:?}"))
+        };
+
+        Box::pin(fut)
+    }
+
+    fn body_string(self) -> ResponseExtFuture<Result<String>>
+    where
+        Self: Sized + Send + 'static,
+    {
+        let fut = async move {
+            let body = self.bytes().await?;
+            let body_str = std::str::from_utf8(&body)?;
+            Ok(body_str.to_string())
         };
 
         Box::pin(fut)
