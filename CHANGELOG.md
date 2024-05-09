@@ -1,5 +1,9 @@
 # Release Notes
 
+## Unreleased
+
+* Timer sleeper only fires once ([#258](https://github.com/infinyon/future-aio/pull/258))
+
 ## 0.5.0
 * Move to `memmap2` because `memmap` is unmaintained.
 * Enable `rustls` on `windows`
