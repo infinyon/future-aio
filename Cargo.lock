@@ -456,7 +456,7 @@ dependencies = [
  "anyhow",
  "async-fs",
  "async-io 1.13.0",
- "async-lock 2.8.0",
+ "async-lock 3.3.0",
  "async-native-tls",
  "async-net",
  "async-rustls",
