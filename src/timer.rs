@@ -77,7 +77,8 @@ mod test {
     /// test timer loop
     #[fluvio_future::test]
     async fn test_sleep() {
-        let mut sleep_count: u16 = 0;
+        let mut times_fired: u16 = 0;
+        let mut times_not_fired: u16 = 0;
         let time_now = Instant::now();
 
         let mut sleep_ft = sleep(Duration::from_millis(10));
@@ -86,8 +87,12 @@ mod test {
             select! {
                 _ = &mut sleep_ft => {
                     // fire everytime but won't make cause more delay than initial 10 ms
-                    sleep_count += 1;
+                    times_fired += 1;
                     debug!("timer fired");
+                }
+
+                _ = sleep(Duration::from_millis(40)) => {
+                    times_not_fired += 1;
                 }
             }
         }
@@ -98,6 +103,7 @@ mod test {
 
         assert!(elapsed < Duration::from_millis(1000)); // make this generous to handle slow CI
         assert!(elapsed > Duration::from_millis(10));
-        assert_eq!(sleep_count, 10);
+        assert_eq!(times_fired, 1);
+        assert_eq!(times_not_fired, 9);
     }
 }
