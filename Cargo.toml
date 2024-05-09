@@ -123,7 +123,7 @@ lazy_static = "1.2.0"
 num_cpus = "1.10.1"
 serde = { version = "1.0.189", features = ["derive"] }
 tokio = { version = "1.17.0", features = ["macros"] }
-tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
+tokio-util = { version = "0.7.11", features = ["codec", "compat"] }
 
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.0" }
 fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry", "http-client-json", "__skip-http-client-cert-verification"] }
