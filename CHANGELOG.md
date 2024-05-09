@@ -3,6 +3,15 @@
 ## Unreleased
 
 * Timer sleeper only fires once ([#258](https://github.com/infinyon/future-aio/pull/258))
+* Bump tokio from 1.33.0 to 1.37.0
+* Bump async-lock from 2.8.0 to 3.3.0
+* Bump async-fs from 1.6.0 to 2.1.2 
+* Bump bytes from 1.4.0 to 1.6.0
+* Bump once_cell from 1.18.0 to 1.19.0
+* Bump async-net from 1.7.0 to 2.0.0
+* Bump async-native-tls from 0.4.0 to 0.5.0
+* Bump memmap2 from 0.5.10 to 0.9.3
+* Bump async-io from 1.13.0 to 2.3.2
 
 ## 0.5.0
 * Move to `memmap2` because `memmap` is unmaintained.
