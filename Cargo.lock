@@ -455,7 +455,7 @@ version = "0.6.2"
 dependencies = [
  "anyhow",
  "async-fs",
- "async-io 1.13.0",
+ "async-io 2.3.2",
  "async-lock 3.3.0",
  "async-native-tls",
  "async-net",
