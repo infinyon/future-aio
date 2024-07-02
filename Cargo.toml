@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.6.3"
+version = "0.7.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
@@ -24,7 +24,7 @@ tls = ["rust_tls"]
 rust_tls = [
     "net",
     "rustls-pemfile",
-    "async-rustls",
+    "futures-rustls",
     "pin-project",
     "futures-util/io",
 ]
@@ -68,74 +68,74 @@ __skip-http-client-cert-verification = []
 
 [dependencies]
 anyhow = { version = "1.0" }
-async-trait = { version = "0.1.40", optional = true }
-bytes = { version = "1.6.0", optional = true }
-cfg-if = { version = "1.0.0", optional = true }
-futures-lite = { version = "2.0.0", optional = true }
-futures-util = { version = "0.3.5", optional = true }
-futures-timer = { version = "3.0.0", optional = true }
-http = { version = "0.2.11", optional = true } # same as hyper
-hyper = { version = "0.14", default-features = false, features = ["client", "http1", "http2"], optional = true }
-log = "0.4.0"
-once_cell = { version = "1.19.0", optional = true }
+async-trait = { version = "0.1.80", optional = true }
+bytes = { version = "1.6", optional = true }
+cfg-if = { version = "1.0", optional = true }
+futures-lite = { version = "2.3", optional = true }
+futures-util = { version = "0.3.30", optional = true }
+futures-timer = { version = "3.0", optional = true }
+http = { version = "1.1", optional = true } # same as hyper
+hyper = { version = "1.4", default-features = false, features = ["client", "http1", "http2"], optional = true }
+log = "0.4.22"
+once_cell = { version = "1.19", optional = true }
 pin-utils = { version = "0.1.0", optional = true }
-pin-project = { version = "1.0.8", optional = true }
+pin-project = { version = "1.1", optional = true }
 thiserror = "1.0"
-tokio = { version = "1.37.0", default-features = false, optional = true }
-tracing = { version = "0.1" }
-tracing-subscriber = { version = "0.3", optional = true }
+tokio = { version = "1.38", default-features = false, optional = true }
+tracing = { version = "0.1.40" }
+tracing-subscriber = { version = "0.3.18", optional = true }
 serde = { version = "1.0", optional = true }
 serde_json = { version = "1.0", optional = true }
-webpki-roots = { version = "0.25", optional = true }
+webpki-roots = { version = "0.26.3", optional = true }
 
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.1", optional = true }
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 async-native-tls = { version = "0.5.0", optional = true }
-async-fs = { version = "2.1.2", optional = true }
-async-io = { version = "1.1.2", optional = true }
-async-net = { version = "2.0.0", optional = true }
-async-rustls = { version = "0.4.1", features = ["dangerous_configuration"], optional = true }
-async-std = { version = "1.12.0", default-features = false, optional = true }
-memmap2 = { version = "0.9", optional = true }
-native-tls = { version = "0.2.4", optional = true }
+async-fs = { version = "2.1", optional = true }
+async-io = { version = "2.3", optional = true }
+async-net = { version = "2.0", optional = true }
+async-std = { version = "1.12", default-features = false, optional = true }
+futures-rustls = { version = "0.26.0", optional = true }
+memmap2 = { version = "0.9.4", optional = true }
+native-tls = { version = "0.2.12", optional = true }
 openssl = { version = "0.10.64", optional = true }
 openssl-sys = { version = "0.9.102", optional = true, features = ["vendored"]}
-nix = { version = "0.26.0", optional = true }
-rustls-pemfile = { version = "1.0.0", optional = true }
-socket2 = { version = "0.5.3", default-features = false, features = ["all"], optional = true }
+nix = { version = "0.29.0", optional = true }
+rustls-pemfile = { version = "2.1", optional = true }
+socket2 = { version = "0.5.7", default-features = false, features = ["all"], optional = true }
 
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-async-std = { version = "1.12.0", default-features = false, features = ["unstable"], optional = true }
-ws_stream_wasm = "0.7.3"
+async-std = { version = "1.12", default-features = false, features = ["unstable"], optional = true }
+ws_stream_wasm = "0.7.4"
 
 fluvio-wasm-timer = "0.2.5"
 
 
 [dev-dependencies]
-async-lock = "3.3.0"
-async-std = { version = "1.12.0", features = ["attributes"] }
-bytes = "1.6.0"
-futures-util = { version = "0.3.5", features = ["sink", "io"] }
-lazy_static = "1.2.0"
-num_cpus = "1.10.1"
-serde = { version = "1.0.189", features = ["derive"] }
-tokio = { version = "1.37.0", features = ["macros"] }
-tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
+async-lock = "3.4"
+async-std = { version = "1.12", features = ["attributes"] }
+bytes = "1.6"
+futures-util = { version = "0.3.30", features = ["sink", "io"] }
+lazy_static = "1.5"
+num_cpus = "1.16"
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.38", features = ["macros"] }
+tokio-util = { version = "0.7.11", features = ["codec", "compat"] }
 
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.0" }
 fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry", "http-client-json", "__skip-http-client-cert-verification"] }
-flv-util = { version = "0.5.0", features = ["fixture"] }
+flv-util = { version = "0.5.2", features = ["fixture"] }
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 portpicker = "0.1.1"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
-tracing-wasm = "0.2.0"
-wasm-bindgen-futures = "0.4.24"
-wasm-bindgen-test = "0.3.24"
+tracing-wasm = "0.2.1"
+wasm-bindgen-futures = "0.4.42"
+wasm-bindgen-test = "0.3.42"
 
 
