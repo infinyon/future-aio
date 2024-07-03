@@ -70,9 +70,16 @@ impl ZeroCopy {
                         target_fd
                     );
 
+                    let target_ofd = unsafe {
+                        <std::os::fd::OwnedFd as std::os::fd::FromRawFd>::from_raw_fd(target_fd)
+                    };
+                    let source_ofd = unsafe {
+                        <std::os::fd::OwnedFd as std::os::fd::FromRawFd>::from_raw_fd(source_fd)
+                    };
+
                     match sendfile(
-                        target_fd,
-                        source_fd,
+                        target_ofd,
+                        source_ofd,
                         Some(&mut current_offset),
                         to_be_transfer,
                     ) {

@@ -26,6 +26,7 @@ impl MemoryMappedMutFile {
                 .read(true)
                 .write(true)
                 .create(true)
+                .truncate(false)
                 .open(inner_path)
                 .unwrap();
 

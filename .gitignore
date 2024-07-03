@@ -4,4 +4,5 @@ target/
 .docker-cargo
 target-docker
 .vscode/tasks.json
+.vscode/settings.json
 .idea/
