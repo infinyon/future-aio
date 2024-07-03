@@ -145,6 +145,13 @@ impl ZeroCopy {
                         target_fd
                     );
 
+                    let target_ofd = unsafe {
+                        <std::os::fd::OwnedFd as std::os::fd::FromRawFd>::from_raw_fd(target_fd)
+                    };
+                    let source_ofd = unsafe {
+                        <std::os::fd::OwnedFd as std::os::fd::FromRawFd>::from_raw_fd(source_fd)
+                    };
+                    
                     let (res, bytes_transferred) = sendfile(
                         source_fd,
                         target_fd,
