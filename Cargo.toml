@@ -50,8 +50,6 @@ mmap = ["fs", "memmap2", "task_unstable"]
 retry = []
 doomsday = ["task", "sync"]
 tokio1 = ["async-std/tokio1"]
-# useful for tests
-__skip-http-client-cert-verification = []
 
 [dependencies]
 anyhow = { version = "1.0" }
