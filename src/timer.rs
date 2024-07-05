@@ -14,18 +14,31 @@ mod inner {
 
     /// same as `after` but return () to make it compatible as previous
     pub fn sleep(duration: Duration) -> Sleeper {
-        Sleeper(after(duration))
+        Sleeper {
+            timer: after(duration),
+            has_fired: false,
+        }
     }
 
     #[pin_project]
-    pub struct Sleeper(#[pin] Timer);
+    pub struct Sleeper {
+        #[pin]
+        timer: Timer,
+        has_fired: bool,
+    }
 
     impl Future for Sleeper {
         type Output = ();
 
         fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
             let this = self.project();
-            if this.0.poll(cx).is_ready() {
+
+            if *this.has_fired {
+                return Poll::Ready(());
+            }
+
+            if this.timer.poll(cx).is_ready() {
+                *this.has_fired = true;
                 Poll::Ready(())
             } else {
                 Poll::Pending
