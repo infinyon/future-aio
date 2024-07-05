@@ -49,44 +49,24 @@ zero_copy = ["nix", "task_unstable"]
 mmap = ["fs", "memmap2", "task_unstable"]
 retry = []
 doomsday = ["task", "sync"]
-http-client = [
-    "rust_tls",
-    "async-std/default",
-    "dep:bytes",
-    "dep:http",
-    "dep:hyper",
-    "dep:serde",
-    "dep:serde_json",
-    "dep:tokio",
-    "dep:once_cell",
-    "dep:webpki-roots",
-]
 tokio1 = ["async-std/tokio1"]
-http-client-json = ["http-client"]
 # useful for tests
 __skip-http-client-cert-verification = []
 
 [dependencies]
 anyhow = { version = "1.0" }
 async-trait = { version = "0.1.80", optional = true }
-bytes = { version = "1.6", optional = true }
 cfg-if = { version = "1.0", optional = true }
 futures-lite = { version = "2.3", optional = true }
 futures-util = { version = "0.3.30", optional = true }
 futures-timer = { version = "3.0", optional = true }
-http = { version = "1.1", optional = true } # same as hyper
-hyper = { version = "1.4", default-features = false, features = ["client", "http1", "http2"], optional = true }
 log = "0.4.22"
-once_cell = { version = "1.19", optional = true }
 pin-utils = { version = "0.1.0", optional = true }
 pin-project = { version = "1.1", optional = true }
 thiserror = "1.0"
 tokio = { version = "1.38", default-features = false, optional = true }
 tracing = { version = "0.1.40" }
 tracing-subscriber = { version = "0.3.18", optional = true }
-serde = { version = "1.0", optional = true }
-serde_json = { version = "1.0", optional = true }
-webpki-roots = { version = "0.26.3", optional = true }
 
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.1", optional = true }
 
@@ -126,7 +106,7 @@ tokio = { version = "1.38", features = ["macros"] }
 tokio-util = { version = "0.7.11", features = ["codec", "compat"] }
 
 fluvio-test-derive = { path = "async-test-derive", version = "0.1.0" }
-fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry", "http-client-json", "__skip-http-client-cert-verification"] }
+fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
 
 
