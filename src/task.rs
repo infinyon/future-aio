@@ -1,11 +1,8 @@
 use std::future::Future;
 
-use async_std::task;
-
 use crate::timer::sleep;
 
-#[cfg(feature = "task_unstable")]
-pub use async_std::task::spawn_local;
+pub use async_global_executor::spawn_local;
 
 /// run future and wait forever
 /// this is typically used in the server
@@ -13,7 +10,7 @@ pub fn run<F>(spawn_closure: F)
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    task::block_on(spawn_closure);
+    async_global_executor::block_on(spawn_closure);
 }
 
 /// run future and wait forever
@@ -24,7 +21,7 @@ where
 {
     use std::time::Duration;
 
-    task::block_on(async {
+    async_global_executor::block_on(async {
         spawn_closure.await;
         // do infinite loop for now
         loop {
@@ -41,15 +38,14 @@ where
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
-        pub use async_std::task::spawn_local as spawn;
+        pub use async_global_executor::spawn_local as spawn;
     } else {
-        pub use async_std::task::spawn;
+        pub use async_global_executor::spawn;
     }
 }
 
-#[cfg(feature = "task_unstable")]
 #[cfg(not(target_arch = "wasm32"))]
-pub use async_std::task::spawn_blocking;
+pub use async_global_executor::spawn_blocking;
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
@@ -58,14 +54,14 @@ cfg_if::cfg_if! {
                 F: Future<Output = T> + 'static,
                 T: 'static,
             {
-                task::block_on(f)
+                block_on(f)
             }
     } else {
-        pub use async_std::task::block_on as run_block_on;
+        pub use async_global_executor::block_on as run_block_on;
     }
 }
 
-pub use async_std::task::JoinHandle;
+pub use async_global_executor::Task;
 
 #[cfg(test)]
 mod basic_test {
@@ -133,8 +129,8 @@ mod basic_test {
         let core_threads = num_cpus::get().max(1);
         debug!("num threads: {}", core_threads);
 
-        spawn(ft1);
-        spawn(ft2);
+        spawn(ft1).detach();
+        spawn(ft2).detach();
         // wait for all futures complete
         thread::sleep(time::Duration::from_millis(2000));
 

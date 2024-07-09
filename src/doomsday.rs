@@ -10,11 +10,7 @@ use log::info;
 use tracing::{debug, error};
 
 use crate::sync::Mutex;
-#[deprecated(
-    since = "0.5.1",
-    note = "please use `fluvio_future::task::JoinHandle` instead"
-)]
-pub use crate::task::JoinHandle;
+use crate::task::Task;
 
 #[derive(Clone)]
 /// DoomsdayTimer will configurably panic or exit if it is not
@@ -45,7 +41,7 @@ impl DoomsdayTimer {
     /// Spawn a new doomsday timer.
     /// If `exit_on_explode` is true, it will terminate process with `exit(1)` if it explodes.
     /// Otherwise it will call `panic()`. Note that `awaiting` on the jh will panic if the `DoomsdayTimer` panicked
-    pub fn spawn(duration: Duration, exit_on_explode: bool) -> (Self, JoinHandle<()>) {
+    pub fn spawn(duration: Duration, exit_on_explode: bool) -> (Self, Task<()>) {
         let s = Self {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
             duration,
@@ -117,11 +113,10 @@ mod tests {
     use std::io::Error;
 
     #[test_async(should_panic)]
-    async fn test_explode() -> Result<(), Error> {
+    async fn test_explode() {
         let (_, jh) = DoomsdayTimer::spawn(Duration::from_millis(1), false);
         crate::timer::sleep(Duration::from_millis(2)).await;
         jh.await;
-        Ok(())
     }
 
     #[test_async]

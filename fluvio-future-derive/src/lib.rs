@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::{quote, quote_spanned};
-use syn::spanned::Spanned;
+use syn::{spanned::Spanned, AttributeArgs};
 
 
 #[proc_macro_attribute]
@@ -47,9 +47,11 @@ pub fn main_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[proc_macro_attribute]
-pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(item as syn::ItemFn);
+pub fn test_async(args: TokenStream, item: TokenStream) -> TokenStream {
+    let attribute_args = syn::parse_macro_input!(args as AttributeArgs);
+    let test_attributes = generate::generate_test_attributes(&attribute_args);
 
+    let input = syn::parse_macro_input!(item as syn::ItemFn);
     let ret = &input.sig.output;
     let name = &input.sig.ident;
     let body = &input.block;
@@ -64,6 +66,7 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let result = quote! {
         #[::core::prelude::v1::test]
+        #test_attributes
         #(#attrs)*
         #vis fn #name() #ret {
             ::fluvio_future::subscriber::init_logger();
@@ -73,4 +76,25 @@ pub fn test_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     result.into()
+}
+
+mod generate {
+
+    use proc_macro2::TokenStream;
+    use quote::quote;
+    use syn::NestedMeta;
+
+    pub fn generate_test_attributes(attributes: &Vec<NestedMeta>) -> TokenStream {
+        let args = attributes.iter().map(|meta| {
+            quote! {
+                #[#meta]
+            }
+        });
+
+        quote! {
+
+            #(#args)*
+
+        }
+    }
 }

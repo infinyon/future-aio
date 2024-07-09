@@ -85,8 +85,8 @@ mod test {
     use log::debug;
     use tokio::select;
 
-    use crate::timer::sleep;
     use crate::test_async;
+    use crate::timer::sleep;
 
     /// test timer loop
     #[test_async]

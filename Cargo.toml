@@ -12,11 +12,10 @@ resolver = "2"
 all-features = true
 
 [features]
-task = ["async-std/default", "timer", "cfg-if"]
+task = ["async-global-executor", "timer", "cfg-if"]
 subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
-task_unstable = ["task", "async-std/unstable"]
-io = ["async-std/default"]
+io = ["async-io", "async-global-executor/async-io"]
 sync = ["async-std/default"]
 future = ["async-std/default"]
 net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io", "socket2"]
@@ -28,11 +27,11 @@ rust_tls = [
     "pin-project",
     "futures-util/io",
 ]
-native2_tls = [
+native_tls = [
     "net",
     "pin-project",
     "async-native-tls",
-    "native-tls",
+    "dep:native-tls",
     "openssl/vendored",
     "futures-util/io",
 ]
@@ -45,8 +44,8 @@ openssl_tls = [
 ]
 timer = ["async-io", "pin-project", "futures-lite"]
 fs = ["async-fs", "futures-lite", "pin-utils", "async-trait"]
-zero_copy = ["nix", "task_unstable"]
-mmap = ["fs", "memmap2", "task_unstable"]
+zero_copy = ["nix", "task"]
+mmap = ["fs", "memmap2", "task"]
 retry = []
 doomsday = ["task", "sync"]
 tokio1 = ["async-std/tokio1"]
@@ -54,6 +53,7 @@ attributes = []
 
 [dependencies]
 anyhow = { version = "1.0" }
+async-global-executor = { version = "2.4.1", default-features = false, optional = true }
 async-trait = { version = "0.1.80", optional = true }
 cfg-if = { version = "1.0", optional = true }
 futures-lite = { version = "2.3", optional = true }

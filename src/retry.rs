@@ -371,10 +371,10 @@ mod delay {
 #[cfg(test)]
 mod test {
     use super::*;
+    use fluvio_future_derive::test_async;
     use std::io::ErrorKind;
     use std::ops::AddAssign;
     use std::time::Duration;
-    use fluvio_future_derive::test_async;
     use tracing::debug;
 
     #[test_async]

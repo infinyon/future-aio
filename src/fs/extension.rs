@@ -88,14 +88,13 @@ mod tests {
     use std::io::SeekFrom;
     use std::io::Write;
 
-    use async_std::io::prelude::SeekExt;
-
     use flv_util::fixture::ensure_clean_file;
 
     use super::AsyncFileExtension;
     use crate::fs::util as file_util;
     use crate::test_async;
     use futures_lite::AsyncReadExt;
+    use futures_lite::AsyncSeekExt;
     use futures_lite::AsyncWriteExt;
 
     // sync seek write and read

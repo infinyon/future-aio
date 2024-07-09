@@ -1,2 +1,1 @@
-pub use async_std::io::*;
-pub use async_std::prelude::*;
+pub use async_io::*;

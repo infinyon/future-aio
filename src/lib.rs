@@ -32,13 +32,13 @@ pub mod net;
 #[cfg(all(any(unix, windows), feature = "rust_tls"))]
 pub mod rust_tls;
 
-#[cfg(all(any(unix, windows), feature = "rust_tls", not(feature = "native2_tls")))]
+#[cfg(all(any(unix, windows), feature = "rust_tls", not(feature = "native_tls")))]
 pub use rust_tls as tls;
 
-#[cfg(all(any(unix, windows), feature = "native2_tls"))]
+#[cfg(all(any(unix, windows), feature = "native_tls"))]
 pub mod native_tls;
 
-#[cfg(all(any(unix, windows), feature = "native2_tls", not(feature = "rust_tls")))]
+#[cfg(all(any(unix, windows), feature = "native_tls", not(feature = "rust_tls")))]
 pub use crate::native_tls as tls;
 
 #[cfg(feature = "openssl_tls")]
@@ -71,9 +71,8 @@ pub mod subscriber {
 #[cfg(feature = "doomsday")]
 pub mod doomsday;
 
-#[cfg(any(feature = "attributes"))]
+#[cfg(feature = "attributes")]
 pub use fluvio_future_derive::main_async;
-
 
 /// re-export tracing
 pub mod tracing {

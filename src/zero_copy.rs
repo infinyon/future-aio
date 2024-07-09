@@ -75,8 +75,8 @@ impl ZeroCopy {
                     );
 
                     match sendfile(
-                        &target_fd,
-                        &source_fd,
+                        target_fd,
+                        source_fd,
                         Some(&mut current_offset),
                         to_be_transfer,
                     ) {
@@ -206,9 +206,9 @@ mod tests {
     use crate::fs::AsyncFileExtension;
     use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;
+    use crate::test_async;
     use crate::timer::sleep;
     use crate::{fs::util as file_util, zero_copy::ZeroCopy};
-    use crate::test_async;
     use futures_lite::AsyncReadExt;
 
     use super::SendFileError;
