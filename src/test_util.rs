@@ -42,12 +42,12 @@ mod test {
         Ok(())
     }
 
-    #[fluvio_future::test]
+    #[test_async]
     async fn simple_test() {
         assert_eq!(1, "x".len());
     }
 
-    #[fluvio_future::test(ignore)]
+    #[test_async(ignore)]
     async fn simple_test_ignore() {
         assert_eq!(1, "x".len());
     }

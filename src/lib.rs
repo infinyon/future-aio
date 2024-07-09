@@ -21,10 +21,7 @@ pub mod retry;
 mod test_util;
 
 #[cfg(any(test, feature = "fixture"))]
-pub use fluvio_test_derive::test_async;
-
-#[cfg(any(test, feature = "fixture"))]
-pub use fluvio_test_derive::test;
+pub use fluvio_future_derive::test_async;
 
 #[cfg(all(unix, feature = "zero_copy"))]
 pub mod zero_copy;
@@ -73,6 +70,10 @@ pub mod subscriber {
 
 #[cfg(feature = "doomsday")]
 pub mod doomsday;
+
+#[cfg(any(feature = "attributes"))]
+pub use fluvio_future_derive::main_async;
+
 
 /// re-export tracing
 pub mod tracing {

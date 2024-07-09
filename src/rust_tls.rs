@@ -494,8 +494,8 @@ mod test {
 
     use fluvio_future::net::tcp_stream::stream;
     use fluvio_future::net::TcpListener;
-    use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
+    use fluvio_future::test_async;
 
     use super::{AcceptorBuilder, ConnectorBuilder};
 

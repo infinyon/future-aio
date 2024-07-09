@@ -85,10 +85,11 @@ mod test {
     use log::debug;
     use tokio::select;
 
-    use fluvio_future::timer::sleep;
+    use crate::timer::sleep;
+    use crate::test_async;
 
     /// test timer loop
-    #[fluvio_future::test]
+    #[test_async]
     async fn test_sleep() {
         let mut sleep_count: u16 = 0;
         let time_now = Instant::now();

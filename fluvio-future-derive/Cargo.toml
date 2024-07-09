@@ -1,12 +1,13 @@
 [package]
-name = "fluvio-test-derive"
-version = "0.1.1"
+name = "fluvio-future-derive"
+version = "0.1.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Procedure macro to run async fn as test"
-repository = "https://github.com/infinyon/flv-future"
+repository = "https://github.com/infinyon/future-aio"
 license = "Apache-2.0"
 readme = "README.md"
+resolver = "2"
 
 [lib]
 proc-macro = true

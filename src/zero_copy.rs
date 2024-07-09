@@ -208,11 +208,12 @@ mod tests {
     use crate::net::TcpListener;
     use crate::timer::sleep;
     use crate::{fs::util as file_util, zero_copy::ZeroCopy};
+    use crate::test_async;
     use futures_lite::AsyncReadExt;
 
     use super::SendFileError;
 
-    #[fluvio_future::test]
+    #[test_async]
     async fn test_zero_copy_simple() {
         let port = portpicker::pick_unused_port().expect("No free ports left");
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
@@ -256,7 +257,7 @@ mod tests {
         let _ = zip(client, server).await;
     }
 
-    #[fluvio_future::test]
+    #[test_async]
     async fn test_zero_copy_large_size() {
         const MAX_BYTES: usize = 3000000;
 
@@ -356,7 +357,7 @@ mod tests {
     }
 
     /// test zero copy when len is too large
-    #[fluvio_future::test]
+    #[test_async]
     async fn test_zero_copy_large_slace() {
         let port = portpicker::pick_unused_port().expect("No free ports left");
         let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
