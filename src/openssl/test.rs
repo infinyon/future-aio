@@ -8,10 +8,10 @@ use bytes::BytesMut;
 use futures_lite::future::zip;
 use futures_lite::stream::StreamExt;
 use futures_util::SinkExt;
-use log::debug;
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
+use tracing::debug;
 
 use crate::net::{tcp_stream::stream, TcpListener};
 use crate::test_async;

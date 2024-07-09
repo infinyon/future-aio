@@ -1,1 +1,1 @@
-pub use async_std::sync::*;
+pub use async_lock::*;

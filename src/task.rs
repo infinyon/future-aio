@@ -71,7 +71,7 @@ mod basic_test {
     use std::time;
 
     use futures_lite::future::zip;
-    use log::debug;
+    use tracing::debug;
 
     use crate::task::spawn;
     use crate::test_async;

@@ -13,12 +13,23 @@ all-features = true
 
 [features]
 task = ["async-global-executor", "timer", "cfg-if"]
-subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
+subscriber = [
+    "tracing-subscriber",
+    "tracing-subscriber/std",
+    "tracing-subscriber/env-filter",
+]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
 io = ["async-io", "async-global-executor/async-io"]
-sync = ["async-std/default"]
-future = ["async-std/default"]
-net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io", "socket2"]
+sync = ["async-lock"]
+future = ["async-io", "pin-project"]
+net = [
+    "futures-lite",
+    "async-net",
+    "async-trait",
+    "cfg-if",
+    "futures-util/io",
+    "socket2",
+]
 tls = ["rust_tls"]
 rust_tls = [
     "net",
@@ -48,66 +59,56 @@ zero_copy = ["nix", "task"]
 mmap = ["fs", "memmap2", "task"]
 retry = []
 doomsday = ["task", "sync"]
-tokio1 = ["async-std/tokio1"]
+tokio1 = ["async-global-executor/tokio"]
 attributes = []
+
 
 [dependencies]
 anyhow = { version = "1.0" }
 async-global-executor = { version = "2.4.1", default-features = false, optional = true }
 async-trait = { version = "0.1.80", optional = true }
 cfg-if = { version = "1.0", optional = true }
+fluvio-future-derive = { path = "fluvio-future-derive", version = "0.1.0", optional = true }
 futures-lite = { version = "2.3", optional = true }
 futures-util = { version = "0.3.30", optional = true }
-futures-timer = { version = "3.0", optional = true }
-log = "0.4.22"
-pin-utils = { version = "0.1.0", optional = true }
 pin-project = { version = "1.1", optional = true }
+pin-utils = { version = "0.1.0", optional = true }
 thiserror = "1.0"
 tokio = { version = "1.38", default-features = false, optional = true }
 tracing = { version = "0.1.40" }
 tracing-subscriber = { version = "0.3.18", optional = true }
 
-fluvio-future-derive = { path = "fluvio-future-derive", version = "0.1.0", optional = true }
-
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-async-native-tls = { version = "0.5.0", optional = true }
 async-fs = { version = "2.1", optional = true }
-async-io = { version = "2.3.3", optional = true }
+async-io = { version = "2.3", optional = true }
+async-lock = { version = "3.4", optional = true }
+async-native-tls = { version = "0.5.0", optional = true }
 async-net = { version = "2.0", optional = true }
-async-std = { version = "1.12", default-features = false, optional = true }
 futures-rustls = { version = "0.26.0", optional = true }
 memmap2 = { version = "0.9.4", optional = true }
 native-tls = { version = "0.2.12", optional = true }
+nix = { version = "0.29.0", optional = true, features = ["zerocopy"] }
 openssl = { version = "0.10.64", optional = true }
 openssl-sys = { version = "0.9.102", optional = true, features = ["vendored"] }
-nix = { version = "0.29.0", optional = true, features = ["zerocopy"] }
 rustls-pemfile = { version = "2.1", optional = true }
 socket2 = { version = "0.5.7", default-features = false, features = ["all"], optional = true }
 
-
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-async-std = { version = "1.12", default-features = false, features = ["unstable"], optional = true }
-ws_stream_wasm = "0.7.4"
-
 fluvio-wasm-timer = "0.2.5"
+ws_stream_wasm = "0.7.4"
 
 
 [dev-dependencies]
-async-lock = "3.4"
-async-std = { version = "1.12", features = ["attributes"] }
 bytes = "1.6"
+fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry"] }
+fluvio-future-derive = { path = "fluvio-future-derive", version = "0.1.0" }
+flv-util = { version = "0.5.2", features = ["fixture"] }
 futures-util = { version = "0.3.30", features = ["sink", "io"] }
 lazy_static = "1.5"
 num_cpus = "1.16"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.38", features = ["macros"] }
 tokio-util = { version = "0.7.11", features = ["codec", "compat"] }
-
-fluvio-future-derive = { path = "fluvio-future-derive", version = "0.1.0" }
-fluvio-future = { path = ".", features = ["net", "fixture", "timer", "fs", "retry"] }
-flv-util = { version = "0.5.2", features = ["fixture"] }
-
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 portpicker = "0.1.1"
@@ -116,5 +117,3 @@ portpicker = "0.1.1"
 tracing-wasm = "0.2.1"
 wasm-bindgen-futures = "0.4.42"
 wasm-bindgen-test = "0.3.42"
-
-

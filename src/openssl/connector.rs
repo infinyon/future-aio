@@ -4,9 +4,9 @@ use std::path::Path;
 
 use async_trait::async_trait;
 use futures_lite::io::{AsyncRead, AsyncWrite};
-use log::debug;
 use openssl::ssl;
 use openssl::x509::verify::X509VerifyFlags;
+use tracing::debug;
 
 use crate::net::{
     tcp_stream::{stream, stream_with_opts, SocketOpts},

@@ -117,7 +117,7 @@ mod connector {
 
     use async_trait::async_trait;
     use futures_rustls::rustls::pki_types::ServerName;
-    use log::debug;
+    use tracing::debug;
 
     use crate::net::{
         tcp_stream::stream, AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd,
@@ -248,6 +248,8 @@ mod builder {
     use futures_rustls::rustls::WantsVerifier;
     use futures_rustls::TlsAcceptor;
     use futures_rustls::TlsConnector;
+
+    use tracing::debug;
 
     use super::load_root_ca;
     use super::{load_certs, load_first_key_from_reader};
@@ -428,7 +430,7 @@ mod builder {
             _ocsp_response: &[u8],
             _now: UnixTime,
         ) -> Result<ServerCertVerified, TlsError> {
-            log::debug!("ignoring server cert");
+            debug!("ignoring server cert");
             Ok(ServerCertVerified::assertion())
         }
 
@@ -438,7 +440,7 @@ mod builder {
             _cert: &CertificateDer<'_>,
             _dss: &futures_rustls::rustls::DigitallySignedStruct,
         ) -> Result<HandshakeSignatureValid, TlsError> {
-            log::debug!("ignoring server cert");
+            debug!("ignoring server cert");
             Ok(HandshakeSignatureValid::assertion())
         }
 
@@ -448,7 +450,7 @@ mod builder {
             _cert: &CertificateDer<'_>,
             _dss: &futures_rustls::rustls::DigitallySignedStruct,
         ) -> Result<HandshakeSignatureValid, TlsError> {
-            log::debug!("ignoring server cert");
+            debug!("ignoring server cert");
             Ok(HandshakeSignatureValid::assertion())
         }
 
@@ -476,10 +478,10 @@ mod test {
     use futures_rustls::TlsAcceptor;
     use futures_rustls::TlsConnector;
     use futures_util::sink::SinkExt;
-    use log::debug;
     use tokio_util::codec::BytesCodec;
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
+    use tracing::debug;
 
     use fluvio_future::net::tcp_stream::stream;
     use fluvio_future::net::TcpListener;

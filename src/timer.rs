@@ -82,8 +82,8 @@ mod test {
     use std::time::Duration;
     use std::time::Instant;
 
-    use log::debug;
     use tokio::select;
+    use tracing::debug;
 
     use crate::test_async;
     use crate::timer::sleep;

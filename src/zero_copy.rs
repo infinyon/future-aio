@@ -9,8 +9,7 @@ use nix::libc::off_t;
 use nix::sys::sendfile::sendfile;
 use nix::Error as NixError;
 
-use log::debug;
-use log::trace;
+use tracing::{debug, error, trace};
 
 use crate::task::spawn_blocking;
 
@@ -113,7 +112,7 @@ impl ZeroCopy {
                                 sleep(std::time::Duration::from_millis(10));
                             }
                             _ => {
-                                log::error!("error sendfile: {}", err);
+                                error!("error sendfile: {}", err);
                                 return Err(err.into());
                             }
                         },
@@ -179,7 +178,7 @@ impl ZeroCopy {
                                 debug!("EAGAIN, try again");
                                 sleep(std::time::Duration::from_millis(10));
                             } else {
-                                log::error!("error sendfile: {}", err);
+                                error!("error sendfile: {}", err);
                                 return Err(err.into());
                             }
                         }
@@ -200,7 +199,7 @@ mod tests {
 
     use futures_lite::future::zip;
     use futures_util::stream::StreamExt;
-    use log::debug;
+    use tracing::debug;
 
     use crate::file_slice::AsyncFileSlice;
     use crate::fs::AsyncFileExtension;

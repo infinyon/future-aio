@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use std::fmt;
 
-use log::trace;
+use tracing::trace;
 
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
@@ -190,7 +190,7 @@ mod tests {
     use std::io::SeekFrom;
     use std::path::Path;
 
-    use log::debug;
+    use tracing::debug;
 
     use crate::test_async;
     use futures_lite::AsyncReadExt;

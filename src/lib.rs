@@ -49,6 +49,7 @@ pub mod openssl;
 pub mod sync;
 
 #[cfg(feature = "future")]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod future;
 
 #[cfg(feature = "subscriber")]

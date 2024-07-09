@@ -36,7 +36,7 @@ mod connector {
 
     use async_native_tls::Error as NativeTlsError;
     use async_trait::async_trait;
-    use log::debug;
+    use tracing::debug;
 
     use crate::net::{
         tcp_stream::{stream, stream_with_opts, SocketOpts},
@@ -434,10 +434,10 @@ mod test {
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
     use futures_util::sink::SinkExt;
-    use log::debug;
     use tokio_util::codec::BytesCodec;
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
+    use tracing::debug;
 
     use crate::net::certs::CertBuilder;
     use crate::net::tcp_stream::stream;

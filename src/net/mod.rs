@@ -93,7 +93,7 @@ pub mod certs {
     use std::io::Error as IoError;
     use std::path::Path;
 
-    use log::debug;
+    use tracing::debug;
 
     pub trait CertBuilder: Sized {
         fn new(bytes: Vec<u8>) -> Self;
@@ -155,7 +155,7 @@ mod unix_connector {
     use std::io::Error as IoError;
 
     use async_trait::async_trait;
-    use log::debug;
+    use tracing::debug;
 
     use super::tcp_stream::stream;
 
@@ -208,7 +208,7 @@ mod test {
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
     use futures_util::AsyncReadExt;
-    use log::debug;
+    use tracing::debug;
 
     use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;

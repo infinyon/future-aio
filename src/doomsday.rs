@@ -6,8 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use log::info;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use crate::sync::Mutex;
 use crate::task::Task;
