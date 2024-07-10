@@ -12,14 +12,15 @@ resolver = "2"
 all-features = true
 
 [features]
-task = ["async-global-executor", "timer", "cfg-if"]
+task = ["async-std/default", "timer", "cfg-if"]
 subscriber = [
     "tracing-subscriber",
     "tracing-subscriber/std",
     "tracing-subscriber/env-filter",
 ]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
-io = ["async-io", "async-global-executor/async-io"]
+task_unstable = ["task", "async-std/unstable"]
+io = ["async-io"]
 sync = ["async-lock"]
 future = ["async-io", "pin-project"]
 net = [
@@ -29,6 +30,7 @@ net = [
     "cfg-if",
     "futures-util/io",
     "socket2",
+    "ws_stream_wasm"
 ]
 tls = ["rust_tls"]
 rust_tls = [
@@ -53,20 +55,19 @@ openssl_tls = [
     "pin-project",
     "futures-util/io",
 ]
-timer = ["async-io", "pin-project", "futures-lite"]
+timer = ["async-io", "pin-project", "futures-lite", "fluvio-wasm-timer"]
 fs = ["async-fs", "futures-lite", "pin-utils", "async-trait"]
-zero_copy = ["nix", "task"]
-mmap = ["fs", "memmap2", "task"]
+zero_copy = ["nix", "task_unstable"]
+mmap = ["fs", "memmap2", "task_unstable"]
 retry = []
 doomsday = ["task", "sync"]
-tokio1 = ["async-global-executor/tokio"]
+tokio1 = ["async-std/tokio1"]
 attributes = []
-
 
 [dependencies]
 anyhow = { version = "1.0" }
-async-global-executor = { version = "2.4.1", default-features = false, optional = true }
 async-trait = { version = "0.1.80", optional = true }
+async-std = { version = "1.12", default-features = false, optional = true }
 cfg-if = { version = "1.0", optional = true }
 fluvio-future-derive = { path = "fluvio-future-derive", version = "0.1.0", optional = true }
 futures-lite = { version = "2.3", optional = true }
@@ -94,8 +95,8 @@ rustls-pemfile = { version = "2.1", optional = true }
 socket2 = { version = "0.5.7", default-features = false, features = ["all"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-fluvio-wasm-timer = "0.2.5"
-ws_stream_wasm = "0.7.4"
+fluvio-wasm-timer = { version = "0.2.5", optional = true }
+ws_stream_wasm = { version = "0.7.4", optional = true }
 
 
 [dev-dependencies]

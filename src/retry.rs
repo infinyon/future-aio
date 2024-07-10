@@ -371,13 +371,12 @@ mod delay {
 #[cfg(test)]
 mod test {
     use super::*;
-    use fluvio_future_derive::test_async;
     use std::io::ErrorKind;
     use std::ops::AddAssign;
     use std::time::Duration;
     use tracing::debug;
 
-    #[test_async]
+    #[fluvio_future::test]
     async fn test_fixed_retries_no_delay() {
         let mut executed_retries = 0u8;
         let operation = || {
@@ -394,7 +393,7 @@ mod test {
         assert_eq!(executed_retries, 3);
     }
 
-    #[test_async]
+    #[fluvio_future::test]
     async fn test_fixed_retries_timeout() {
         let mut executed_retries = 0u8;
         let operation = || {
@@ -413,7 +412,7 @@ mod test {
         assert!(executed_retries < 10);
     }
 
-    #[test_async]
+    #[fluvio_future::test]
     async fn test_fixed_retries_not_retryable() {
         let mut executed_retries = 0u8;
         let operation = || {
@@ -431,7 +430,7 @@ mod test {
         assert_eq!(executed_retries, 1);
     }
 
-    #[test_async]
+    #[fluvio_future::test]
     async fn test_conditional_retry() {
         let mut executed_retries = 0u8;
         let operation = || {

@@ -10,7 +10,7 @@ macro_rules! assert_async_block {
             Err(err) => assert!(false, "error {:?}", err),
         }
         #[cfg(target_arch = "wasm32")]
-        fluvio_future::task::run_block_on(ft);
+        fluvio_future::task::run_block_on(ft)
     }};
 }
 
@@ -42,12 +42,12 @@ mod test {
         Ok(())
     }
 
-    #[test_async]
+    #[fluvio_future::test]
     async fn simple_test() {
         assert_eq!(1, "x".len());
     }
 
-    #[test_async(ignore)]
+    #[fluvio_future::test(ignore)]
     async fn simple_test_ignore() {
         assert_eq!(1, "x".len());
     }

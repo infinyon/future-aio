@@ -85,11 +85,10 @@ mod test {
     use tokio::select;
     use tracing::debug;
 
-    use crate::test_async;
     use crate::timer::sleep;
 
     /// test timer loop
-    #[test_async]
+    #[fluvio_future::test]
     async fn test_sleep() {
         let mut sleep_count: u16 = 0;
         let time_now = Instant::now();

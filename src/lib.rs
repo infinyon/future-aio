@@ -1,7 +1,8 @@
 #[cfg(unix)]
 pub mod file_slice;
 
-#[cfg(all(feature = "fs", not(target_arch = "wasm32")))]
+#[cfg(feature = "fs")]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod fs;
 
 #[cfg(feature = "io")]
@@ -23,7 +24,11 @@ mod test_util;
 #[cfg(any(test, feature = "fixture"))]
 pub use fluvio_future_derive::test_async;
 
+#[cfg(any(test, feature = "fixture"))]
+pub use fluvio_future_derive::test;
+
 #[cfg(all(unix, feature = "zero_copy"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod zero_copy;
 
 #[cfg(feature = "net")]
@@ -36,9 +41,11 @@ pub mod rust_tls;
 pub use rust_tls as tls;
 
 #[cfg(all(any(unix, windows), feature = "native_tls"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod native_tls;
 
 #[cfg(all(any(unix, windows), feature = "native_tls", not(feature = "rust_tls")))]
+#[cfg(not(target_arch = "wasm32"))]
 pub use crate::native_tls as tls;
 
 #[cfg(feature = "openssl_tls")]
@@ -46,6 +53,7 @@ pub use crate::native_tls as tls;
 pub mod openssl;
 
 #[cfg(feature = "sync")]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod sync;
 
 #[cfg(feature = "future")]
@@ -70,10 +78,11 @@ pub mod subscriber {
 }
 
 #[cfg(feature = "doomsday")]
+#[cfg(not(target_arch = "wasm32"))]
 pub mod doomsday;
 
-#[cfg(feature = "attributes")]
-pub use fluvio_future_derive::main_async;
+// #[cfg(feature = "attributes")]
+// pub use fluvio_future_derive::main_async;
 
 /// re-export tracing
 pub mod tracing {
