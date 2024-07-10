@@ -81,8 +81,8 @@ pub mod subscriber {
 #[cfg(not(target_arch = "wasm32"))]
 pub mod doomsday;
 
-// #[cfg(feature = "attributes")]
-// pub use fluvio_future_derive::main_async;
+#[cfg(feature = "attributes")]
+pub use fluvio_future_derive::main_async;
 
 /// re-export tracing
 pub mod tracing {

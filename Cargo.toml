@@ -20,9 +20,9 @@ subscriber = [
 ]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
 task_unstable = ["task", "async-std/unstable"]
-io = ["async-io"]
+io = ["async-std/default"]
 sync = ["async-std/default"]
-future = ["async-io", "pin-project"]
+future = ["async-std/default"]
 net = [
     "futures-lite",
     "async-net",

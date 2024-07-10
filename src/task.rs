@@ -18,7 +18,7 @@ where
 
 /// run future and wait forever
 /// this is typically used in the server
-pub fn main<F>(spawn_closure: F)
+pub fn main_forever<F>(spawn_closure: F)
 where
     F: Future<Output = ()> + Send + 'static,
 {
