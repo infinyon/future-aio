@@ -67,7 +67,6 @@ attributes = []
 [dependencies]
 anyhow = { version = "1.0" }
 async-trait = { version = "0.1.80", optional = true }
-async-std = { version = "1.12", default-features = false, optional = true }
 cfg-if = { version = "1.0", optional = true }
 fluvio-future-derive = { path = "fluvio-future-derive", version = "0.1.0", optional = true }
 futures-lite = { version = "2.3", optional = true }
@@ -86,6 +85,7 @@ async-io = { version = "2.3", optional = true }
 async-lock = { version = "3.4", optional = true }
 async-native-tls = { version = "0.5.0", optional = true }
 async-net = { version = "2.0", optional = true }
+async-std = { version = "1.12", default-features = false, optional = true }
 futures-rustls = { version = "0.26.0", optional = true }
 memmap2 = { version = "0.9.4", optional = true }
 native-tls = { version = "0.2.12", optional = true }
@@ -96,6 +96,7 @@ rustls-pemfile = { version = "2.1", optional = true }
 socket2 = { version = "0.5.7", default-features = false, features = ["all"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+async-std = { version = "1.12.0", default-features = false, features = ["unstable"], optional = true }
 fluvio-wasm-timer = { version = "0.2.5", optional = true }
 ws_stream_wasm = { version = "0.7.4", optional = true }
 
