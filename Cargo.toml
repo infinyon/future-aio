@@ -21,7 +21,7 @@ subscriber = [
 fixture = ["subscriber", "task", "fluvio-future-derive"]
 task_unstable = ["task", "async-std/unstable"]
 io = ["async-io"]
-sync = ["async-lock"]
+sync = ["async-lock", "async-condvar-fair"]
 future = ["async-io", "pin-project"]
 net = [
     "futures-lite",
@@ -61,7 +61,7 @@ zero_copy = ["nix", "task_unstable"]
 mmap = ["fs", "memmap2", "task_unstable"]
 retry = []
 doomsday = ["task", "sync"]
-tokio1 = ["async-std/tokio1"]
+tokio1 = ["async-std/tokio1", "async-condvar-fair/tokio"]
 attributes = []
 
 [dependencies]
@@ -80,6 +80,7 @@ tracing = { version = "0.1.40" }
 tracing-subscriber = { version = "0.3.18", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+async-condvar-fair = { version = "1.0.1", optional = true, default-features = false, features = ["smol"] }
 async-fs = { version = "2.1", optional = true }
 async-io = { version = "2.3", optional = true }
 async-lock = { version = "3.4", optional = true }
