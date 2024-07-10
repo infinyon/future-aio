@@ -28,7 +28,6 @@ pub use fluvio_future_derive::test_async;
 pub use fluvio_future_derive::test;
 
 #[cfg(all(unix, feature = "zero_copy"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub mod zero_copy;
 
 #[cfg(feature = "net")]
@@ -41,11 +40,9 @@ pub mod rust_tls;
 pub use rust_tls as tls;
 
 #[cfg(all(any(unix, windows), feature = "native_tls"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub mod native_tls;
 
 #[cfg(all(any(unix, windows), feature = "native_tls", not(feature = "rust_tls")))]
-#[cfg(not(target_arch = "wasm32"))]
 pub use crate::native_tls as tls;
 
 #[cfg(feature = "openssl_tls")]
@@ -53,11 +50,9 @@ pub use crate::native_tls as tls;
 pub mod openssl;
 
 #[cfg(feature = "sync")]
-#[cfg(not(target_arch = "wasm32"))]
 pub mod sync;
 
 #[cfg(feature = "future")]
-#[cfg(not(target_arch = "wasm32"))]
 pub mod future;
 
 #[cfg(feature = "subscriber")]
