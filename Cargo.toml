@@ -12,54 +12,23 @@ resolver = "2"
 all-features = true
 
 [features]
-task = ["async-std/default", "timer", "cfg-if"]
-subscriber = [
-    "tracing-subscriber",
-    "tracing-subscriber/std",
-    "tracing-subscriber/env-filter",
-]
+task = ["async-std/default", "cfg-if"]
+subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
 task_unstable = ["task", "async-std/unstable"]
 io = ["async-std/default"]
 sync = ["async-std/default"]
 future = ["async-std/default"]
-net = [
-    "futures-lite",
-    "async-net",
-    "async-trait",
-    "cfg-if",
-    "futures-util/io",
-    "socket2",
-    "ws_stream_wasm"
-]
+net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io", "socket2", "ws_stream_wasm"]
 tls = ["rust_tls"]
-rust_tls = [
-    "net",
-    "rustls-pemfile",
-    "futures-rustls",
-    "pin-project",
-    "futures-util/io",
-]
-native_tls = [
-    "net",
-    "pin-project",
-    "async-native-tls",
-    "dep:native-tls",
-    "openssl/vendored",
-    "futures-util/io",
-]
-openssl_tls = [
-    "net",
-    "openssl",
-    "openssl-sys",
-    "pin-project",
-    "futures-util/io",
-]
+rust_tls = ["net", "rustls-pemfile", "futures-rustls", "pin-project", "futures-util/io"]
+native_tls = ["net", "pin-project", "async-native-tls", "dep:native-tls", "openssl/vendored", "futures-util/io"]
+openssl_tls = ["net", "openssl", "openssl-sys", "pin-project", "futures-util/io"]
 timer = ["async-io", "pin-project", "futures-lite", "fluvio-wasm-timer"]
 fs = ["async-fs", "futures-lite", "pin-utils", "async-trait"]
 zero_copy = ["nix", "task_unstable"]
 mmap = ["fs", "memmap2", "task_unstable"]
-retry = []
+retry = ["cfg-if"]
 doomsday = ["task", "sync"]
 tokio1 = ["async-std/tokio1"]
 attributes = []
@@ -94,7 +63,7 @@ rustls-pemfile = { version = "2.1", optional = true }
 socket2 = { version = "0.5.7", default-features = false, features = ["all"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-async-std = { version = "1.12.0", default-features = false, features = ["unstable"], optional = true }
+async-std = { version = "1.12", default-features = false, features = ["unstable"], optional = true }
 fluvio-wasm-timer = { version = "0.2.5", optional = true }
 ws_stream_wasm = { version = "0.7.4", optional = true }
 
