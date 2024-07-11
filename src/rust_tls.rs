@@ -38,72 +38,57 @@ mod cert {
     use std::fs::File;
     use std::io::BufRead;
     use std::io::BufReader;
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
     use std::path::Path;
 
+    use anyhow::{anyhow, Context, Result};
     use futures_rustls::rustls::pki_types::CertificateDer;
     use futures_rustls::rustls::pki_types::PrivateKeyDer;
     use futures_rustls::rustls::RootCertStore;
     use rustls_pemfile::certs;
     use rustls_pemfile::pkcs8_private_keys;
 
-    pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<CertificateDer<'static>>, IoError> {
+    pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<CertificateDer<'static>>> {
         load_certs_from_reader(&mut BufReader::new(File::open(path)?))
     }
 
-    pub fn load_certs_from_reader(
-        rd: &mut dyn BufRead,
-    ) -> Result<Vec<CertificateDer<'static>>, IoError> {
-        certs(rd)
-            .map(|r| r.map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert")))
-            .collect()
+    pub fn load_certs_from_reader(rd: &mut dyn BufRead) -> Result<Vec<CertificateDer<'static>>> {
+        certs(rd).map(|r| r.context("invalid cert")).collect()
     }
 
     /// Load the passed keys file
-    pub fn load_keys<P: AsRef<Path>>(path: P) -> Result<Vec<PrivateKeyDer<'static>>, IoError> {
+    pub fn load_keys<P: AsRef<Path>>(path: P) -> Result<Vec<PrivateKeyDer<'static>>> {
         load_keys_from_reader(&mut BufReader::new(File::open(path)?))
     }
 
-    pub fn load_keys_from_reader(
-        rd: &mut dyn BufRead,
-    ) -> Result<Vec<PrivateKeyDer<'static>>, IoError> {
+    pub fn load_keys_from_reader(rd: &mut dyn BufRead) -> Result<Vec<PrivateKeyDer<'static>>> {
         pkcs8_private_keys(rd)
-            .map(|r| {
-                r.map(|p| p.into())
-                    .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid key"))
-            })
+            .map(|r| r.map(|p| p.into()).context("invalid key"))
             .collect()
     }
 
-    pub(crate) fn load_first_key<P: AsRef<Path>>(
-        path: P,
-    ) -> Result<PrivateKeyDer<'static>, IoError> {
+    pub(crate) fn load_first_key<P: AsRef<Path>>(path: P) -> Result<PrivateKeyDer<'static>> {
         load_first_key_from_reader(&mut BufReader::new(File::open(path)?))
     }
 
     pub(crate) fn load_first_key_from_reader(
         rd: &mut dyn BufRead,
-    ) -> Result<PrivateKeyDer<'static>, IoError> {
+    ) -> Result<PrivateKeyDer<'static>> {
         let mut keys = load_keys_from_reader(rd)?;
 
         if keys.is_empty() {
-            Err(IoError::new(ErrorKind::InvalidInput, "no keys found"))
+            Err(anyhow!("no keys found"))
         } else {
             Ok(keys.remove(0))
         }
     }
 
-    pub fn load_root_ca<P: AsRef<Path>>(path: P) -> Result<RootCertStore, IoError> {
-        let certs = load_certs(path)
-            .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+    pub fn load_root_ca<P: AsRef<Path>>(path: P) -> Result<RootCertStore> {
+        let certs = load_certs(path).map_err(|err| err.context("invalid ca crt"))?;
 
         let mut root_store = RootCertStore::empty();
 
         for cert in certs {
-            root_store
-                .add(cert)
-                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+            root_store.add(cert).context("invalid ca crt")?;
         }
 
         Ok(root_store)
@@ -112,7 +97,6 @@ mod cert {
 
 mod connector {
     use std::io::Error as IoError;
-
     use std::io::ErrorKind;
 
     use async_trait::async_trait;
@@ -224,8 +208,6 @@ mod connector {
 mod builder {
 
     use std::io::Cursor;
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
     use std::path::Path;
     use std::sync::Arc;
 
@@ -249,7 +231,8 @@ mod builder {
     use futures_rustls::TlsAcceptor;
     use futures_rustls::TlsConnector;
 
-    use tracing::debug;
+    use anyhow::{Context, Result};
+    use tracing::info;
 
     use super::load_root_ca;
     use super::{load_certs, load_first_key_from_reader};
@@ -271,7 +254,7 @@ mod builder {
         pub fn load_ca_cert<P: AsRef<Path>>(
             self,
             path: P,
-        ) -> Result<ConnectorBuilderStage<WantsClientCert>, IoError> {
+        ) -> Result<ConnectorBuilderStage<WantsClientCert>> {
             let certs = load_certs(path)?;
             self.with_root_certificates(certs)
         }
@@ -279,7 +262,7 @@ mod builder {
         pub fn load_ca_cert_from_bytes(
             self,
             buffer: &[u8],
-        ) -> Result<ConnectorBuilderStage<WantsClientCert>, IoError> {
+        ) -> Result<ConnectorBuilderStage<WantsClientCert>> {
             let certs = load_certs_from_reader(&mut Cursor::new(buffer))?;
             self.with_root_certificates(certs)
         }
@@ -297,13 +280,11 @@ mod builder {
         fn with_root_certificates(
             self,
             certs: Vec<CertificateDer>,
-        ) -> Result<ConnectorBuilderStage<WantsClientCert>, IoError> {
+        ) -> Result<ConnectorBuilderStage<WantsClientCert>> {
             let mut root_store = RootCertStore::empty();
 
             for cert in certs {
-                root_store
-                    .add(cert)
-                    .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid ca crt"))?;
+                root_store.add(cert).context("invalid ca crt")?;
             }
 
             Ok(ConnectorBuilderStage(
@@ -317,7 +298,7 @@ mod builder {
             self,
             cert_path: P,
             key_path: P,
-        ) -> Result<ConnectorBuilderWithConfig, IoError> {
+        ) -> Result<ConnectorBuilderWithConfig> {
             let certs = load_certs(cert_path)?;
             let key = load_first_key(key_path)?;
             self.with_single_cert(certs, key)
@@ -327,7 +308,7 @@ mod builder {
             self,
             cert_buf: &[u8],
             key_buf: &[u8],
-        ) -> Result<ConnectorBuilderWithConfig, IoError> {
+        ) -> Result<ConnectorBuilderWithConfig> {
             let certs = load_certs_from_reader(&mut Cursor::new(cert_buf))?;
             let key = load_first_key_from_reader(&mut Cursor::new(key_buf))?;
             self.with_single_cert(certs, key)
@@ -341,11 +322,11 @@ mod builder {
             self,
             certs: Vec<CertificateDer<'static>>,
             key: PrivateKeyDer<'static>,
-        ) -> Result<ConnectorBuilderWithConfig, IoError> {
+        ) -> Result<ConnectorBuilderWithConfig> {
             let config = self
                 .0
                 .with_client_auth_cert(certs, key)
-                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
+                .context("invalid cert")?;
 
             Ok(ConnectorBuilderWithConfig(config))
         }
@@ -379,12 +360,12 @@ mod builder {
         pub fn client_authenticate<P: AsRef<Path>>(
             self,
             path: P,
-        ) -> Result<AcceptorBuilderStage<WantsServerCert>, IoError> {
+        ) -> Result<AcceptorBuilderStage<WantsServerCert>> {
             let root_store = load_root_ca(path)?;
 
             let client_verifier = WebPkiClientVerifier::builder(root_store.into())
                 .build()
-                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid verifier"))?;
+                .context("invalid verifier")?;
 
             Ok(AcceptorBuilderStage(
                 self.0.with_client_cert_verifier(client_verifier),
@@ -397,14 +378,14 @@ mod builder {
             self,
             cert_path: impl AsRef<Path>,
             key_path: impl AsRef<Path>,
-        ) -> Result<AcceptorBuilderWithConfig, IoError> {
+        ) -> Result<AcceptorBuilderWithConfig> {
             let certs = load_certs(cert_path)?;
             let key = load_first_key(key_path)?;
 
             let config = self
                 .0
                 .with_single_cert(certs, key)
-                .map_err(|_| IoError::new(ErrorKind::InvalidInput, "invalid cert"))?;
+                .context("invalid cert")?;
 
             Ok(AcceptorBuilderWithConfig(config))
         }
@@ -430,7 +411,7 @@ mod builder {
             _ocsp_response: &[u8],
             _now: UnixTime,
         ) -> Result<ServerCertVerified, TlsError> {
-            debug!("ignoring server cert");
+            info!("ignoring server cert");
             Ok(ServerCertVerified::assertion())
         }
 
@@ -440,7 +421,7 @@ mod builder {
             _cert: &CertificateDer<'_>,
             _dss: &futures_rustls::rustls::DigitallySignedStruct,
         ) -> Result<HandshakeSignatureValid, TlsError> {
-            debug!("ignoring server cert");
+            info!("ignoring server cert");
             Ok(HandshakeSignatureValid::assertion())
         }
 
@@ -450,7 +431,7 @@ mod builder {
             _cert: &CertificateDer<'_>,
             _dss: &futures_rustls::rustls::DigitallySignedStruct,
         ) -> Result<HandshakeSignatureValid, TlsError> {
-            debug!("ignoring server cert");
+            info!("ignoring server cert");
             Ok(HandshakeSignatureValid::assertion())
         }
 
@@ -466,7 +447,6 @@ mod builder {
 #[cfg(test)]
 mod test {
 
-    use std::io::Error as IoError;
     use std::net::SocketAddr;
     use std::time;
 
@@ -488,6 +468,8 @@ mod test {
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 
+    use anyhow::Result;
+
     use super::{AcceptorBuilder, ConnectorBuilder};
 
     const CA_PATH: &str = "certs/test-certs/ca.crt";
@@ -500,7 +482,7 @@ mod test {
     }
 
     #[test_async(ignore)]
-    async fn test_rust_tls_all() -> Result<(), IoError> {
+    async fn test_rust_tls_all() -> Result<()> {
         test_rustls(
             AcceptorBuilder::with_safe_defaults()
                 .no_client_authentication()
@@ -531,7 +513,7 @@ mod test {
         Ok(())
     }
 
-    async fn test_rustls(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), IoError> {
+    async fn test_rustls(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<()> {
         let addr = "127.0.0.1:19998".parse::<SocketAddr>().expect("parse");
 
         let server_ft = async {
@@ -575,7 +557,7 @@ mod test {
                     .expect("send failed");
             }
 
-            Ok(()) as Result<(), IoError>
+            Ok(()) as Result<()>
         };
 
         let client_ft = async {
@@ -610,7 +592,7 @@ mod test {
                 assert_eq!(message, format!("message{}reply", i));
             }
 
-            Ok(()) as Result<(), IoError>
+            Ok(()) as Result<()>
         };
 
         let _ = zip(client_ft, server_ft).await;
