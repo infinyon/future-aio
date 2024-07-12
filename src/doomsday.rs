@@ -6,15 +6,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use log::info;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use crate::sync::Mutex;
-#[deprecated(
-    since = "0.5.1",
-    note = "please use `fluvio_future::task::JoinHandle` instead"
-)]
-pub use crate::task::JoinHandle;
+use crate::task::JoinHandle;
 
 #[derive(Clone)]
 /// DoomsdayTimer will configurably panic or exit if it is not

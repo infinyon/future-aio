@@ -121,10 +121,10 @@ mod tests {
     use futures_lite::AsyncReadExt;
     use futures_util::SinkExt;
     use futures_util::StreamExt;
-    use log::debug;
     use tokio_util::codec::BytesCodec;
     use tokio_util::codec::Framed;
     use tokio_util::compat::FuturesAsyncReadCompatExt;
+    use tracing::debug;
 
     fn to_bytes(bytes: Vec<u8>) -> Bytes {
         let mut buf = BytesMut::with_capacity(bytes.len());

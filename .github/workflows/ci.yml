@@ -21,6 +21,10 @@ jobs:
         with:
           key: windows-latest-test
       - uses: cargo-bins/cargo-binstall@main
+      - name: Install NASM for AWS-LC
+        uses: ilammy/setup-nasm@v1
+      - name: Install bindgen-cli
+        run: cargo install --force --locked bindgen-cli
       - name: Test Setup
         run: |
           make certs
@@ -29,7 +33,7 @@ jobs:
       - name: Test
         run: |
           Start-Process cmd -Args /c,"http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8"
-          cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry,http-client-json,__skip-http-client-cert-verification
+          cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry
   test:
     name: Check ${{ matrix.check }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

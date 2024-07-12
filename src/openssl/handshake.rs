@@ -6,10 +6,10 @@ use std::result;
 use std::task::Context;
 use std::task::Poll;
 
+use anyhow::{Error, Result};
 use futures_lite::io::{AsyncRead, AsyncWrite};
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
-use super::error::Error;
 use super::stream::TlsStream;
 
 pub(super) enum HandshakeFuture<F, S: Unpin + fmt::Debug> {
@@ -29,7 +29,7 @@ where
     >,
     Self: Unpin,
 {
-    type Output = Result<TlsStream<S>, Error>;
+    type Output = Result<TlsStream<S>>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let self_mut = self.get_mut();
@@ -47,7 +47,7 @@ where
                         *self_mut = HandshakeFuture::MidHandshake(mid);
                         Poll::Pending
                     }
-                    Err(e) => Poll::Ready(Err(Error::from(e))),
+                    Err(e) => Poll::Ready(Err(Error::new(e))),
                 }
             }
             HandshakeFuture::MidHandshake(mut stream) => {
@@ -62,7 +62,7 @@ where
                         *self_mut = HandshakeFuture::MidHandshake(mid);
                         Poll::Pending
                     }
-                    Err(e) => Poll::Ready(Err(Error::from(e))),
+                    Err(e) => Poll::Ready(Err(Error::new(e))),
                 }
             }
             HandshakeFuture::Done => panic!("Future must not be polled after ready"),

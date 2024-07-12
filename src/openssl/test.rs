@@ -1,24 +1,23 @@
-use std::io::Error as IoError;
 use std::net::SocketAddr;
 use std::time;
 
+use anyhow::Result;
 use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
 use futures_lite::future::zip;
 use futures_lite::stream::StreamExt;
 use futures_util::SinkExt;
-use log::debug;
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::Framed;
 use tokio_util::compat::FuturesAsyncReadCompatExt;
+use tracing::debug;
 
 use crate::net::{tcp_stream::stream, TcpListener};
 use crate::test_async;
 use crate::timer::sleep;
 
-use super::TlsError;
-use super::{AllTcpStream, TlsAcceptor, TlsConnector};
+use super::{TlsAcceptor, TlsConnector};
 
 const CA_PATH: &str = "certs/test-certs/ca.crt";
 const INTERMEDIATE_CA_PATH: &str = "certs/test-certs/intermediate-ca.crt";
@@ -31,7 +30,7 @@ fn to_bytes(bytes: Vec<u8>) -> Bytes {
 }
 
 #[test_async]
-async fn test_tls() -> Result<(), TlsError> {
+async fn test_tls() -> Result<()> {
     // Test the client against a server with CA intermediary cert chain
     // Requires X509VerifyFlags::PARTIAL_CHAIN or allow_partial: true (default)
     run_test(
@@ -88,7 +87,7 @@ async fn test_tls() -> Result<(), TlsError> {
     Ok(())
 }
 
-async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), IoError> {
+async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<()> {
     let addr = "127.0.0.1:19988".parse::<SocketAddr>().expect("parse");
 
     let server_ft = async {
@@ -135,7 +134,7 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), 
                 .expect("send failed");
         }
 
-        Ok(()) as Result<(), IoError>
+        Ok(()) as Result<()>
     };
 
     let client_ft = async {
@@ -147,8 +146,7 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), 
             .connect("localhost", tcp_stream)
             .await
             .expect("tls failed");
-        let all_stream = AllTcpStream::Tls(tls_stream);
-        let mut framed = Framed::new(all_stream.compat(), BytesCodec::new());
+        let mut framed = Framed::new(tls_stream.compat(), BytesCodec::new());
         debug!("client: got connection. waiting");
 
         for i in 0..ITER {
@@ -170,7 +168,7 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<(), 
             assert_eq!(message, format!("message{}reply", i));
         }
 
-        Ok(()) as Result<(), IoError>
+        Ok(()) as Result<()>
     };
 
     let _ = zip(client_ft, server_ft).await;

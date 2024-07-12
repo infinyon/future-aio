@@ -1,5 +1,13 @@
 # Release Notes
 
+## 0.7.0
+* Update all depencencies to latest versions
+* Timer sleeper only fires once
+* Remove `http-client`
+* Rename `native2_tls` feature to `native_tls`
+* Note: `rustls` now uses `aws-lc` instead of `ring`
+
+
 ## 0.5.0
 * Move to `memmap2` because `memmap` is unmaintained.
 * Enable `rustls` on `windows`

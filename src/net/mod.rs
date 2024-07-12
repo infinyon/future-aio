@@ -9,19 +9,15 @@ pub use conn::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use unix_connector::DefaultTcpDomainConnector as DefaultDomainConnector;
 
-#[cfg(not(target_arch = "wasm32"))]
-#[deprecated(since = "0.3.3", note = "Please use the bar DefaultDomainConnector")]
-pub use unix_connector::DefaultTcpDomainConnector;
-
 #[cfg(target_arch = "wasm32")]
 pub use wasm_connector::DefaultDomainWebsocketConnector as DefaultDomainConnector;
 
 mod conn {
 
-    use std::io::Error as IoError;
-
     use async_trait::async_trait;
     use futures_lite::io::{AsyncRead, AsyncWrite};
+    use std::io::Error as IoError;
+
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
     impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
 
@@ -90,21 +86,21 @@ pub mod certs {
     use std::fs::File;
     use std::io::BufRead;
     use std::io::BufReader;
-    use std::io::Error as IoError;
     use std::path::Path;
 
-    use log::debug;
+    use anyhow::Result;
+    use tracing::debug;
 
     pub trait CertBuilder: Sized {
         fn new(bytes: Vec<u8>) -> Self;
 
-        fn from_reader(reader: &mut dyn BufRead) -> Result<Self, IoError> {
+        fn from_reader(reader: &mut dyn BufRead) -> Result<Self> {
             let mut bytes = vec![];
             reader.read_to_end(&mut bytes)?;
             Ok(Self::new(bytes))
         }
 
-        fn from_path(path: impl AsRef<Path>) -> Result<Self, IoError> {
+        fn from_path(path: impl AsRef<Path>) -> Result<Self> {
             debug!("loading cert from: {}", path.as_ref().display());
             let mut reader = BufReader::new(File::open(path)?);
             Self::from_reader(&mut reader)
@@ -119,6 +115,7 @@ mod wasm_connector {
     use futures_util::io::AsyncReadExt;
     use std::io::Error as IoError;
     use ws_stream_wasm::WsMeta;
+
     #[derive(Clone, Default)]
     pub struct DefaultDomainWebsocketConnector {}
     impl DefaultDomainWebsocketConnector {
@@ -152,10 +149,9 @@ mod wasm_connector {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod unix_connector {
-    use std::io::Error as IoError;
-
     use async_trait::async_trait;
-    use log::debug;
+    use std::io::Error as IoError;
+    use tracing::debug;
 
     use super::tcp_stream::stream;
 
@@ -208,7 +204,7 @@ mod test {
     use futures_lite::future::zip;
     use futures_lite::stream::StreamExt;
     use futures_util::AsyncReadExt;
-    use log::debug;
+    use tracing::debug;
 
     use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;

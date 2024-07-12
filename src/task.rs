@@ -2,8 +2,6 @@ use std::future::Future;
 
 use async_std::task;
 
-use crate::timer::sleep;
-
 #[cfg(feature = "task_unstable")]
 pub use async_std::task::spawn_local;
 
@@ -14,29 +12,6 @@ where
     F: Future<Output = ()> + Send + 'static,
 {
     task::block_on(spawn_closure);
-}
-
-/// run future and wait forever
-/// this is typically used in the server
-pub fn main<F>(spawn_closure: F)
-where
-    F: Future<Output = ()> + Send + 'static,
-{
-    use std::time::Duration;
-
-    task::block_on(async {
-        spawn_closure.await;
-        // do infinite loop for now
-        loop {
-            cfg_if::cfg_if! {
-                if #[cfg(target_arch = "wasm32")] {
-                    sleep(Duration::from_secs(3600)).await.unwrap();
-                } else {
-                    sleep(Duration::from_secs(3600)).await;
-                }
-            }
-        }
-    });
 }
 
 cfg_if::cfg_if! {
@@ -75,7 +50,7 @@ mod basic_test {
     use std::time;
 
     use futures_lite::future::zip;
-    use log::debug;
+    use tracing::debug;
 
     use crate::task::spawn;
     use crate::test_async;

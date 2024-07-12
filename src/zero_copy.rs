@@ -1,4 +1,5 @@
 use std::io::Error as IoError;
+use std::os::fd::BorrowedFd;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::thread::sleep;
 use thiserror::Error;
@@ -8,8 +9,7 @@ use nix::libc::off_t;
 use nix::sys::sendfile::sendfile;
 use nix::Error as NixError;
 
-use log::debug;
-use log::trace;
+use tracing::{debug, error, trace};
 
 use crate::task::spawn_blocking;
 
@@ -48,8 +48,8 @@ impl ZeroCopy {
 impl ZeroCopy {
     pub async fn copy_slice(&self, source: &AsyncFileSlice) -> Result<usize, SendFileError> {
         let size = source.len();
-        let target_fd = self.0;
-        let source_fd = source.fd();
+        let target_raw_fd = self.0;
+        let source_raw_fd = source.fd();
 
         #[cfg(target_os = "linux")]
         let ft = {
@@ -59,15 +59,18 @@ impl ZeroCopy {
                 let mut total_transferred: usize = 0; // total bytes transferred so far
                 let mut current_offset = offset;
 
+                let target_fd = unsafe { BorrowedFd::borrow_raw(target_raw_fd) };
+                let source_fd = unsafe { BorrowedFd::borrow_raw(source_raw_fd) };
+
                 loop {
                     let to_be_transfer = size as usize - total_transferred;
 
                     trace!(
-                        "trying: zero copy source fd: {} offset: {} len: {}, target: fd{}",
-                        source_fd,
+                        "trying: zero copy source fd: {} offset: {} len: {}, target fd: {}",
+                        source_raw_fd,
                         current_offset,
                         to_be_transfer,
-                        target_fd
+                        target_raw_fd
                     );
 
                     match sendfile(
@@ -104,12 +107,12 @@ impl ZeroCopy {
                             nix::errno::Errno::EAGAIN => {
                                 debug!(
                                     "EAGAIN, continuing source: {},target: {}",
-                                    source_fd, target_fd
+                                    source_raw_fd, target_raw_fd
                                 );
                                 sleep(std::time::Duration::from_millis(10));
                             }
                             _ => {
-                                log::error!("error sendfile: {}", err);
+                                error!("error sendfile: {}", err);
                                 return Err(err.into());
                             }
                         },
@@ -127,15 +130,18 @@ impl ZeroCopy {
                 let mut total_transferred = 0;
                 let mut current_offset = offset;
 
+                let target_fd = unsafe { BorrowedFd::borrow_raw(target_raw_fd) };
+                let source_fd = unsafe { BorrowedFd::borrow_raw(source_raw_fd) };
+
                 loop {
                     let to_be_transfer = (size - total_transferred) as i64;
 
                     trace!(
                         "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
-                        source_fd,
+                        source_raw_fd,
                         current_offset,
                         to_be_transfer,
-                        target_fd
+                        target_raw_fd
                     );
 
                     let (res, bytes_transferred) = sendfile(
@@ -172,7 +178,7 @@ impl ZeroCopy {
                                 debug!("EAGAIN, try again");
                                 sleep(std::time::Duration::from_millis(10));
                             } else {
-                                log::error!("error sendfile: {}", err);
+                                error!("error sendfile: {}", err);
                                 return Err(err.into());
                             }
                         }
@@ -193,7 +199,7 @@ mod tests {
 
     use futures_lite::future::zip;
     use futures_util::stream::StreamExt;
-    use log::debug;
+    use tracing::debug;
 
     use crate::file_slice::AsyncFileSlice;
     use crate::fs::AsyncFileExtension;

@@ -6,11 +6,11 @@ macro_rules! assert_async_block {
 
         #[cfg(not(target_arch = "wasm32"))]
         match fluvio_future::task::run_block_on(ft) {
-            Ok(_) => log::debug!("finished run"),
+            Ok(_) => debug!("finished run"),
             Err(err) => assert!(false, "error {:?}", err),
         }
         #[cfg(target_arch = "wasm32")]
-        fluvio_future::task::run_block_on(ft);
+        fluvio_future::task::run_block_on(ft)
     }};
 }
 
@@ -24,7 +24,7 @@ mod test {
 
     use futures_lite::future::poll_fn;
     use futures_lite::Future;
-    use log::debug;
+    use tracing::debug;
 
     use crate::test_async;
 
