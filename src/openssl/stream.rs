@@ -1,16 +1,12 @@
 use std::fmt::Debug;
 use std::io;
 use std::io::Read;
-use std::io::Result as IoResult;
 use std::io::Write;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures_lite::{AsyncRead, AsyncWrite};
 use openssl::ssl;
-use pin_project::pin_project;
-
-use crate::net::TcpStream;
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
 use super::certificate::Certificate;
@@ -71,57 +67,5 @@ fn result_to_poll<T>(r: io::Result<T>) -> Poll<io::Result<T>> {
         Ok(v) => Poll::Ready(Ok(v)),
         Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => Poll::Pending,
         Err(e) => Poll::Ready(Err(e)),
-    }
-}
-
-#[pin_project(project = EnumProj)]
-pub enum AllTcpStream {
-    Tcp(#[pin] TcpStream),
-    Tls(#[pin] TlsStream<TcpStream>),
-}
-
-impl AllTcpStream {
-    pub fn tcp(stream: TcpStream) -> Self {
-        Self::Tcp(stream)
-    }
-
-    pub fn tls(stream: TlsStream<TcpStream>) -> Self {
-        Self::Tls(stream)
-    }
-}
-
-impl AsyncRead for AllTcpStream {
-    fn poll_read(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-        buf: &mut [u8],
-    ) -> Poll<io::Result<usize>> {
-        match self.project() {
-            EnumProj::Tcp(stream) => stream.poll_read(cx, buf),
-            EnumProj::Tls(stream) => stream.poll_read(cx, buf),
-        }
-    }
-}
-
-impl AsyncWrite for AllTcpStream {
-    fn poll_write(self: Pin<&mut Self>, cx: &mut Context, buf: &[u8]) -> Poll<IoResult<usize>> {
-        match self.project() {
-            EnumProj::Tcp(stream) => stream.poll_write(cx, buf),
-            EnumProj::Tls(stream) => stream.poll_write(cx, buf),
-        }
-    }
-
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<IoResult<()>> {
-        match self.project() {
-            EnumProj::Tcp(stream) => stream.poll_flush(cx),
-            EnumProj::Tls(stream) => stream.poll_flush(cx),
-        }
-    }
-
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context) -> Poll<IoResult<()>> {
-        match self.project() {
-            EnumProj::Tcp(stream) => stream.poll_close(cx),
-            EnumProj::Tls(stream) => stream.poll_close(cx),
-        }
     }
 }

@@ -17,7 +17,7 @@ use crate::net::{tcp_stream::stream, TcpListener};
 use crate::test_async;
 use crate::timer::sleep;
 
-use super::{AllTcpStream, TlsAcceptor, TlsConnector};
+use super::{TlsAcceptor, TlsConnector};
 
 const CA_PATH: &str = "certs/test-certs/ca.crt";
 const INTERMEDIATE_CA_PATH: &str = "certs/test-certs/intermediate-ca.crt";
@@ -146,8 +146,7 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<()> 
             .connect("localhost", tcp_stream)
             .await
             .expect("tls failed");
-        let all_stream = AllTcpStream::Tls(tls_stream);
-        let mut framed = Framed::new(all_stream.compat(), BytesCodec::new());
+        let mut framed = Framed::new(tls_stream.compat(), BytesCodec::new());
         debug!("client: got connection. waiting");
 
         for i in 0..ITER {

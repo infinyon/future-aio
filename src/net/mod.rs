@@ -129,8 +129,7 @@ mod wasm_connector {
             &self,
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
-            let (mut _ws, wsstream) = WsMeta::connect(addr, None)
-                .await?;
+            let (mut _ws, wsstream) = WsMeta::connect(addr, None).await?;
             let wsstream_io = wsstream.into_io();
             let (stream, sink) = wsstream_io.split();
             Ok((Box::new(sink), Box::new(stream), String::from(addr)))
