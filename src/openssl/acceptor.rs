@@ -1,12 +1,13 @@
-use futures_lite::io::{AsyncRead, AsyncWrite};
-use openssl::ssl;
 use std::fmt;
 use std::path::Path;
 use std::sync::Arc;
 
+use anyhow::Result;
+use futures_lite::io::{AsyncRead, AsyncWrite};
+use openssl::ssl;
+
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
 use super::certificate::{Certificate, PrivateKey};
-use super::error::Result;
 use super::handshake::HandshakeFuture;
 use super::stream::TlsStream;
 

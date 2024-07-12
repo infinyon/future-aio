@@ -9,19 +9,15 @@ pub use conn::*;
 #[cfg(not(target_arch = "wasm32"))]
 pub use unix_connector::DefaultTcpDomainConnector as DefaultDomainConnector;
 
-#[cfg(not(target_arch = "wasm32"))]
-#[deprecated(since = "0.3.3", note = "Please use the bar DefaultDomainConnector")]
-pub use unix_connector::DefaultTcpDomainConnector;
-
 #[cfg(target_arch = "wasm32")]
 pub use wasm_connector::DefaultDomainWebsocketConnector as DefaultDomainConnector;
 
 mod conn {
 
-    use std::io::Error as IoError;
-
+    use anyhow::Result;
     use async_trait::async_trait;
     use futures_lite::io::{AsyncRead, AsyncWrite};
+
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
     impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
 
@@ -75,7 +71,7 @@ mod conn {
         async fn connect(
             &self,
             domain: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError>;
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)>;
 
         // create new version of my self with new domain
         fn new_domain(&self, domain: String) -> DomainConnector;
@@ -90,21 +86,21 @@ pub mod certs {
     use std::fs::File;
     use std::io::BufRead;
     use std::io::BufReader;
-    use std::io::Error as IoError;
     use std::path::Path;
 
+    use anyhow::Result;
     use tracing::debug;
 
     pub trait CertBuilder: Sized {
         fn new(bytes: Vec<u8>) -> Self;
 
-        fn from_reader(reader: &mut dyn BufRead) -> Result<Self, IoError> {
+        fn from_reader(reader: &mut dyn BufRead) -> Result<Self> {
             let mut bytes = vec![];
             reader.read_to_end(&mut bytes)?;
             Ok(Self::new(bytes))
         }
 
-        fn from_path(path: impl AsRef<Path>) -> Result<Self, IoError> {
+        fn from_path(path: impl AsRef<Path>) -> Result<Self> {
             debug!("loading cert from: {}", path.as_ref().display());
             let mut reader = BufReader::new(File::open(path)?);
             Self::from_reader(&mut reader)
@@ -115,10 +111,11 @@ pub mod certs {
 #[cfg(target_arch = "wasm32")]
 mod wasm_connector {
     use super::*;
+    use anyhow::Result;
     use async_trait::async_trait;
     use futures_util::io::AsyncReadExt;
-    use std::io::Error as IoError;
     use ws_stream_wasm::WsMeta;
+
     #[derive(Clone, Default)]
     pub struct DefaultDomainWebsocketConnector {}
     impl DefaultDomainWebsocketConnector {
@@ -131,10 +128,9 @@ mod wasm_connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
             let (mut _ws, wsstream) = WsMeta::connect(addr, None)
-                .await
-                .map_err(|e| IoError::new(std::io::ErrorKind::Other, e))?;
+                .await?;
             let wsstream_io = wsstream.into_io();
             let (stream, sink) = wsstream_io.split();
             Ok((Box::new(sink), Box::new(stream), String::from(addr)))
@@ -152,8 +148,7 @@ mod wasm_connector {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod unix_connector {
-    use std::io::Error as IoError;
-
+    use anyhow::Result;
     use async_trait::async_trait;
     use tracing::debug;
 
@@ -182,7 +177,7 @@ mod unix_connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
             debug!("connect to tcp addr: {}", addr);
             let tcp_stream = stream(addr).await?;
 

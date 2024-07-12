@@ -96,9 +96,7 @@ mod cert {
 }
 
 mod connector {
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
-
+    use anyhow::{Context, Result};
     use async_trait::async_trait;
     use futures_rustls::rustls::pki_types::ServerName;
     use tracing::debug;
@@ -109,8 +107,6 @@ mod connector {
     };
 
     use super::TlsConnector;
-
-    pub type TlsError = IoError;
 
     /// connect as anonymous client
     #[derive(Clone)]
@@ -127,16 +123,11 @@ mod connector {
         async fn connect(
             &self,
             domain: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
             let tcp_stream = stream(domain).await?;
             let fd = tcp_stream.as_connection_fd();
 
-            let server_name = ServerName::try_from(domain).map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("Invalid Dns Name: {}", err),
-                )
-            })?;
+            let server_name = ServerName::try_from(domain).context("Invalid DNS name")?;
 
             let (write, read) = self
                 .0
@@ -172,18 +163,14 @@ mod connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
             debug!("connect to tls addr: {}", addr);
             let tcp_stream = stream(addr).await?;
             let fd = tcp_stream.as_connection_fd();
             debug!("connect to tls domain: {}", self.domain);
 
-            let server_name = ServerName::try_from(self.domain.as_str()).map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("Invalid Dns Name: {}", err),
-                )
-            })?;
+            let server_name =
+                ServerName::try_from(self.domain.as_str()).context("Invalid DNS name")?;
 
             let (write, read) = self
                 .connector
