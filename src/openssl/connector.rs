@@ -180,7 +180,6 @@ impl TlsConnector {
             AsyncToSyncWrapper::new(stream),
         )
         .await
-        .map_err(|err| anyhow::anyhow!("oe {err}"))
     }
 }
 
