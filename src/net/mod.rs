@@ -14,9 +14,9 @@ pub use wasm_connector::DefaultDomainWebsocketConnector as DefaultDomainConnecto
 
 mod conn {
 
-    use anyhow::Result;
     use async_trait::async_trait;
     use futures_lite::io::{AsyncRead, AsyncWrite};
+    use std::io::Error as IoError;
 
     pub trait Connection: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection {}
     impl<T: AsyncRead + AsyncWrite + Send + Sync + Unpin + SplitConnection> Connection for T {}
@@ -71,7 +71,7 @@ mod conn {
         async fn connect(
             &self,
             domain: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)>;
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError>;
 
         // create new version of my self with new domain
         fn new_domain(&self, domain: String) -> DomainConnector;
@@ -111,9 +111,9 @@ pub mod certs {
 #[cfg(target_arch = "wasm32")]
 mod wasm_connector {
     use super::*;
-    use anyhow::Result;
     use async_trait::async_trait;
     use futures_util::io::AsyncReadExt;
+    use std::io::Error as IoError;
     use ws_stream_wasm::WsMeta;
 
     #[derive(Clone, Default)]
@@ -128,8 +128,10 @@ mod wasm_connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
-            let (mut _ws, wsstream) = WsMeta::connect(addr, None).await?;
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
+            let (mut _ws, wsstream) = WsMeta::connect(addr, None)
+                .await
+                .map_err(|e| IoError::new(std::io::ErrorKind::Other, e))?;
             let wsstream_io = wsstream.into_io();
             let (stream, sink) = wsstream_io.split();
             Ok((Box::new(sink), Box::new(stream), String::from(addr)))
@@ -147,8 +149,8 @@ mod wasm_connector {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod unix_connector {
-    use anyhow::Result;
     use async_trait::async_trait;
+    use std::io::Error as IoError;
     use tracing::debug;
 
     use super::tcp_stream::stream;
@@ -176,7 +178,7 @@ mod unix_connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tcp addr: {}", addr);
             let tcp_stream = stream(addr).await?;
 

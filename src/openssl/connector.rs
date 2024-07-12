@@ -1,4 +1,6 @@
 use std::fmt;
+use std::io::Error as IoError;
+use std::io::ErrorKind;
 use std::path::Path;
 
 use anyhow::{Context, Result};
@@ -259,7 +261,7 @@ impl TcpDomainConnector for TlsAnonymousConnector {
     async fn connect(
         &self,
         domain: &str,
-    ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
+    ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
         debug!("tcp connect: {}", domain);
         let socket_opts = SocketOpts {
             keepalive: Some(Default::default()),
@@ -272,7 +274,12 @@ impl TcpDomainConnector for TlsAnonymousConnector {
             .0
             .connect(domain, tcp_stream)
             .await
-            .map_err(|err| anyhow::anyhow!(err))?
+            .map_err(|e| {
+                IoError::new(
+                    ErrorKind::ConnectionRefused,
+                    format!("failed to connect: {}", e),
+                )
+            })?
             .split_connection();
 
         Ok((write, read, fd))
@@ -304,7 +311,7 @@ impl TcpDomainConnector for TlsDomainConnector {
     async fn connect(
         &self,
         addr: &str,
-    ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
+    ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
         debug!("connect to tls addr: {}", addr);
         let tcp_stream = stream(addr).await?;
         let fd = tcp_stream.as_connection_fd();
@@ -313,7 +320,12 @@ impl TcpDomainConnector for TlsDomainConnector {
             .connector
             .connect(&self.domain, tcp_stream)
             .await
-            .map_err(|err| anyhow::anyhow!(err))?
+            .map_err(|e| {
+                IoError::new(
+                    ErrorKind::ConnectionRefused,
+                    format!("failed to connect: {}", e),
+                )
+            })?
             .split_connection();
 
         debug!("connect to tls domain: {}", self.domain);

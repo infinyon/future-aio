@@ -29,9 +29,10 @@ mod split {
 }
 
 mod connector {
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
     use std::sync::Arc;
 
-    use anyhow::{Context, Result};
     use async_trait::async_trait;
     use tracing::debug;
 
@@ -58,14 +59,19 @@ mod connector {
         async fn connect(
             &self,
             domain: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             let tcp_stream = stream(domain).await?;
             let fd = tcp_stream.as_connection_fd();
             let (write, read) = self
                 .0
                 .connect(domain, tcp_stream)
                 .await
-                .context("failed to connect")?
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::ConnectionRefused,
+                        format!("failed to connect: {}", e),
+                    )
+                })?
                 .split_connection();
             Ok((write, read, fd))
         }
@@ -108,7 +114,7 @@ mod connector {
         async fn connect(
             &self,
             addr: &str,
-        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd)> {
+        ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
             debug!("connect to tls addr: {}", addr);
             let socket_opts = SocketOpts {
                 keepalive: Some(Default::default()),
@@ -122,7 +128,12 @@ mod connector {
                 .connector
                 .connect(&self.domain, tcp_stream)
                 .await
-                .context("failed to connect")?
+                .map_err(|e| {
+                    IoError::new(
+                        ErrorKind::ConnectionRefused,
+                        format!("failed to connect: {}", e),
+                    )
+                })?
                 .split_connection();
             Ok((write, read, fd))
         }
