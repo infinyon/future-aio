@@ -44,7 +44,7 @@ test-wasm-safari: install-wasm32 install-wasm-pack
 	wasm-pack test --safari --headless
 
 test-derive:
-	cd async-test-derive; cargo test
+	cd fluvio-future-derive; cargo test
 
 check-wasm: install-wasm32
 	cargo build --target wasm32-unknown-unknown --all-features
