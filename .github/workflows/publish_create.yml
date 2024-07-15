@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Rust ${{ matrix.rust }}
+      
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
@@ -23,7 +24,16 @@ jobs:
           override: true
 
       - uses: actions/checkout@v4
-      - name: Run publish script
+
+      - name: Publish derive crate
+        env:
+          VERBOSE: true
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          cd fluvio-future-derive
+          cargo publish
+
+      - name: Publish main crate
         env:
           VERBOSE: true
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
