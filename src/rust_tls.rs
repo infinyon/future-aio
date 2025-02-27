@@ -153,6 +153,10 @@ mod connector {
         fn domain(&self) -> &str {
             "localhost"
         }
+
+        fn clone_box(&self) -> DomainConnector {
+            Box::new(self.clone())
+        }
     }
 
     #[derive(Clone)]
@@ -201,6 +205,10 @@ mod connector {
 
         fn domain(&self) -> &str {
             &self.domain
+        }
+
+        fn clone_box(&self) -> DomainConnector {
+            Box::new(self.clone())
         }
     }
 }

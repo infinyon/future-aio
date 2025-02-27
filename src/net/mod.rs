@@ -60,6 +60,12 @@ mod conn {
 
     pub type DomainConnector = Box<dyn TcpDomainConnector>;
 
+    impl Clone for DomainConnector {
+        fn clone(&self) -> DomainConnector {
+            self.clone_box()
+        }
+    }
+
     pub trait AsyncConnector: Send + Sync {}
 
     impl<T: Send + Sync> AsyncConnector for T {}
@@ -77,6 +83,8 @@ mod conn {
         fn new_domain(&self, domain: String) -> DomainConnector;
 
         fn domain(&self) -> &str;
+
+        fn clone_box(&self) -> DomainConnector;
     }
 }
 
@@ -144,6 +152,10 @@ mod wasm_connector {
         fn domain(&self) -> &str {
             "localhost"
         }
+
+        fn clone_box(&self) -> DomainConnector {
+            Box::new(self.clone())
+        }
     }
 }
 
@@ -192,6 +204,10 @@ mod unix_connector {
 
         fn domain(&self) -> &str {
             "localhost"
+        }
+
+        fn clone_box(&self) -> DomainConnector {
+            Box::new(self.clone())
         }
     }
 }

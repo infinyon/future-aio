@@ -83,6 +83,10 @@ mod connector {
         fn domain(&self) -> &str {
             "localhost"
         }
+
+        fn clone_box(&self) -> DomainConnector {
+            Box::new(self.clone())
+        }
     }
 
     /// Connect to TLS
@@ -146,6 +150,10 @@ mod connector {
 
         fn domain(&self) -> &str {
             &self.domain
+        }
+
+        fn clone_box(&self) -> DomainConnector {
+            Box::new(self.clone())
         }
     }
 }
