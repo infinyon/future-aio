@@ -11,7 +11,7 @@ mod test;
 pub use acceptor::{TlsAcceptor, TlsAcceptorBuilder};
 pub use certificate::Certificate;
 pub use connector::{
-    certs, TlsAnonymousConnector, TlsConnector, TlsConnectorBuilder, TlsDomainConnector,
+    TlsAnonymousConnector, TlsConnector, TlsConnectorBuilder, TlsDomainConnector, certs,
 };
 pub use openssl::ssl::SslVerifyMode;
 pub use stream::TlsStream;

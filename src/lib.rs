@@ -5,10 +5,6 @@ pub mod file_slice;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod fs;
 
-#[cfg(feature = "io")]
-#[cfg(not(target_arch = "wasm32"))]
-pub mod io;
-
 #[cfg(feature = "task")]
 pub mod task;
 
