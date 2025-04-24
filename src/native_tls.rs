@@ -37,9 +37,9 @@ mod connector {
     use tracing::debug;
 
     use crate::net::{
-        tcp_stream::{stream, stream_with_opts, SocketOpts},
         AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
         SplitConnection, TcpDomainConnector,
+        tcp_stream::{SocketOpts, stream, stream_with_opts},
     };
 
     use super::*;
@@ -327,9 +327,9 @@ mod test {
     use tokio_util::compat::FuturesAsyncReadCompatExt;
     use tracing::debug;
 
+    use crate::net::TcpListener;
     use crate::net::certs::CertBuilder;
     use crate::net::tcp_stream::stream;
-    use crate::net::TcpListener;
     use crate::test_async;
     use crate::timer::sleep;
 

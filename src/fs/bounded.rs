@@ -184,8 +184,8 @@ impl AsyncWrite for BoundedFileSink {
 mod tests {
 
     use std::env::temp_dir;
-    use std::fs::remove_file;
     use std::fs::File as StdFile;
+    use std::fs::remove_file;
     use std::io::Read;
     use std::io::SeekFrom;
     use std::path::Path;

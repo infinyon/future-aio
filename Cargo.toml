@@ -1,22 +1,20 @@
 [package]
 name = "fluvio-future"
-version = "0.7.2"
-edition = "2021"
+version = "0.8.0"
+edition = "2024"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
 repository = "https://github.com/infinyon/future-aio"
 license = "Apache-2.0"
-resolver = "2"
+resolver = "3"
 
 [package.metadata.docs.rs]
 all-features = true
 
 [features]
-task = ["async-std/default", "cfg-if"]
+task = ["cfg-if"]
 subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
-task_unstable = ["task", "async-std/unstable"]
-io = ["async-std/default"]
 sync = ["async-std/default"]
 future = ["async-std/default"]
 net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io", "socket2", "ws_stream_wasm"]
@@ -26,15 +24,15 @@ native_tls = ["net", "pin-project", "async-native-tls", "dep:native-tls", "opens
 openssl_tls = ["net", "openssl", "openssl-sys", "pin-project", "futures-util/io"]
 timer = ["async-io", "pin-project", "futures-lite", "fluvio-wasm-timer"]
 fs = ["async-fs", "futures-lite", "pin-utils", "async-trait"]
-zero_copy = ["nix", "task_unstable"]
-mmap = ["fs", "memmap2", "task_unstable"]
+zero_copy = ["nix"]
+mmap = ["fs", "memmap2"]
 retry = ["timer", "cfg-if", "async-trait", "futures-util/io"]
 doomsday = ["task", "sync"]
-tokio1 = ["async-std/tokio1"]
 attributes = []
 
 [dependencies]
 anyhow = { version = "1.0" }
+async-global-executor = { version = "3.1.0",features = ["tokio"] }
 async-trait = { version = "0.1.80", optional = true }
 cfg-if = { version = "1.0", optional = true }
 fluvio-future-derive = { path = "fluvio-future-derive", version = "0.1.0", optional = true }
@@ -43,7 +41,7 @@ futures-util = { version = "0.3.30", optional = true }
 pin-project = { version = "1.1", optional = true }
 pin-utils = { version = "0.1.0", optional = true }
 thiserror = "2.0.11"
-tokio = { version = "1.38", default-features = false, optional = true }
+tokio = { version = "1.44.2", default-features = false}
 tracing = { version = "0.1.40" }
 tracing-subscriber = { version = "0.3.18", optional = true }
 
@@ -52,7 +50,6 @@ async-fs = { version = "2.1", optional = true }
 async-io = { version = "2.3", optional = true }
 async-native-tls = { version = "0.5.0", optional = true }
 async-net = { version = "2.0", optional = true }
-async-std = { version = "1.12", default-features = false, optional = true }
 futures-rustls = { version = "0.26.0", optional = true }
 memmap2 = { version = "0.9.4", optional = true }
 native-tls = { version = "0.2.12", optional = true }

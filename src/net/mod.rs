@@ -222,8 +222,8 @@ mod test {
     use futures_util::AsyncReadExt;
     use tracing::debug;
 
-    use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;
+    use crate::net::tcp_stream::stream;
     use crate::test_async;
     use crate::timer::sleep;
 
