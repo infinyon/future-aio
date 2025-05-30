@@ -6,22 +6,30 @@ pub fn run<F>(spawn_closure: F)
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    async_global_executor::block_on(spawn_closure);
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            wasm_bindgen_futures::spawn_local(spawn_closure);
+        } else {
+            async_global_executor::block_on(spawn_closure);
+        }
+    }
 }
 
 // preserve async-std spawn behavior which is always detach task.
 // to fully control task life cycle, use spawn_task
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
-
-        pub use async_global_executor::spawn_local as spawn_task;
-        pub fn spawn<F: Future<Output = T> + 'static, T: 'static>(future: F){
-            spawn_task(future).detach();
+        pub fn spawn<F: Future<Output = T> + 'static, T: 'static>(future: F) {
+            wasm_bindgen_futures::spawn_local(async move {
+                let _ = future.await;
+            });
         }
     } else {
-        pub use async_global_executor::spawn as spawn_task;
         pub fn spawn<F: Future<Output = T> + Send + 'static, T: Send + 'static>(future: F) {
-            spawn_task(future).detach();
+            async_global_executor::spawn(future).detach();
+        }
+        pub fn spawn_task<F: Future<Output = T> + Send + 'static, T: Send + 'static>(future: F) -> async_task::Task<T> {
+            async_global_executor::spawn(future)
         }
     }
 }
@@ -36,12 +44,17 @@ cfg_if::cfg_if! {
                 F: Future<Output = T> + 'static,
                 T: 'static,
             {
-                async_global_executor::block_on(f)
+                wasm_bindgen_futures::spawn_local(async move {
+                    let _ = f.await;
+                });
             }
     } else {
         pub use async_global_executor::block_on as run_block_on;
     }
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+pub type Task<T> = async_task::Task<T>;
 
 #[cfg(test)]
 mod basic_test {

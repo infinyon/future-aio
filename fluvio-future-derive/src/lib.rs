@@ -3,8 +3,8 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{quote, quote_spanned};
-use syn::{Ident, ItemFn};
 use syn::spanned::Spanned;
+use syn::{Ident, ItemFn};
 
 #[proc_macro_attribute]
 pub fn main_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -79,9 +79,6 @@ pub fn test_async(args: TokenStream, item: TokenStream) -> TokenStream {
             if let Err(err) = ::fluvio_future::task::run_block_on(ft) {
                 assert!(false,"error: {:?}",err);
             }
-            #[cfg(target_arch = "wasm32")]
-            ::fluvio_future::task::run_block_on(ft);
-
         }
     };
 
@@ -116,7 +113,6 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
 
 
             ::fluvio_future::task::run_block_on(ft);
-
         }
     };
 

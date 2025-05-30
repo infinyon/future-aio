@@ -55,6 +55,7 @@ pub mod certs {
         impl Identity {
             pub fn from_pkcs12(buf: &[u8], pass: &str) -> Result<Identity> {
                 let pkcs12 = Pkcs12::from_der(buf)?;
+
                 let parsed = pkcs12
                     .parse2(pass)
                     .map_err(|err| anyhow!("Couldn't read pkcs12 {err}"))?;
