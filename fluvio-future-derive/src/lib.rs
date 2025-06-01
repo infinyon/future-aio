@@ -51,9 +51,8 @@ pub fn main_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn test_async(args: TokenStream, item: TokenStream) -> TokenStream {
-    use syn::AttributeArgs;
 
-    let attribute_args = syn::parse_macro_input!(args as AttributeArgs);
+    let attribute_args = syn::parse_macro_input!(args with syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated);
     let input = syn::parse_macro_input!(item as ItemFn);
     let name = &input.sig.ident;
     let sync_name = format!("{}_sync", name);
@@ -87,9 +86,8 @@ pub fn test_async(args: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
-    use syn::AttributeArgs;
 
-    let attribute_args = syn::parse_macro_input!(args as AttributeArgs);
+    let attribute_args = syn::parse_macro_input!(args with syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated);
     let input = syn::parse_macro_input!(item as ItemFn);
     let name = &input.sig.ident;
     let sync_name = format!("{}_sync", name);
@@ -123,9 +121,8 @@ mod generate {
 
     use proc_macro2::TokenStream;
     use quote::quote;
-    use syn::NestedMeta;
 
-    pub fn generate_test_attributes(attributes: &Vec<NestedMeta>) -> TokenStream {
+    pub fn generate_test_attributes(attributes: &syn::punctuated::Punctuated<syn::Meta, syn::Token![,]>) -> TokenStream {
         let args = attributes.iter().map(|meta| {
             quote! {
                 #[#meta]
