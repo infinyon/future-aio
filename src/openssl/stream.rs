@@ -57,7 +57,7 @@ impl<S: AsyncRead + AsyncWrite + Unpin> AsyncWrite for TlsStream<S> {
         self.with_context(cx, |stream| match stream.shutdown() {
             Ok(_) => Ok(()),
             Err(ref e) if e.code() == openssl::ssl::ErrorCode::ZERO_RETURN => Ok(()),
-            Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
+            Err(e) => Err(io::Error::other(e)),
         })
     }
 }

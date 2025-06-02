@@ -1,9 +1,9 @@
 use crate::net::TcpStream;
 
-pub use futures_rustls::client::TlsStream as ClientTlsStream;
-pub use futures_rustls::server::TlsStream as ServerTlsStream;
 pub use futures_rustls::TlsAcceptor;
 pub use futures_rustls::TlsConnector;
+pub use futures_rustls::client::TlsStream as ClientTlsStream;
+pub use futures_rustls::server::TlsStream as ServerTlsStream;
 
 pub type DefaultServerTlsStream = ServerTlsStream<TcpStream>;
 pub type DefaultClientTlsStream = ClientTlsStream<TcpStream>;
@@ -40,10 +40,10 @@ mod cert {
     use std::io::BufReader;
     use std::path::Path;
 
-    use anyhow::{anyhow, Context, Result};
+    use anyhow::{Context, Result, anyhow};
+    use futures_rustls::rustls::RootCertStore;
     use futures_rustls::rustls::pki_types::CertificateDer;
     use futures_rustls::rustls::pki_types::PrivateKeyDer;
-    use futures_rustls::rustls::RootCertStore;
     use rustls_pemfile::certs;
     use rustls_pemfile::pkcs8_private_keys;
 
@@ -104,8 +104,8 @@ mod connector {
     use tracing::debug;
 
     use crate::net::{
-        tcp_stream::stream, AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd,
-        DomainConnector, SplitConnection, TcpDomainConnector,
+        AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
+        SplitConnection, TcpDomainConnector, tcp_stream::stream,
     };
 
     use super::TlsConnector;
@@ -219,16 +219,9 @@ mod builder {
     use std::path::Path;
     use std::sync::Arc;
 
+    use futures_rustls::TlsAcceptor;
+    use futures_rustls::TlsConnector;
     use futures_rustls::pki_types::UnixTime;
-    use futures_rustls::rustls::client::danger::HandshakeSignatureValid;
-    use futures_rustls::rustls::client::danger::ServerCertVerified;
-    use futures_rustls::rustls::client::danger::ServerCertVerifier;
-    use futures_rustls::rustls::client::WantsClientCert;
-    use futures_rustls::rustls::pki_types::CertificateDer;
-    use futures_rustls::rustls::pki_types::PrivateKeyDer;
-    use futures_rustls::rustls::pki_types::ServerName;
-    use futures_rustls::rustls::server::WantsServerCert;
-    use futures_rustls::rustls::server::WebPkiClientVerifier;
     use futures_rustls::rustls::ClientConfig;
     use futures_rustls::rustls::ConfigBuilder;
     use futures_rustls::rustls::Error as TlsError;
@@ -236,8 +229,15 @@ mod builder {
     use futures_rustls::rustls::ServerConfig;
     use futures_rustls::rustls::SignatureScheme;
     use futures_rustls::rustls::WantsVerifier;
-    use futures_rustls::TlsAcceptor;
-    use futures_rustls::TlsConnector;
+    use futures_rustls::rustls::client::WantsClientCert;
+    use futures_rustls::rustls::client::danger::HandshakeSignatureValid;
+    use futures_rustls::rustls::client::danger::ServerCertVerified;
+    use futures_rustls::rustls::client::danger::ServerCertVerifier;
+    use futures_rustls::rustls::pki_types::CertificateDer;
+    use futures_rustls::rustls::pki_types::PrivateKeyDer;
+    use futures_rustls::rustls::pki_types::ServerName;
+    use futures_rustls::rustls::server::WantsServerCert;
+    use futures_rustls::rustls::server::WebPkiClientVerifier;
 
     use anyhow::{Context, Result};
     use tracing::info;
@@ -471,8 +471,8 @@ mod test {
     use tokio_util::compat::FuturesAsyncReadCompatExt;
     use tracing::debug;
 
-    use fluvio_future::net::tcp_stream::stream;
     use fluvio_future::net::TcpListener;
+    use fluvio_future::net::tcp_stream::stream;
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 

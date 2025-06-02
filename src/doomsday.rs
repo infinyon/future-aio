@@ -1,15 +1,14 @@
 use std::fmt::Display;
 use std::sync::atomic::{AtomicBool, Ordering};
-
 use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
 
+use async_lock::Mutex;
 use tracing::{debug, error, info};
 
-use crate::sync::Mutex;
-use crate::task::JoinHandle;
+use crate::task::Task;
 
 #[derive(Clone)]
 /// DoomsdayTimer will configurably panic or exit if it is not
@@ -40,7 +39,7 @@ impl DoomsdayTimer {
     /// Spawn a new doomsday timer.
     /// If `exit_on_explode` is true, it will terminate process with `exit(1)` if it explodes.
     /// Otherwise it will call `panic()`. Note that `awaiting` on the jh will panic if the `DoomsdayTimer` panicked
-    pub fn spawn(duration: Duration, exit_on_explode: bool) -> (Self, JoinHandle<()>) {
+    pub fn spawn(duration: Duration, exit_on_explode: bool) -> (Self, Task<()>) {
         let s = Self {
             time_to_explode: Arc::new(Mutex::new(Instant::now() + duration)),
             duration,
@@ -49,7 +48,7 @@ impl DoomsdayTimer {
         };
 
         let cloned = s.clone();
-        let jh = crate::task::spawn(async move {
+        let jh = crate::task::spawn_task(async move {
             cloned.main_loop().await;
         });
         (s, jh)

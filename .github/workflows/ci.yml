@@ -33,7 +33,7 @@ jobs:
       - name: Test
         run: |
           Start-Process cmd -Args /c,"http-server --tls --tls-key certs/test-certs/server.key --tls-cert certs/test-certs/server.crt --tls-key-algorithm pkcs8"
-          cargo test --features task,subscriber,fixture,task_unstable,io,sync,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry
+          cargo test --features task,subscriber,fixture,io,future,net,tls,rust_tls,timer,fs,zero_copy,mmap,retry
   test:
     name: Check ${{ matrix.check }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

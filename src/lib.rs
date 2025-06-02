@@ -49,9 +49,6 @@ pub use crate::native_tls as tls;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod openssl;
 
-#[cfg(feature = "sync")]
-pub mod sync;
-
 #[cfg(feature = "future")]
 pub mod future;
 

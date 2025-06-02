@@ -30,7 +30,7 @@ test-macos: PFX_OPTS=""
 test-macos: certs cert-patch-macos test-derive setup-http-server run-test-macos
 run-test-macos:
 	TEST_PORT=$$(cat tmp-PORT) cargo test \
-		--features "task,subscriber,fixture,task_unstable,io,sync,future,net,tls,timer,fs,zero_copy,retry,doomsday,tokio1"
+		  --features "task,subscriber,fixture,io,future,net,tls,timer,fs,zero_copy,retry,doomsday"
 	$(MAKE) teardown-http-server
 
 install-wasm-pack:

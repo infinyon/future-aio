@@ -1,30 +1,41 @@
 use std::future::Future;
 
-use async_std::task;
-
-#[cfg(feature = "task_unstable")]
-pub use async_std::task::spawn_local;
-
 /// run future and wait forever
 /// this is typically used in the server
 pub fn run<F>(spawn_closure: F)
 where
     F: Future<Output = ()> + Send + 'static,
 {
-    task::block_on(spawn_closure);
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(target_arch = "wasm32")] {
-        pub use async_std::task::spawn_local as spawn;
-    } else {
-        pub use async_std::task::spawn;
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            wasm_bindgen_futures::spawn_local(spawn_closure);
+        } else {
+            async_global_executor::block_on(spawn_closure);
+        }
     }
 }
 
-#[cfg(feature = "task_unstable")]
+// preserve async-std spawn behavior which is always detach task.
+// to fully control task life cycle, use spawn_task
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "wasm32")] {
+        pub fn spawn<F: Future<Output = T> + 'static, T: 'static>(future: F) {
+            wasm_bindgen_futures::spawn_local(async move {
+                let _ = future.await;
+            });
+        }
+    } else {
+        pub fn spawn<F: Future<Output = T> + Send + 'static, T: Send + 'static>(future: F) {
+            async_global_executor::spawn(future).detach();
+        }
+        pub fn spawn_task<F: Future<Output = T> + Send + 'static, T: Send + 'static>(future: F) -> async_task::Task<T> {
+            async_global_executor::spawn(future)
+        }
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
-pub use async_std::task::spawn_blocking;
+pub use async_global_executor::spawn_blocking;
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
@@ -33,14 +44,17 @@ cfg_if::cfg_if! {
                 F: Future<Output = T> + 'static,
                 T: 'static,
             {
-                task::block_on(f)
+                wasm_bindgen_futures::spawn_local(async move {
+                    let _ = f.await;
+                });
             }
     } else {
-        pub use async_std::task::block_on as run_block_on;
+        pub use async_global_executor::block_on as run_block_on;
     }
 }
 
-pub use async_std::task::JoinHandle;
+#[cfg(not(target_arch = "wasm32"))]
+pub type Task<T> = async_task::Task<T>;
 
 #[cfg(test)]
 mod basic_test {

@@ -117,8 +117,8 @@ mod tests {
     use bytes::BufMut;
     use bytes::Bytes;
     use bytes::BytesMut;
-    use futures_lite::future::zip;
     use futures_lite::AsyncReadExt;
+    use futures_lite::future::zip;
     use futures_util::SinkExt;
     use futures_util::StreamExt;
     use tokio_util::codec::BytesCodec;

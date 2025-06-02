@@ -3,8 +3,8 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{quote, quote_spanned};
-use syn::{Ident, ItemFn};
 use syn::spanned::Spanned;
+use syn::{Ident, ItemFn};
 
 #[proc_macro_attribute]
 pub fn main_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -51,9 +51,8 @@ pub fn main_async(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn test_async(args: TokenStream, item: TokenStream) -> TokenStream {
-    use syn::AttributeArgs;
 
-    let attribute_args = syn::parse_macro_input!(args as AttributeArgs);
+    let attribute_args = syn::parse_macro_input!(args with syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated);
     let input = syn::parse_macro_input!(item as ItemFn);
     let name = &input.sig.ident;
     let sync_name = format!("{}_sync", name);
@@ -79,9 +78,6 @@ pub fn test_async(args: TokenStream, item: TokenStream) -> TokenStream {
             if let Err(err) = ::fluvio_future::task::run_block_on(ft) {
                 assert!(false,"error: {:?}",err);
             }
-            #[cfg(target_arch = "wasm32")]
-            ::fluvio_future::task::run_block_on(ft);
-
         }
     };
 
@@ -90,9 +86,8 @@ pub fn test_async(args: TokenStream, item: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
-    use syn::AttributeArgs;
 
-    let attribute_args = syn::parse_macro_input!(args as AttributeArgs);
+    let attribute_args = syn::parse_macro_input!(args with syn::punctuated::Punctuated::<syn::Meta, syn::Token![,]>::parse_terminated);
     let input = syn::parse_macro_input!(item as ItemFn);
     let name = &input.sig.ident;
     let sync_name = format!("{}_sync", name);
@@ -116,7 +111,6 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
 
 
             ::fluvio_future::task::run_block_on(ft);
-
         }
     };
 
@@ -127,9 +121,8 @@ mod generate {
 
     use proc_macro2::TokenStream;
     use quote::quote;
-    use syn::NestedMeta;
 
-    pub fn generate_test_attributes(attributes: &Vec<NestedMeta>) -> TokenStream {
+    pub fn generate_test_attributes(attributes: &syn::punctuated::Punctuated<syn::Meta, syn::Token![,]>) -> TokenStream {
         let args = attributes.iter().map(|meta| {
             quote! {
                 #[#meta]

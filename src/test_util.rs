@@ -22,8 +22,8 @@ mod test {
     use std::task::Context;
     use std::task::Poll;
 
-    use futures_lite::future::poll_fn;
     use futures_lite::Future;
+    use futures_lite::future::poll_fn;
     use tracing::debug;
 
     use crate::test_async;

@@ -4,10 +4,10 @@ use std::os::unix::io::{AsRawFd, RawFd};
 use std::thread::sleep;
 use thiserror::Error;
 
+use nix::Error as NixError;
 #[allow(unused)]
 use nix::libc::off_t;
 use nix::sys::sendfile::sendfile;
-use nix::Error as NixError;
 
 use tracing::{debug, error, trace};
 
@@ -67,10 +67,7 @@ impl ZeroCopy {
 
                     trace!(
                         "trying: zero copy source fd: {} offset: {} len: {}, target fd: {}",
-                        source_raw_fd,
-                        current_offset,
-                        to_be_transfer,
-                        target_raw_fd
+                        source_raw_fd, current_offset, to_be_transfer, target_raw_fd
                     );
 
                     match sendfile(
@@ -96,8 +93,7 @@ impl ZeroCopy {
                             } else {
                                 trace!(
                                     "actual: zero copy bytes transferred: {} out of {}, ",
-                                    bytes_transferred,
-                                    size
+                                    bytes_transferred, size
                                 );
 
                                 return Ok(total_transferred);
@@ -138,10 +134,7 @@ impl ZeroCopy {
 
                     trace!(
                         "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
-                        source_raw_fd,
-                        current_offset,
-                        to_be_transfer,
-                        target_raw_fd
+                        source_raw_fd, current_offset, to_be_transfer, target_raw_fd
                     );
 
                     let (res, bytes_transferred) = sendfile(
@@ -203,8 +196,8 @@ mod tests {
 
     use crate::file_slice::AsyncFileSlice;
     use crate::fs::AsyncFileExtension;
-    use crate::net::tcp_stream::stream;
     use crate::net::TcpListener;
+    use crate::net::tcp_stream::stream;
     use crate::timer::sleep;
     use crate::{fs::util as file_util, zero_copy::ZeroCopy};
     use futures_lite::AsyncReadExt;

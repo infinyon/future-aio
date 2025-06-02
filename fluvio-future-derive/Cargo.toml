@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future-derive"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Procedure macro to run async fn as test"
@@ -14,8 +14,8 @@ proc-macro = true
 
 [dependencies]
 proc-macro2 = "1.0"
-quote = "1.0.2"
-syn = { version = "1.0.14", features = ["full"] }
+quote = "1.0.40"
+syn = { version = "2.0.101", features = ["full"] }
 
 
 [dev-dependencies]

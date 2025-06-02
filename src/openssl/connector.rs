@@ -11,9 +11,9 @@ use openssl::x509::verify::X509VerifyFlags;
 use tracing::debug;
 
 use crate::net::{
-    tcp_stream::{stream, stream_with_opts, SocketOpts},
     AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
     SplitConnection, TcpDomainConnector,
+    tcp_stream::{SocketOpts, stream, stream_with_opts},
 };
 
 use super::async_to_sync_wrapper::AsyncToSyncWrapper;
@@ -40,7 +40,7 @@ pub mod certs {
     // copied from https://github.com/sfackler/rust-native-tls/blob/master/src/imp/openssl.rs
     mod identity_impl {
 
-        use anyhow::{anyhow, Result};
+        use anyhow::{Result, anyhow};
         use openssl::pkcs12::Pkcs12;
         use openssl::pkey::{PKey, Private};
         use openssl::x509::X509;
@@ -55,6 +55,7 @@ pub mod certs {
         impl Identity {
             pub fn from_pkcs12(buf: &[u8], pass: &str) -> Result<Identity> {
                 let pkcs12 = Pkcs12::from_der(buf)?;
+
                 let parsed = pkcs12
                     .parse2(pass)
                     .map_err(|err| anyhow!("Couldn't read pkcs12 {err}"))?;
