@@ -8,9 +8,9 @@ use std::sync::RwLock;
 use std::sync::RwLockReadGuard;
 use std::sync::RwLockWriteGuard;
 
-use async_fs::File;
 use memmap2::Mmap;
 use memmap2::MmapMut;
+use tokio::fs::File;
 
 use crate::task::spawn_blocking;
 
@@ -34,7 +34,7 @@ impl MemoryMappedMutFile {
 
             unsafe { MmapMut::map_mut(&mfile) }.map(|mm_file| (mm_file, mfile, owned_path))
         })
-        .await?;
+        .await??;
 
         Ok((MemoryMappedMutFile::from_mmap(m_map), mfile.into()))
     }
@@ -71,7 +71,7 @@ impl MemoryMappedMutFile {
             drop(inner_map);
             res
         })
-        .await
+        .await?
     }
 
     pub async fn flush_async_ft(&self) -> Result<(), IoError> {
@@ -80,7 +80,7 @@ impl MemoryMappedMutFile {
             let inner_map = inner.write().unwrap();
             inner_map.flush_async()
         })
-        .await
+        .await?
     }
 
     pub async fn flush_range_ft(&self, offset: usize, len: usize) -> Result<(), IoError> {
@@ -89,7 +89,7 @@ impl MemoryMappedMutFile {
             let inner_map = inner.write().unwrap();
             inner_map.flush_range(offset, len)
         })
-        .await
+        .await?
     }
 }
 
@@ -118,7 +118,7 @@ impl MemoryMappedFile {
 
             unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))
         })
-        .await?;
+        .await??;
 
         Ok((MemoryMappedFile::from_mmap(m_map), mfile.into()))
     }
@@ -140,8 +140,8 @@ mod tests {
     use std::io::Error as IoError;
     use std::io::Read;
 
-    use async_fs::OpenOptions;
     use flv_util::fixture::ensure_clean_file;
+    use tokio::fs::OpenOptions;
 
     use crate::test_async;
 

@@ -4,13 +4,14 @@ mod extension;
 pub use extension::*;
 
 pub use self::bounded::BoundedFileOption;
-pub use self::bounded::BoundedFileSink;
+// pub use self::bounded::BoundedFileSink;
 pub use self::bounded::BoundedFileSinkError;
 
 #[cfg(feature = "mmap")]
 pub mod mmap;
 
-pub use async_fs::*;
+// pub use async_fs::*;
+pub use tokio::fs::*;
 
 pub mod util {
 

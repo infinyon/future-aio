@@ -4,10 +4,10 @@ use std::os::unix::io::{AsRawFd, RawFd};
 use std::thread::sleep;
 use thiserror::Error;
 
-use nix::Error as NixError;
 #[allow(unused)]
 use nix::libc::off_t;
 use nix::sys::sendfile::sendfile;
+use nix::Error as NixError;
 
 use tracing::{debug, error, trace};
 
@@ -26,6 +26,12 @@ pub enum SendFileError {
     NixError {
         #[from]
         source: NixError,
+    },
+    //JoinError
+    #[error("Join error: {source}")]
+    JoinError {
+        #[from]
+        source: tokio::task::JoinError,
     },
 }
 
@@ -67,7 +73,10 @@ impl ZeroCopy {
 
                     trace!(
                         "trying: zero copy source fd: {} offset: {} len: {}, target fd: {}",
-                        source_raw_fd, current_offset, to_be_transfer, target_raw_fd
+                        source_raw_fd,
+                        current_offset,
+                        to_be_transfer,
+                        target_raw_fd
                     );
 
                     match sendfile(
@@ -93,7 +102,8 @@ impl ZeroCopy {
                             } else {
                                 trace!(
                                     "actual: zero copy bytes transferred: {} out of {}, ",
-                                    bytes_transferred, size
+                                    bytes_transferred,
+                                    size
                                 );
 
                                 return Ok(total_transferred);
@@ -134,7 +144,10 @@ impl ZeroCopy {
 
                     trace!(
                         "mac zero copy source fd: {} offset: {} len: {}, target: fd{}",
-                        source_raw_fd, current_offset, to_be_transfer, target_raw_fd
+                        source_raw_fd,
+                        current_offset,
+                        to_be_transfer,
+                        target_raw_fd
                     );
 
                     let (res, bytes_transferred) = sendfile(
@@ -180,7 +193,7 @@ impl ZeroCopy {
             })
         };
 
-        ft.await
+        ft.await?
     }
 }
 
@@ -191,16 +204,15 @@ mod tests {
     use std::time;
 
     use futures_lite::future::zip;
-    use futures_util::stream::StreamExt;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
     use tracing::debug;
 
     use crate::file_slice::AsyncFileSlice;
     use crate::fs::AsyncFileExtension;
-    use crate::net::TcpListener;
     use crate::net::tcp_stream::stream;
     use crate::timer::sleep;
     use crate::{fs::util as file_util, zero_copy::ZeroCopy};
-    use futures_lite::AsyncReadExt;
+    use tokio::net::TcpListener;
 
     use super::SendFileError;
 
@@ -215,10 +227,10 @@ mod tests {
             let mut listener = TcpListener::bind(addr).await?;
 
             debug!("server: listening");
-            let mut incoming = listener.incoming();
-            if let Some(stream) = incoming.next().await {
+            let incoming = listener.accept().await;
+            if let Ok((stream, _)) = incoming {
                 debug!("server: got connection. waiting");
-                let mut tcp_stream = stream?;
+                let mut tcp_stream = stream;
                 let mut buf = [0; 30];
                 let len = tcp_stream.read(&mut buf).await?;
                 assert_eq!(len, 30);
@@ -252,7 +264,6 @@ mod tests {
     async fn test_zero_copy_large_size() {
         const MAX_BYTES: usize = 3000000;
 
-        use futures_lite::AsyncWriteExt;
         use std::env::temp_dir;
 
         const TEST_ITERATION: u16 = 2;
@@ -288,13 +299,13 @@ mod tests {
             let listener = TcpListener::bind(addr).await.expect("failed bind");
 
             debug!("server: listening");
-            let mut incoming = listener.incoming();
 
             for i in 0..TEST_ITERATION {
-                let stream = incoming.next().await.expect("client should connect");
+                let incoming = listener.accept().await;
+                let (stream, _addr) = incoming.expect("accept failed");
                 debug!("server {} got connection. waiting", i);
 
-                let mut tcp_stream = stream.expect("stream");
+                let mut tcp_stream = stream;
 
                 debug!(
                     "server {}, send back file using zero copy: {:#?}",
@@ -316,6 +327,7 @@ mod tests {
         };
 
         let client = async {
+            use futures_lite::AsyncReadExt;
             // wait 1 seconds to give server to be ready
             sleep(time::Duration::from_millis(100)).await;
             debug!("client loop starting");
@@ -359,10 +371,10 @@ mod tests {
             let mut listener = TcpListener::bind(addr).await?;
 
             debug!("server: listening");
-            let mut incoming = listener.incoming();
-            if let Some(stream) = incoming.next().await {
+            let incoming = listener.accept().await;
+            if let Ok((stream, _)) = incoming {
                 debug!("server: got connection. waiting");
-                let mut tcp_stream = stream?;
+                let mut tcp_stream = stream;
                 let mut buf = [0; 30];
                 let len = tcp_stream.read(&mut buf).await?;
                 assert_eq!(len, 30);

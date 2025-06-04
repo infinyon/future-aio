@@ -7,18 +7,21 @@ mod inner {
     use std::task::{Context, Poll};
     use std::time::Duration;
 
-    use async_io::Timer;
     use futures_lite::future::Future;
 
     use pin_project::pin_project;
 
     /// same as `after` but return () to make it compatible as previous
     pub fn sleep(duration: Duration) -> Sleeper {
-        Sleeper(after(duration))
+        // tokio::time::sleep(duration)
+        let pin_sleep = Box::pin(tokio::time::sleep(duration));
+        Sleeper(pin_sleep)
     }
 
+    pub type Timer = tokio::time::Sleep;
+
     #[pin_project]
-    pub struct Sleeper(#[pin] Timer);
+    pub struct Sleeper(#[pin] Pin<Box<Timer>>);
 
     impl Future for Sleeper {
         type Output = ();
@@ -48,7 +51,7 @@ mod inner {
     /// });
     /// ```
     pub fn after(duration: Duration) -> Timer {
-        Timer::after(duration)
+        tokio::time::sleep(duration)
     }
 }
 #[cfg(target_arch = "wasm32")]

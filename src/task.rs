@@ -26,16 +26,25 @@ cfg_if::cfg_if! {
         }
     } else {
         pub fn spawn<F: Future<Output = T> + Send + 'static, T: Send + 'static>(future: F) {
-            async_global_executor::spawn(future).detach();
+            tokio::task::spawn(future);
         }
-        pub fn spawn_task<F: Future<Output = T> + Send + 'static, T: Send + 'static>(future: F) -> async_task::Task<T> {
-            async_global_executor::spawn(future)
+        pub fn spawn_task<F: Future<Output = T> + Send + 'static, T: Send + 'static>(future: F) -> Task<T> {
+            tokio::task::spawn(future)
         }
     }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use async_global_executor::spawn_blocking;
+pub type Task<T> = tokio::task::JoinHandle<T>;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn spawn_blocking<F, R>(f: F) -> Task<R>
+where
+    F: FnOnce() -> R + Send + 'static,
+    R: Send + 'static,
+{
+    tokio::task::spawn_blocking(f)
+}
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "wasm32")] {
@@ -52,9 +61,6 @@ cfg_if::cfg_if! {
         pub use async_global_executor::block_on as run_block_on;
     }
 }
-
-#[cfg(not(target_arch = "wasm32"))]
-pub type Task<T> = async_task::Task<T>;
 
 #[cfg(test)]
 mod basic_test {

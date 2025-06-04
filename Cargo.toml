@@ -12,22 +12,22 @@ resolver = "3"
 all-features = true
 
 [features]
-task = ["cfg-if", "async-task"]
+task = ["cfg-if", "tokio"]
 subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
 future = ["futures-lite"]
-io = ["async-fs", "async-io"]
+io = ["tokio"]
 net = ["futures-lite", "async-net", "async-trait", "cfg-if", "futures-util/io", "socket2", "ws_stream_wasm"]
 tls = ["rust_tls"]
 rust_tls = ["net", "rustls-pemfile", "futures-rustls", "pin-project", "futures-util/io"]
 native_tls = ["net", "pin-project", "async-native-tls", "dep:native-tls", "openssl/vendored", "futures-util/io"]
 openssl_tls = ["net", "openssl", "openssl-sys", "pin-project", "futures-util/io"]
-timer = ["async-io", "pin-project", "futures-lite", "fluvio-wasm-timer"]
-fs = ["async-fs", "futures-lite", "pin-utils", "async-trait"]
+timer = ["tokio", "pin-project", "futures-lite", "fluvio-wasm-timer"]
+fs = ["tokio", "futures-lite", "pin-utils", "async-trait"]
 zero_copy = ["nix", "task"]
 mmap = ["fs", "memmap2", "task"]
 retry = ["timer", "cfg-if", "async-trait", "futures-util/io"]
-doomsday = ["task", "async-lock"]
+doomsday = ["task", "tokio"]
 attributes = []
 
 [dependencies]
@@ -44,14 +44,13 @@ tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.19", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-tokio = { version = "1.45", default-features = false}
+tokio = { version = "1.45", default-features = false, features = ["full"], optional = true }
 async-global-executor = { version = "3.1.0", features = ["tokio"] }
-async-fs = { version = "2.1", optional = true }
-async-io = { version = "2.4", optional = true }
+# async-fs = { version = "2.1", optional = true }
+# async-io = { version = "2.4", optional = true }
+# async-lock = { version = "3.4", optional = true }
 async-native-tls = { version = "0.5.0", optional = true }
 async-net = { version = "2.0", optional = true }
-async-lock = { version = "3.4", optional = true }
-async-task = { version = "4.7", optional = true }
 futures-rustls = { version = "0.26.0", optional = true }
 memmap2 = { version = "0.9.5", optional = true }
 native-tls = { version = "0.2.14", optional = true }

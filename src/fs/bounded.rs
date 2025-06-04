@@ -9,18 +9,17 @@ use std::path::PathBuf;
 
 use std::fmt;
 
+use tokio::fs::File;
+use tokio::io::AsyncWrite;
 use tracing::trace;
 
 use pin_utils::unsafe_pinned;
 use pin_utils::unsafe_unpinned;
 
-use async_fs::File;
-
 #[cfg(unix)]
 use crate::file_slice::AsyncFileSlice;
 
 use super::AsyncFileExtension;
-use futures_lite::AsyncWrite;
 
 #[derive(Debug)]
 pub enum BoundedFileSinkError {
@@ -175,8 +174,8 @@ impl AsyncWrite for BoundedFileSink {
         self.writer().poll_flush(cx)
     }
 
-    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
-        self.writer().poll_close(cx)
+    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<io::Result<()>> {
+        self.writer().poll_shutdown(cx)
     }
 }
 
@@ -184,18 +183,18 @@ impl AsyncWrite for BoundedFileSink {
 mod tests {
 
     use std::env::temp_dir;
-    use std::fs::File as StdFile;
     use std::fs::remove_file;
+    use std::fs::File as StdFile;
     use std::io::Read;
     use std::io::SeekFrom;
     use std::path::Path;
 
+    use tokio::io::AsyncReadExt;
+    use tokio::io::AsyncSeekExt;
+    use tokio::io::AsyncWriteExt;
     use tracing::debug;
 
     use crate::test_async;
-    use futures_lite::AsyncReadExt;
-    use futures_lite::AsyncSeekExt;
-    use futures_lite::AsyncWriteExt;
 
     use super::BoundedFileOption;
     use super::BoundedFileSink;

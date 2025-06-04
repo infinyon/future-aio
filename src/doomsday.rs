@@ -5,7 +5,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use async_lock::Mutex;
+use tokio::sync::Mutex;
 use tracing::{debug, error, info};
 
 use crate::task::Task;

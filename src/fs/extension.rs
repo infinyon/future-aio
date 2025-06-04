@@ -6,8 +6,9 @@ use std::io::SeekFrom;
 use std::os::unix::io::AsRawFd;
 
 use async_trait::async_trait;
-use futures_lite::AsyncSeekExt;
+// use futures_lite::AsyncSeekExt;
 
+use tokio::io::AsyncSeekExt;
 use tracing::trace;
 
 #[cfg(unix)]
@@ -89,13 +90,13 @@ mod tests {
     use std::io::Write;
 
     use flv_util::fixture::ensure_clean_file;
+    use tokio::io::AsyncReadExt;
+    use tokio::io::AsyncSeekExt;
+    use tokio::io::AsyncWriteExt;
 
     use super::AsyncFileExtension;
     use crate::fs::util as file_util;
     use crate::test_async;
-    use futures_lite::AsyncReadExt;
-    use futures_lite::AsyncSeekExt;
-    use futures_lite::AsyncWriteExt;
 
     // sync seek write and read
     // this is used for implementating async version
