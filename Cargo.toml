@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.8.1"
+version = "0.8.2"
 edition = "2024"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"
@@ -12,7 +12,7 @@ resolver = "3"
 all-features = true
 
 [features]
-task = ["cfg-if", "async-task"]
+task = ["cfg-if", "async-task", "timer"]
 subscriber = ["tracing-subscriber", "tracing-subscriber/std", "tracing-subscriber/env-filter"]
 fixture = ["subscriber", "task", "fluvio-future-derive"]
 future = ["futures-lite"]
@@ -58,6 +58,7 @@ native-tls = { version = "0.2.14", optional = true }
 nix = { version = "0.30.1", optional = true, features = ["zerocopy"] }
 openssl = { version = "0.10.71", optional = true }
 openssl-sys = { version = "0.9.109", optional = true, features = ["vendored"] }
+openssl-src = { version = "=300.4.2+3.4.1", optional = true } # https://github.com/infinyon/fluvio/issues/4502
 rustls-pemfile = { version = "2.2", optional = true }
 socket2 = { version = "0.5.10", default-features = false, features = ["all"], optional = true }
 

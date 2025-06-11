@@ -6,4 +6,3 @@ target-docker
 .vscode/tasks.json
 .vscode/settings.json
 .idea/
-Cargo.lock
