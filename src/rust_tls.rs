@@ -1,9 +1,9 @@
 use crate::net::TcpStream;
 
-pub use futures_rustls::client::TlsStream as ClientTlsStream;
-pub use futures_rustls::server::TlsStream as ServerTlsStream;
 pub use futures_rustls::TlsAcceptor;
 pub use futures_rustls::TlsConnector;
+pub use futures_rustls::client::TlsStream as ClientTlsStream;
+pub use futures_rustls::server::TlsStream as ServerTlsStream;
 
 pub type DefaultServerTlsStream = ServerTlsStream<TcpStream>;
 pub type DefaultClientTlsStream = ClientTlsStream<TcpStream>;
@@ -41,11 +41,11 @@ mod cert {
     use std::iter;
     use std::path::Path;
 
-    use anyhow::{anyhow, Context, Result};
+    use anyhow::{Context, Result, anyhow};
+    use futures_rustls::rustls::RootCertStore;
     use futures_rustls::rustls::pki_types::CertificateDer;
     use futures_rustls::rustls::pki_types::PrivateKeyDer;
-    use futures_rustls::rustls::RootCertStore;
-    use rustls_pemfile::{certs, read_one, Item};
+    use rustls_pemfile::{Item, certs, read_one};
 
     pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<CertificateDer<'static>>> {
         load_certs_from_reader(&mut BufReader::new(File::open(path)?))
@@ -112,8 +112,8 @@ mod connector {
     use tracing::debug;
 
     use crate::net::{
-        tcp_stream::stream, AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd,
-        DomainConnector, SplitConnection, TcpDomainConnector,
+        AsConnectionFd, BoxReadConnection, BoxWriteConnection, ConnectionFd, DomainConnector,
+        SplitConnection, TcpDomainConnector, tcp_stream::stream,
     };
 
     use super::TlsConnector;
@@ -140,10 +140,7 @@ mod connector {
             let fd = tcp_stream.as_connection_fd();
 
             let server_name = ServerName::try_from(domain).map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("Invalid Dns Name: {}", err),
-                )
+                IoError::new(ErrorKind::InvalidInput, format!("Invalid Dns Name: {err}"))
             })?;
 
             let (write, read) = self
@@ -191,10 +188,7 @@ mod connector {
             debug!("connect to tls domain: {}", self.domain);
 
             let server_name = ServerName::try_from(self.domain.as_str()).map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("Invalid Dns Name: {}", err),
-                )
+                IoError::new(ErrorKind::InvalidInput, format!("Invalid Dns Name: {err}"))
             })?;
 
             let (write, read) = self
@@ -227,16 +221,9 @@ mod builder {
     use std::path::Path;
     use std::sync::Arc;
 
+    use futures_rustls::TlsAcceptor;
+    use futures_rustls::TlsConnector;
     use futures_rustls::pki_types::UnixTime;
-    use futures_rustls::rustls::client::danger::HandshakeSignatureValid;
-    use futures_rustls::rustls::client::danger::ServerCertVerified;
-    use futures_rustls::rustls::client::danger::ServerCertVerifier;
-    use futures_rustls::rustls::client::WantsClientCert;
-    use futures_rustls::rustls::pki_types::CertificateDer;
-    use futures_rustls::rustls::pki_types::PrivateKeyDer;
-    use futures_rustls::rustls::pki_types::ServerName;
-    use futures_rustls::rustls::server::WantsServerCert;
-    use futures_rustls::rustls::server::WebPkiClientVerifier;
     use futures_rustls::rustls::ClientConfig;
     use futures_rustls::rustls::ConfigBuilder;
     use futures_rustls::rustls::Error as TlsError;
@@ -244,8 +231,15 @@ mod builder {
     use futures_rustls::rustls::ServerConfig;
     use futures_rustls::rustls::SignatureScheme;
     use futures_rustls::rustls::WantsVerifier;
-    use futures_rustls::TlsAcceptor;
-    use futures_rustls::TlsConnector;
+    use futures_rustls::rustls::client::WantsClientCert;
+    use futures_rustls::rustls::client::danger::HandshakeSignatureValid;
+    use futures_rustls::rustls::client::danger::ServerCertVerified;
+    use futures_rustls::rustls::client::danger::ServerCertVerifier;
+    use futures_rustls::rustls::pki_types::CertificateDer;
+    use futures_rustls::rustls::pki_types::PrivateKeyDer;
+    use futures_rustls::rustls::pki_types::ServerName;
+    use futures_rustls::rustls::server::WantsServerCert;
+    use futures_rustls::rustls::server::WebPkiClientVerifier;
 
     use anyhow::{Context, Result};
     use tracing::info;
@@ -479,8 +473,8 @@ mod test {
     use tokio_util::compat::FuturesAsyncReadCompatExt;
     use tracing::debug;
 
-    use fluvio_future::net::tcp_stream::stream;
     use fluvio_future::net::TcpListener;
+    use fluvio_future::net::tcp_stream::stream;
     use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 
@@ -563,8 +557,8 @@ mod test {
                     str_bytes.push(b.to_owned());
                 }
                 let message = String::from_utf8(str_bytes).expect("utf8");
-                assert_eq!(message, format!("message{}", i));
-                let resply = format!("{}reply", message);
+                assert_eq!(message, format!("message{i}"));
+                let resply = format!("{message}reply");
                 let reply_bytes = resply.as_bytes();
                 debug!("sever: send back reply: {}", resply);
                 framed
@@ -590,7 +584,7 @@ mod test {
             debug!("client: got connection. waiting");
 
             for i in 0..ITER {
-                let message = format!("message{}", i);
+                let message = format!("message{i}");
                 let bytes = message.as_bytes();
                 debug!("client: loop {} sending test message", i);
                 framed
@@ -605,7 +599,7 @@ mod test {
                     str_bytes.push(b.to_owned());
                 }
                 let message = String::from_utf8(str_bytes).expect("utf8");
-                assert_eq!(message, format!("message{}reply", i));
+                assert_eq!(message, format!("message{i}reply"));
             }
 
             Ok(()) as Result<()>

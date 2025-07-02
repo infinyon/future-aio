@@ -277,7 +277,7 @@ impl TcpDomainConnector for TlsAnonymousConnector {
             .map_err(|e| {
                 IoError::new(
                     ErrorKind::ConnectionRefused,
-                    format!("failed to connect: {}", e),
+                    format!("failed to connect: {e}"),
                 )
             })?
             .split_connection();
@@ -327,7 +327,7 @@ impl TcpDomainConnector for TlsDomainConnector {
             .map_err(|e| {
                 IoError::new(
                     ErrorKind::ConnectionRefused,
-                    format!("failed to connect: {}", e),
+                    format!("failed to connect: {e}"),
                 )
             })?
             .split_connection();
