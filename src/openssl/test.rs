@@ -124,8 +124,8 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<()> 
                 str_bytes.push(b.to_owned());
             }
             let message = String::from_utf8(str_bytes).expect("utf8");
-            assert_eq!(message, format!("message{}", i));
-            let resply = format!("{}reply", message);
+            assert_eq!(message, format!("message{i}"));
+            let resply = format!("{message}reply");
             let reply_bytes = resply.as_bytes();
             debug!("sever: send back reply: {}", resply);
             framed
@@ -150,7 +150,7 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<()> 
         debug!("client: got connection. waiting");
 
         for i in 0..ITER {
-            let message = format!("message{}", i);
+            let message = format!("message{i}");
             let bytes = message.as_bytes();
             debug!("client: loop {} sending test message", i);
             framed
@@ -165,7 +165,7 @@ async fn run_test(acceptor: TlsAcceptor, connector: TlsConnector) -> Result<()> 
                 str_bytes.push(b.to_owned());
             }
             let message = String::from_utf8(str_bytes).expect("utf8");
-            assert_eq!(message, format!("message{}reply", i));
+            assert_eq!(message, format!("message{i}reply"));
         }
 
         Ok(()) as Result<()>

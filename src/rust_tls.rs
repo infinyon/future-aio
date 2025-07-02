@@ -132,10 +132,7 @@ mod connector {
             let fd = tcp_stream.as_connection_fd();
 
             let server_name = ServerName::try_from(domain).map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("Invalid Dns Name: {}", err),
-                )
+                IoError::new(ErrorKind::InvalidInput, format!("Invalid Dns Name: {err}"))
             })?;
 
             let (write, read) = self
@@ -183,10 +180,7 @@ mod connector {
             debug!("connect to tls domain: {}", self.domain);
 
             let server_name = ServerName::try_from(self.domain.as_str()).map_err(|err| {
-                IoError::new(
-                    ErrorKind::InvalidInput,
-                    format!("Invalid Dns Name: {}", err),
-                )
+                IoError::new(ErrorKind::InvalidInput, format!("Invalid Dns Name: {err}"))
             })?;
 
             let (write, read) = self
@@ -555,8 +549,8 @@ mod test {
                     str_bytes.push(b.to_owned());
                 }
                 let message = String::from_utf8(str_bytes).expect("utf8");
-                assert_eq!(message, format!("message{}", i));
-                let resply = format!("{}reply", message);
+                assert_eq!(message, format!("message{i}"));
+                let resply = format!("{message}reply");
                 let reply_bytes = resply.as_bytes();
                 debug!("sever: send back reply: {}", resply);
                 framed
@@ -582,7 +576,7 @@ mod test {
             debug!("client: got connection. waiting");
 
             for i in 0..ITER {
-                let message = format!("message{}", i);
+                let message = format!("message{i}");
                 let bytes = message.as_bytes();
                 debug!("client: loop {} sending test message", i);
                 framed
@@ -597,7 +591,7 @@ mod test {
                     str_bytes.push(b.to_owned());
                 }
                 let message = String::from_utf8(str_bytes).expect("utf8");
-                assert_eq!(message, format!("message{}reply", i));
+                assert_eq!(message, format!("message{i}reply"));
             }
 
             Ok(()) as Result<()>
