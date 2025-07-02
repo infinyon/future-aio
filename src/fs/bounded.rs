@@ -31,7 +31,7 @@ pub enum BoundedFileSinkError {
 impl fmt::Display for BoundedFileSinkError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::IoError(err) => write!(f, "{}", err),
+            Self::IoError(err) => write!(f, "{err}"),
             Self::MaxLenReached => write!(f, "max len reached"),
         }
     }

@@ -69,7 +69,7 @@ mod connector {
                 .map_err(|e| {
                     IoError::new(
                         ErrorKind::ConnectionRefused,
-                        format!("failed to connect: {}", e),
+                        format!("failed to connect: {e}"),
                     )
                 })?
                 .split_connection();
@@ -135,7 +135,7 @@ mod connector {
                 .map_err(|e| {
                     IoError::new(
                         ErrorKind::ConnectionRefused,
-                        format!("failed to connect: {}", e),
+                        format!("failed to connect: {e}"),
                     )
                 })?
                 .split_connection();
@@ -457,7 +457,7 @@ mod test {
     async fn test_tls(port: u16, acceptor: TlsAcceptor, connector: TlsConnector) -> Result<()> {
         const TEST_ITERATION: u16 = 2;
 
-        let addr = format!("127.0.0.1:{}", port)
+        let addr = format!("127.0.0.1:{port}")
             .parse::<SocketAddr>()
             .expect("parse");
 
