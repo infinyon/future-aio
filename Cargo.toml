@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-future"
-version = "0.8.2"
+version = "0.8.3"
 edition = "2024"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "I/O futures for Fluvio project"

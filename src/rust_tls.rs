@@ -38,14 +38,14 @@ mod cert {
     use std::fs::File;
     use std::io::BufRead;
     use std::io::BufReader;
+    use std::iter;
     use std::path::Path;
 
     use anyhow::{Context, Result, anyhow};
     use futures_rustls::rustls::RootCertStore;
     use futures_rustls::rustls::pki_types::CertificateDer;
     use futures_rustls::rustls::pki_types::PrivateKeyDer;
-    use rustls_pemfile::certs;
-    use rustls_pemfile::pkcs8_private_keys;
+    use rustls_pemfile::{Item, certs, read_one};
 
     pub fn load_certs<P: AsRef<Path>>(path: P) -> Result<Vec<CertificateDer<'static>>> {
         load_certs_from_reader(&mut BufReader::new(File::open(path)?))
@@ -61,9 +61,17 @@ mod cert {
     }
 
     pub fn load_keys_from_reader(rd: &mut dyn BufRead) -> Result<Vec<PrivateKeyDer<'static>>> {
-        pkcs8_private_keys(rd)
-            .map(|r| r.map(|p| p.into()).context("invalid key"))
-            .collect()
+        let mut keys = vec![];
+        for item in iter::from_fn(|| read_one(rd).transpose()) {
+            match item.unwrap() {
+                Item::Pkcs1Key(key) => keys.push(PrivateKeyDer::from(key)),
+                Item::Pkcs8Key(key) => keys.push(PrivateKeyDer::from(key)),
+                Item::Sec1Key(key) => keys.push(PrivateKeyDer::from(key)),
+                _ => {}
+            }
+        }
+
+        Ok(keys)
     }
 
     pub(crate) fn load_first_key<P: AsRef<Path>>(path: P) -> Result<PrivateKeyDer<'static>> {
