@@ -60,7 +60,7 @@ openssl = { version = "0.10.71", optional = true }
 openssl-sys = { version = "0.9.109", optional = true, features = ["vendored"] }
 openssl-src = { version = "=300.4.2+3.4.1", optional = true } # https://github.com/infinyon/fluvio/issues/4502
 rustls-pemfile = { version = "2.2", optional = true }
-socket2 = { version = "0.5.10", default-features = false, features = ["all"], optional = true }
+socket2 = { version = "0.6.0", default-features = false, features = ["all"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = { version = "0.4.45" }
